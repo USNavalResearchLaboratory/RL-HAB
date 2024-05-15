@@ -23,7 +23,7 @@ from wandb.integration.sb3 import WandbCallback
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-model_name = "DQN-2dFlow"
+model_name = "DQN-2dFlow-altitude"
 
 models_dir = "RL_models/" + model_name
 
@@ -52,21 +52,21 @@ hyperparams = {
 '''
 
 #For later
-policy_kwargs = dict(net_arch=[600, 600, 600])
+policy_kwargs = dict(net_arch=[128, 128, 128])
 
 
 #'''
 # Define hyperparameters
 config = {
-    "total_timesteps": int(10e6),
+    "total_timesteps": int(14e6),
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 1e-6,
-                'exploration_fraction':.3,
+                'learning_rate': 1e-4,  #is 1e-6 too low?
+                'exploration_fraction':.5,
                 'exploration_final_eps': 0.1,
                 #'learning_rate_schedule': schedule_coef,
-                'batch_size': 64,
+                'batch_size': 32,
                 #'n_steps': 256,
                 #'ent_coef': 0.2,
                 'train_freq': 5,
@@ -141,7 +141,7 @@ env = FlowFieldEnv(render_mode="human")
 # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 
 print("Loading model")
-model = DQN.load("RL_models/zesty-rain-8/DQN-2dFlow_zesty-rain-8_4000000_steps", env=env, )
+model = DQN.load("RL_models/grateful-wave-22/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
 # Evaluate the agent
 # NOTE: If you use wrappers with your environment that modify rewards,

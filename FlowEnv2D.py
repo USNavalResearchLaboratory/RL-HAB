@@ -17,7 +17,13 @@ class FlowFieldEnv(gym.Env):
         self.NUM_FLOW_LEVELS = 5
         self.dt = 0.1
 
+        self.max_vel = 10
+        self.min_vel = 1
+        self.episode_length = 400
+
         self.render_mode = render_mode
+
+
 
         # Generate flow field
         self.reset_flow()
@@ -28,6 +34,7 @@ class FlowFieldEnv(gym.Env):
         self.observation_space = spaces.Dict({
             'x': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float64),
             'y': spaces.Box(low=0, high=self.HEIGHT, shape=(1,), dtype=np.float64),
+            'x_flow': spaces.Box(low=self.min_vel, high=self.max_vel , shape=(1,), dtype=np.float64),
             'flow_field': spaces.Box(low=-10, high=10, shape=(self.NUM_FLOW_LEVELS,), dtype=np.float64),
             'goal_x': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float64),
             'goal_y': spaces.Box(low=0, high=self.HEIGHT, shape=(1,), dtype=np.float64)
@@ -40,7 +47,7 @@ class FlowFieldEnv(gym.Env):
             self.flow_field = np.zeros((self.NUM_FLOW_LEVELS, self.WIDTH))
             for altitude in range(self.NUM_FLOW_LEVELS):
                 wind_direction = np.random.choice([-1, 1])
-                wind_speed = np.random.uniform(0.5, 10)
+                wind_speed = np.random.uniform(self.min_vel , self.max_vel )
                 self.flow_field[altitude, :] = wind_direction * wind_speed
 
             # Count the number of right winds (1) and left winds (-1)
@@ -53,13 +60,18 @@ class FlowFieldEnv(gym.Env):
 
             #print("regenerating flow field, not enough diversity")
 
+        #Reset visited_areas
+        self.visited_areas = set()
+        self.entered_area = False
+        self.to_add = None
+
         # Interpolate between altitude levels with higher resolution
         x = np.linspace(-100, 100, self.WIDTH)
         f = interpolate.interp1d(np.arange(self.NUM_FLOW_LEVELS), self.flow_field, axis=0, kind='cubic')
         interp_intensity = self.NUM_FLOW_LEVELS
         self.interp_flow_field = f(np.linspace(0, self.NUM_FLOW_LEVELS - 1, interp_intensity))
 
-    def step(self, action):
+    def step_old(self, action):
 
         self.total_steps +=1
 
@@ -73,10 +85,10 @@ class FlowFieldEnv(gym.Env):
         # Calculate new y position based on action
         if action == 0:
             new_y = max(0, self.point["y"] - 2)  # Move down
-            #reward = -1
+            reward = -1
         elif action == 2:
             new_y = min(self.HEIGHT - 1, self.point["y"] + 2)  # Move up
-            #reward = -1
+            reward = -1
         else:
             new_y = self.point["y"]  # Stay
 
@@ -91,13 +103,13 @@ class FlowFieldEnv(gym.Env):
             distance_to_target = np.sqrt(
                 (self.point["x"] - self.goal["x"]) ** 2 + (self.point["y"] - self.goal["y"]) ** 2)
             if distance_to_target < 5:
-                reward = 100
+                reward = 500
                 print("Target Reached!", self.total_steps)
                 done = True
             else:
                 done = False
 
-        if self.total_steps > 400:
+        if self.total_steps > self.episode_length:
             done = True
 
 
@@ -105,6 +117,110 @@ class FlowFieldEnv(gym.Env):
         observation = self._get_obs()
 
         return observation, reward, done, False, self._get_info()
+
+    def altitude_reward(self):
+        distance_to_goal = abs(self.point["y"] - self.goal["y"])
+        if distance_to_goal <= 50:
+            return 1 - distance_to_goal / 50
+        else:
+            return 0
+
+    def euclidean_reward(self):
+        distance_to_goal = np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
+        if distance_to_goal <= 50:
+            return 1 - distance_to_goal / 50
+        else:
+            return 0
+
+    def area_reward(self, resolution=5):
+        reward = 0
+        # Check if the agent is entering a new area
+        current_area = (int(self.point["x"] // resolution), int(self.point["y"] // resolution))
+
+        #Add the most recent newly explored area if not already in the visited map.
+        if self.to_add != current_area:
+            self.visited_areas.add(self.to_add)
+            self.entered_area = False
+
+        #Check if an area has already been visited an peanlize the agent.
+        if current_area in self.visited_areas:
+            #Only penalize the agent for the first time it enters a previously entered area.
+            if not self.entered_area:
+                reward -= 10  # Penalize revisiting an area
+                self.entered_area = True
+
+        #Don't add the current area until it's left the area.
+        else:
+            self.to_add = current_area
+
+        return reward
+
+
+    def move_agent(self, action):
+        # Calculate new x position based on horizontal flow
+        new_x = self.point["x"] + self.horizontal_flow(self.point) * self.dt
+
+        reward = 0
+
+        # Calculate new y position based on action
+        if action == 0:
+            new_y = max(0, self.point["y"] - 2)  # Move down
+            #reward = -1 # Reduce score for excessive movement
+        elif action == 2:
+            new_y = min(self.HEIGHT - 1, self.point["y"] + 2)  # Move up
+            #reward = -1
+        else:
+            new_y = self.point["y"]  # Stay
+
+
+        self.point["x"] = new_x
+        self.point["y"] = new_y
+
+        self.current_flow = self.horizontal_flow(self.point)
+
+        return reward
+
+    def step(self, action):
+
+        done = False
+
+        self.total_steps += 1
+
+        reward = 0
+
+        reward += self.move_agent(action)
+
+        # Append the Euclidean distance-based reward
+        reward += self.euclidean_reward()
+
+        # Penalize the agent for revisiting an area
+        reward += self.area_reward()
+
+        # Check if new position is within bounds
+        if self.point["x"] < -100 or self.point["x"] > 100 or self.point["y"] <= 0 or self.point["y"] >= self.HEIGHT-1:
+            reward += -100  # Penalize going out of bounds
+            done = True
+
+        # Check if goal has been reached
+        distance_to_target =  self._get_info()["distance"]     #np.sqrt((self.point["x"] - self.goal["x"]) ** 2 + (self.point["y"] - self.goal["y"]) ** 2)
+        if distance_to_target < 5:
+            reward += 500
+            print("Target Reached!", self.total_steps)
+            done = True
+
+
+        #check if episode steps length has been reached
+        if self.total_steps > self.episode_length:
+            done = True
+
+        # Observation includes point position, goal position, and flow field levels
+        observation = self._get_obs()
+        info = self._get_info()
+
+        print(reward)
+        #print(observation)
+
+        return observation, reward, done, False, info
 
     def _get_info(self):
 
@@ -117,6 +233,7 @@ class FlowFieldEnv(gym.Env):
         observation = {
             'x': np.array([self.point["x"]]),
             'y': np.array([self.point["y"]]),
+            'x_flow': np.array([self.current_flow]),
             'flow_field': self.flow_field[:, 0],
             'goal_x': np.array([self.goal["x"]]),
             'goal_y': np.array([self.goal["y"]])
@@ -145,6 +262,8 @@ class FlowFieldEnv(gym.Env):
         # Reset point position and include goal position in the observation
         self.point = {"x": random.uniform(-80, 80), "y": random.uniform(20, 80)}
         self.goal = {"x": random.uniform(-80, 80), "y": random.uniform(20, 80)}  # Static goal position
+
+        self.current_flow = self.horizontal_flow(self.point)
 
         observation = self._get_obs()
 
@@ -200,6 +319,10 @@ class FlowFieldEnv(gym.Env):
         # Return the horizontal flow at the adjusted x position
         return horizontal_flow(adjusted_x)
 
+    def is_point_valid(self, point):
+        return point[0] >= -100 and point[0] <= 100 and point[1] >= 0 and point[1] <= self.HEIGHT
+
+
 
 if __name__ == '__main__':
 
@@ -217,6 +340,7 @@ if __name__ == '__main__':
         total_steps = 0
         for _ in range(500):
             action = env.action_space.sample()
+            #action = 1
             obs, reward, done, _, info = env.step(action)
             #obs, rewards, dones, info = env.step(action)
             total_reward += reward
