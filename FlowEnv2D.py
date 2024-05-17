@@ -5,6 +5,7 @@ from matplotlib.animation import FuncAnimation
 import gymnasium as gym
 from gymnasium import spaces
 import random
+import time
 
 #from stable_baselines3.common.env_checker import check_env
 
@@ -22,8 +23,6 @@ class FlowFieldEnv(gym.Env):
         self.episode_length = 400
 
         self.render_mode = render_mode
-
-
 
         # Generate flow field
         self.reset_flow()
@@ -71,52 +70,6 @@ class FlowFieldEnv(gym.Env):
         interp_intensity = self.NUM_FLOW_LEVELS
         self.interp_flow_field = f(np.linspace(0, self.NUM_FLOW_LEVELS - 1, interp_intensity))
 
-    def step_old(self, action):
-
-        self.total_steps +=1
-
-
-
-        # Calculate new x position based on horizontal flow
-        new_x = self.point["x"] + self.horizontal_flow(self.point) * self.dt
-
-        reward = 0
-
-        # Calculate new y position based on action
-        if action == 0:
-            new_y = max(0, self.point["y"] - 2)  # Move down
-            reward = -1
-        elif action == 2:
-            new_y = min(self.HEIGHT - 1, self.point["y"] + 2)  # Move up
-            reward = -1
-        else:
-            new_y = self.point["y"]  # Stay
-
-        # Check if new position is within bounds
-        if new_x < -100 or new_x > 100 or new_y < 0 or new_y >= self.HEIGHT:
-            reward = -100  # Penalize going out of bounds
-            done = True
-        else:
-            self.point["x"] = new_x
-            self.point["y"] = new_y
-            # Calculate distance to target
-            distance_to_target = np.sqrt(
-                (self.point["x"] - self.goal["x"]) ** 2 + (self.point["y"] - self.goal["y"]) ** 2)
-            if distance_to_target < 5:
-                reward = 500
-                print("Target Reached!", self.total_steps)
-                done = True
-            else:
-                done = False
-
-        if self.total_steps > self.episode_length:
-            done = True
-
-
-        # Observation includes point position, goal position, and flow field levels
-        observation = self._get_obs()
-
-        return observation, reward, done, False, self._get_info()
 
     def altitude_reward(self):
         distance_to_goal = abs(self.point["y"] - self.goal["y"])
@@ -165,10 +118,10 @@ class FlowFieldEnv(gym.Env):
         # Calculate new y position based on action
         if action == 0:
             new_y = max(0, self.point["y"] - 2)  # Move down
-            #reward = -1 # Reduce score for excessive movement
+            reward = -0.1 # Reduce score for excessive movement
         elif action == 2:
             new_y = min(self.HEIGHT - 1, self.point["y"] + 2)  # Move up
-            #reward = -1
+            reward = -0.1
         else:
             new_y = self.point["y"]  # Stay
 
@@ -194,12 +147,13 @@ class FlowFieldEnv(gym.Env):
         reward += self.euclidean_reward()
 
         # Penalize the agent for revisiting an area
-        reward += self.area_reward()
+        #reward += self.area_reward()
 
         # Check if new position is within bounds
         if self.point["x"] < -100 or self.point["x"] > 100 or self.point["y"] <= 0 or self.point["y"] >= self.HEIGHT-1:
             reward += -100  # Penalize going out of bounds
             done = True
+            #pass
 
         # Check if goal has been reached
         distance_to_target =  self._get_info()["distance"]     #np.sqrt((self.point["x"] - self.goal["x"]) ** 2 + (self.point["y"] - self.goal["y"]) ** 2)
@@ -217,7 +171,7 @@ class FlowFieldEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
-        print(reward)
+        #print(reward)
         #print(observation)
 
         return observation, reward, done, False, info
@@ -323,7 +277,6 @@ class FlowFieldEnv(gym.Env):
         return point[0] >= -100 and point[0] <= 100 and point[1] >= 0 and point[1] <= self.HEIGHT
 
 
-
 if __name__ == '__main__':
 
 
@@ -342,9 +295,10 @@ if __name__ == '__main__':
             action = env.action_space.sample()
             #action = 1
             obs, reward, done, _, info = env.step(action)
-            #obs, rewards, dones, info = env.step(action)
+            #print(obs, reward, done, info)
             total_reward += reward
             total_steps += 1
+            time.sleep(1)
             env.render(mode='human')
             if done:
                 break
