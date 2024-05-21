@@ -1,7 +1,9 @@
 .idea/
 
 RL_models
+RL_models_static
 logs
+logs_static
 wandb
 
 # Byte-compiled / optimized / DLL files

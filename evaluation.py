@@ -2,7 +2,10 @@ import sys
 import os
 sys.path.append(os.path.abspath('src'))
 
-from FlowEnv2D import FlowFieldEnv
+
+"""Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
+#from FlowEnv2D import FlowFieldEnv
+from FlowEnv2DSTATIC import FlowFieldEnv
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -18,8 +21,13 @@ env = FlowFieldEnv(render_mode="human")
 # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 
 print("Loading model")
-model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
-model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
+#model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
+#model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
+
+model = DQN.load("RL_models_static/vivid-pine-3/static-2dflow-DQN_5000000_steps", env=env, )
+
+print("model.policy", model.policy)
+#dfgd
 
 # Evaluate the agent
 # NOTE: If you use wrappers with your environment that modify rewards,

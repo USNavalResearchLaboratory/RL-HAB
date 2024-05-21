@@ -36,7 +36,7 @@ if not os.path.exists(logdir):
     os.makedirs(logdir)
 
 #Update Network Architecture
-policy_kwargs = dict(net_arch=[128, 128, 128, 128])
+policy_kwargs = dict(net_arch=[64,64,64])
 
 
 # Define hyperparameters
@@ -45,7 +45,7 @@ config = {
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 1e-4,  #is 1e-6 too low?
+                'learning_rate': 1e-5,  #is 1e-6 too low?
                 'exploration_fraction':.1,
                 'exploration_final_eps': 0.05,
                 #'learning_rate_schedule': schedule_coef,
@@ -53,9 +53,10 @@ config = {
                 #'n_steps': 256,
                 #'ent_coef': 0.2,
                 'train_freq': 4,
-                'gamma': .99,
+                'gamma': .993,
                 'buffer_size': int(1e6),
-                'target_update_interval': 10000,
+                'target_update_interval': 1000,
+                'stats_window_size': 1000,
             },
     "env_name": "2dflow"
     # Add other hyperparameters here

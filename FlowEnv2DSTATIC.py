@@ -16,7 +16,7 @@ class FlowFieldEnv(gym.Env):
         self.WIDTH = 100
         self.HEIGHT = 100
         self.NUM_FLOW_LEVELS = 5
-        self.dt = 0.1
+        self.dt = 1
 
         self.max_vel = 10
         self.min_vel = 1
@@ -25,6 +25,7 @@ class FlowFieldEnv(gym.Env):
         self.render_mode = render_mode
 
         # Generate flow field
+        self.target_reached = False
         self.reset_flow()
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
@@ -33,20 +34,22 @@ class FlowFieldEnv(gym.Env):
         self.observation_space = spaces.Dict({
             'x': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float64),
             'y': spaces.Box(low=0, high=self.HEIGHT, shape=(1,), dtype=np.float64),
-            'x_flow': spaces.Box(low=self.min_vel, high=self.max_vel , shape=(1,), dtype=np.float64),
-            'flow_field': spaces.Box(low=-10, high=10, shape=(self.NUM_FLOW_LEVELS,), dtype=np.float64),
+            'x_flow': spaces.Box(low=-4, high=4 , shape=(1,), dtype=np.float64),
+            'flow_field': spaces.Box(low=-4, high=4, shape=(self.NUM_FLOW_LEVELS,), dtype=np.float64),
             'goal_x': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float64),
             'goal_y': spaces.Box(low=0, high=self.HEIGHT, shape=(1,), dtype=np.float64)
         })
 
-
     def reset_flow(self):
         while True:
-            # Generate flow field
+            # Generate STATIC flow field
+            static_direction = [-1,1,-1,1,-1]
+            static_magnitude = [2,3,4,4,2]
+
             self.flow_field = np.zeros((self.NUM_FLOW_LEVELS, self.WIDTH))
             for altitude in range(self.NUM_FLOW_LEVELS):
-                wind_direction = np.random.choice([-1, 1])
-                wind_speed = np.random.uniform(self.min_vel , self.max_vel )
+                wind_direction = static_direction[altitude]
+                wind_speed = static_magnitude[altitude]
                 self.flow_field[altitude, :] = wind_direction * wind_speed
 
             # Count the number of right winds (1) and left winds (-1)
@@ -56,8 +59,6 @@ class FlowFieldEnv(gym.Env):
             # Check if there are at least 2 right winds and 2 left winds
             if right_winds >= 2 and left_winds >= 2:
                 break
-
-            #print("regenerating flow field, not enough diversity")
 
         #Reset visited_areas
         self.visited_areas = set()
@@ -70,7 +71,6 @@ class FlowFieldEnv(gym.Env):
         interp_intensity = self.NUM_FLOW_LEVELS
         self.interp_flow_field = f(np.linspace(0, self.NUM_FLOW_LEVELS - 1, interp_intensity))
 
-
     def altitude_reward(self):
         distance_to_goal = abs(self.point["y"] - self.goal["y"])
         if distance_to_goal <= 50:
@@ -82,6 +82,14 @@ class FlowFieldEnv(gym.Env):
         distance_to_goal = np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
         if distance_to_goal <= 50:
             return 1 - distance_to_goal / 50
+        else:
+            return 0
+
+    def euclidean_reward_exponential(self):
+        distance_to_goal = np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
+        if distance_to_goal <= 50:
+            # Use an exponential decay function
+            return np.exp(-distance_to_goal / 100)
         else:
             return 0
 
@@ -108,7 +116,6 @@ class FlowFieldEnv(gym.Env):
 
         return reward
 
-
     def move_agent(self, action):
         # Calculate new x position based on horizontal flow
         new_x = self.point["x"] + self.horizontal_flow(self.point) * self.dt
@@ -118,10 +125,10 @@ class FlowFieldEnv(gym.Env):
         # Calculate new y position based on action
         if action == 0:
             new_y = max(0, self.point["y"] - 2)  # Move down
-            reward = -0.1 # Reduce score for excessive movement
+            #reward = -0.25 # Reduce score for excessive movement
         elif action == 2:
             new_y = min(self.HEIGHT - 1, self.point["y"] + 2)  # Move up
-            reward = -0.1
+            #reward = -0.25
         else:
             new_y = self.point["y"]  # Stay
 
@@ -160,6 +167,7 @@ class FlowFieldEnv(gym.Env):
         if distance_to_target < 5:
             reward += 500
             print("Target Reached!", self.total_steps)
+            self.target_reached = True
             done = True
 
 
@@ -181,7 +189,8 @@ class FlowFieldEnv(gym.Env):
 
         return {
             "distance": np.linalg.norm(
-                np.asarray([self.point["x"], self.point["y"]]) - np.asarray([self.goal["x"], self.goal["y"]]), ord=1)
+                np.asarray([self.point["x"], self.point["y"]]) - np.asarray([self.goal["x"], self.goal["y"]]), ord=1),
+            "target_reached": self.target_reached,
         }
 
     def _get_obs(self):
@@ -200,6 +209,7 @@ class FlowFieldEnv(gym.Env):
         super().reset(seed=seed)
 
         self.reset_flow()
+        self.target_reached = False
         #print(self.flow_field[:, 0])
 
         # Reset the rendering
@@ -233,13 +243,13 @@ class FlowFieldEnv(gym.Env):
             plt.colorbar(self.im, ax=self.ax, label='Wind Speed', orientation='vertical')
             plt.xlabel('X')
             plt.ylabel('Altitude')
-            plt.title('2D Flow Field with Smoothly Interpolated Altitude Levels')
+            plt.title('2D Static Flow Field with Smoothly Interpolated Altitude Levels')
 
             # Set y-axis limits to increase from 0 to HEIGHT
             self.ax.set_ylim(0, self.HEIGHT)
 
             # Plot goal position
-            self.goal_point = self.ax.scatter(self.goal["x"], self.goal["y"], color='green', marker='x')
+            self.goal_point = self.ax.scatter(self.goal["x"], self.goal["y"], color='white', marker='x')
 
             self.canvas = self.fig.canvas
 
@@ -288,7 +298,8 @@ if __name__ == '__main__':
     #env_test = check_env(env)
     #print(env_test)
 
-print        env.reset()
+    while True:
+        env.reset()
         total_reward = 0
         total_steps = 0
         for _ in range(500):
@@ -298,7 +309,7 @@ print        env.reset()
             #print(obs, reward, done, info)
             total_reward += reward
             total_steps += 1
-            time.sleep(1)
+            time.sleep(.1)
             env.render(mode='human')
             if done:
                 break
