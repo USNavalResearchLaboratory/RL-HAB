@@ -59,6 +59,7 @@ config = {
                 'stats_window_size': 1000,
             },
     "env_name": "2dflow"
+    "NOTES" "Changed Euclidian based reward to 100m radius decayed exponentially instead of linearly. Returing to vivid-pine hyperparameters."
     # Add other hyperparameters here
 }
 

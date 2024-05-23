@@ -28,6 +28,8 @@ class FlowFieldEnv(gym.Env):
         self.target_reached = False
         self.reset_flow()
 
+        self.action_history = []
+
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
 
         # Observation space includes continuous x and y positions and discrete flow field
@@ -93,6 +95,19 @@ class FlowFieldEnv(gym.Env):
         else:
             return 0
 
+    def repeated_action_penalty(self):
+        #maximum negative score would be -.25 a step.
+        recent_actions = self.action_history[-25:]
+
+        # Calculate the number of action changes
+        action_changes = sum(1 for i in range(1, len(recent_actions)) if recent_actions[i] != recent_actions[i - 1])
+
+        # Define a penalty value; adjust based on your requirements
+        penalty_per_change = -.1
+        total_penalty = action_changes * penalty_per_change
+
+        return total_penalty
+
     def area_reward(self, resolution=5):
         reward = 0
         # Check if the agent is entering a new area
@@ -145,13 +160,16 @@ class FlowFieldEnv(gym.Env):
         done = False
 
         self.total_steps += 1
+        self.action_history.append(action)
 
         reward = 0
 
         reward += self.move_agent(action)
 
         # Append the Euclidean distance-based reward
-        reward += self.euclidean_reward()
+        reward += self.euclidean_reward_exponential()
+
+        reward += self.repeated_action_penalty()
 
         # Penalize the agent for revisiting an area
         #reward += self.area_reward()
@@ -269,7 +287,8 @@ class FlowFieldEnv(gym.Env):
             return rgb_data  # Return as a list
 
         elif mode == 'human':
-            plt.pause(0.01)  # Pause to update plot
+            plt.pause(0.1)  # Pause to update plot
+
 
     def close(self):
         pass

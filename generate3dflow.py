@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from scipy.interpolate import interpn, griddata
-from scipy.interpolate import RegularGridInterpolator
-from scipy import interpolate
+from matplotlib import cm
 
 
 class FlowField3D:
@@ -21,6 +19,12 @@ class FlowField3D:
         magnitudes = np.random.uniform(self.min_vel, self.max_vel, size=self.num_levels)
         alt_levels = np.linspace(0, self.z_dim, self.num_levels, endpoint=True)
 
+
+        #Static Debugging:
+        #directions = [0,  np.pi, np.pi/2,np.pi, 3*np.pi/2]
+        #magnitudes = [5, 5, 5, 10, 10]
+
+
         flow_field = np.zeros((self.num_levels, self.x_dim, self.y_dim, 4))
         for z in range(self.num_levels):
             u = np.cos(directions[z]) * magnitudes[z]
@@ -30,29 +34,40 @@ class FlowField3D:
             flow_field[z, :, :, 2] = 0  # Flow is only in the X-Y plane
             flow_field[z, :, :, 3] = alt_levels[z]  # Store altitude in the fourth dimension
 
+        self.flow_field = flow_field
+
         return flow_field, directions, magnitudes
 
     def interpolate_flow(self, x, y, z):
-        alt_levels = self.flow_field[:, 0, 0, 3]
-        above_idx = np.searchsorted(alt_levels, z, side='right')
-        below_idx = above_idx - 1 if above_idx > 0 else 0
+        # Determine the indices of the levels below and above the current altitude
+        below_idx = int(np.floor(z / (self.z_dim / self.num_levels)))
+        above_idx = int(np.ceil(z / (self.z_dim / self.num_levels)))
 
-        flow_below = self.flow_field[below_idx, :, :, :3]
-        flow_above = self.flow_field[above_idx, :, :, :3]
+        # Ensure the indices are within bounds
+        below_idx = max(0, min(self.num_levels - 1, below_idx))
+        above_idx = max(0, min(self.num_levels - 1, above_idx))
 
-        weight_below = (alt_levels[above_idx] - z) / (alt_levels[above_idx] - alt_levels[below_idx])
-        weight_above = 1.0 - weight_below
+        if below_idx == above_idx:
+            flow_below = self.flow_field[below_idx, :, :, :3]
+            flow_above = flow_below
+        else:
+            flow_below = self.flow_field[below_idx, :, :, :3]
+            flow_above = self.flow_field[above_idx, :, :, :3]
 
-        u_interp = weight_below * flow_below[x, y, 0] + weight_above * flow_above[x, y, 0]
-        v_interp = weight_below * flow_below[x, y, 1] + weight_above * flow_above[x, y, 1]
-        w_interp = 0  # Flow is only in the X-Y plane
+        # Interpolate the flow at the current x, y, and z positions
+        frac = (z % (self.z_dim / self.num_levels)) / (self.z_dim / self.num_levels)
+        u_below = flow_below[int(y), int(x), 0]
+        v_below = flow_below[int(y), int(x), 1]
+        u_above = flow_above[int(y), int(x), 0]
+        v_above = flow_above[int(y), int(x), 1]
 
-        return u_interp, v_interp, w_interp
+        u = u_below + frac * (u_above - u_below)
+        v = v_below + frac * (v_above - v_below)
 
-    def visualize_3d_planar_flow(self, skip=1, interpolation_point=None):
-        fig = plt.figure(figsize=(10, 6))
-        ax = fig.add_subplot(111, projection='3d')
+        return u, v, 0  # Assuming zero vertical flow
 
+
+    def visualize_3d_planar_flow(self, ax, skip=1, interpolation_point=None):
         for z in range(self.flow_field.shape[0]):
             X, Y = np.meshgrid(np.arange(self.flow_field.shape[1]), np.arange(self.flow_field.shape[2]))
             U = self.flow_field[z, :, :, 0]
@@ -60,9 +75,15 @@ class FlowField3D:
             W = self.flow_field[z, :, :, 2]  # Flow is only in the X-Y plane
             Z = np.full_like(X, self.flow_field[z, 0, 0, 3])
 
-            ax.quiver(X[::skip, ::skip], Y[::skip, ::skip], Z[::skip, ::skip],
-                      U[::skip, ::skip], V[::skip, ::skip], W[::skip, ::skip],
-                      length=self.magnitudes[z] * 1, normalize=True, arrow_length_ratio=.1)
+            # Calculate directions for color mapping
+            directions = np.arctan2(V, U)
+            norm = plt.Normalize(-np.pi, np.pi)
+            colors = cm.rainbow(norm(directions))
+
+            for i in range(0, X.shape[0], skip):
+                for j in range(0, Y.shape[1], skip):
+                    ax.quiver(X[i, j], Y[i, j], Z[i, j], U[i, j], V[i, j], W[i, j],
+                              length=self.magnitudes[z] * 2, normalize=True, arrow_length_ratio=.5, color=colors[i, j])
 
         if interpolation_point is not None:
             x, y, z = interpolation_point
@@ -75,8 +96,6 @@ class FlowField3D:
         ax.set_xlim(0, self.flow_field.shape[1])
         ax.set_ylim(0, self.flow_field.shape[2])
         ax.set_zlim(0, self.flow_field[-1, 0, 0, 3])  # Set the z-axis limit to the maximum altitude
-
-        plt.show()
 
 
 class PointMass:
@@ -119,12 +138,15 @@ class PointMass:
             dz = dz_func()
             self.move(dz)
 
-    def visualize_path(self):
-        fig = plt.figure(figsize=(10, 6))
-        ax = fig.add_subplot(111, projection='3d')
-
+    def visualize_path(self, ax):
         path = np.array(self.path)
-        ax.plot(path[:, 0], path[:, 1], path[:, 2], marker='o')
+        # Calculate directions for color mapping
+        directions = np.arctan2(np.diff(path[:, 1]), np.diff(path[:, 0]))
+        norm = plt.Normalize(-np.pi, np.pi)
+        colors = cm.rainbow(norm(directions))
+
+        for i in range(len(directions)):
+            ax.plot(path[i:i+2, 0], path[i:i+2, 1], path[i:i+2, 2], color=colors[i], marker='.')
 
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -133,30 +155,39 @@ class PointMass:
         ax.set_ylim(0, self.flow_field_3d.y_dim)
         ax.set_zlim(0, self.flow_field_3d.z_dim)
 
-        plt.show()
 
+if __name__ == '__main__':
 
-# Example usage
-x_dim = 100
-y_dim = 100
-z_dim = 100
-num_levels = 5
-min_vel = 1
-max_vel = 10
-skip = 10
+    # Example usage
+    x_dim = 500
+    y_dim = 500
+    z_dim = 100
+    num_levels = 5
+    min_vel = 1
+    max_vel = 10
+    skip = x_dim // 10
 
-flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel)
-flow_field_3d.visualize_3d_planar_flow(skip)
+    flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel)
 
-# Initialize the point mass
-mass = 1.0  # Mass of the point mass
-dt = 1.0  # Time step for simulation
-point_mass = PointMass(flow_field_3d, x=50, y=50, z=25, mass=mass, dt=dt)
+    # Initialize the point mass
+    mass = 1.0  # Mass of the point mass
+    dt = 1.0  # Time step for simulation
+    point_mass = PointMass(flow_field_3d, x=250, y=250, z=25, mass=mass, dt=dt)
 
-# Simulate the point mass movement
-steps = 50
-dz_func = lambda: np.random.choice([-1, 0, 5])  # Randomly move up, down, or stay at the same altitude
-point_mass.simulate(steps, dz_func)
+    # Simulate the point mass movement
+    steps = 200
+    dz_func = lambda: np.random.choice([-5, -2, 0, 2, 5])  # Randomly move up, down, or stay at the same altitude
+    point_mass.simulate(steps, dz_func)
 
-# Visualize the path
-point_mass.visualize_path()
+    # Create a single figure with two subplots
+    fig = plt.figure(figsize=(15, 10))
+
+    # Plot the flow field
+    ax1 = fig.add_subplot(121, projection='3d')
+    flow_field_3d.visualize_3d_planar_flow(ax1, skip, interpolation_point=(250, 250, 25))
+
+    # Plot the point mass path
+    ax2 = fig.add_subplot(122, projection='3d')
+    point_mass.visualize_path(ax2)
+
+plt.show()

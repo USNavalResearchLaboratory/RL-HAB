@@ -288,7 +288,8 @@ if __name__ == '__main__':
     #env_test = check_env(env)
     #print(env_test)
 
-print        env.reset()
+    while True:
+        env.reset()
         total_reward = 0
         total_steps = 0
         for _ in range(500):

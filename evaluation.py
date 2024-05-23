@@ -24,9 +24,17 @@ print("Loading model")
 #model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
 #model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
-model = DQN.load("RL_models_static/vivid-pine-3/static-2dflow-DQN_5000000_steps", env=env, )
+model = DQN.load("RL_models_static/chocolate-shape-8/static-2dflow-DQN_10000000_steps", env=env, )
 
-print("model.policy", model.policy)
+print(model.exploration_initial_eps)
+
+
+#model.exploration_initial_eps = 0.5
+print(model.exploration_initial_eps)
+#sdfsdfsd
+#print(model.get_parameters())
+
+#print("model.policy", model.policy)
 #dfgd
 
 # Evaluate the agent
@@ -62,6 +70,7 @@ while True:
         total_reward += rewards
         total_steps+=1
         vec_env.render(mode='human')
+
         if dones:
             break
     print("episode length", total_steps, "Total Reward", total_reward)
