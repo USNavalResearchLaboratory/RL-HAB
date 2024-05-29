@@ -235,7 +235,7 @@ if __name__ == "__main__":
     env = FlowFieldEnv()
     start = np.array([random.uniform(-80, 80), random.uniform(20, 80)])
     goal = np.array([random.uniform(-80, 80), random.uniform(20, 80)])
-    rrt = RRT(env, start, goal, dt=2, altitude_move_amount=4)
+    rrt = RRT(env, start, goal, dt=1, altitude_move_amount=2)
     path = rrt.plan()
 
     # Print the path if found, otherwise print a message

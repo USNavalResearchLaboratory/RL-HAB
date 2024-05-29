@@ -24,7 +24,7 @@ print("Loading model")
 #model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
 #model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
-model = DQN.load("RL_models_static/chocolate-shape-8/static-2dflow-DQN_10000000_steps", env=env, )
+model = DQN.load("RL_models_static/sage-thunder-30/static-2dflow-DQN_26000000_steps", env=env, )
 
 print(model.exploration_initial_eps)
 

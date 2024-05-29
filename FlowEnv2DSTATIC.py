@@ -81,11 +81,16 @@ class FlowFieldEnv(gym.Env):
             return 0
 
     def euclidean_reward(self):
+        '''
         distance_to_goal = np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
-        if distance_to_goal <= 50:
-            return 1 - distance_to_goal / 50
+        if distance_to_goal <= 100:
+            #clip
+            return - distance_to_goal / 100
         else:
             return 0
+        '''
+        distance_to_goal = self._get_info()["distance"] # np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
+        return -1 * np.clip(distance_to_goal,0,100)/100
 
     def euclidean_reward_exponential(self):
         distance_to_goal = np.linalg.norm([self.point["x"] - self.goal["x"], self.point["y"] - self.goal["y"]])
@@ -167,23 +172,23 @@ class FlowFieldEnv(gym.Env):
         reward += self.move_agent(action)
 
         # Append the Euclidean distance-based reward
-        reward += self.euclidean_reward_exponential()
+        reward += self.euclidean_reward()
 
-        reward += self.repeated_action_penalty()
+        #reward += self.repeated_action_penalty()
 
         # Penalize the agent for revisiting an area
         #reward += self.area_reward()
 
         # Check if new position is within bounds
         if self.point["x"] < -100 or self.point["x"] > 100 or self.point["y"] <= 0 or self.point["y"] >= self.HEIGHT-1:
-            reward += -100  # Penalize going out of bounds
+            reward += -300  # Penalize going out of bounds
             done = True
             #pass
 
         # Check if goal has been reached
         distance_to_target =  self._get_info()["distance"]     #np.sqrt((self.point["x"] - self.goal["x"]) ** 2 + (self.point["y"] - self.goal["y"]) ** 2)
         if distance_to_target < 5:
-            reward += 500
+            reward += 200
             print("Target Reached!", self.total_steps)
             self.target_reached = True
             done = True
@@ -191,7 +196,7 @@ class FlowFieldEnv(gym.Env):
 
         #check if episode steps length has been reached
         if self.total_steps > self.episode_length:
-            reward += -100  # Penalize running out of time
+            #reward += -100  # Penalize running out of time
             done = True
 
         # Observation includes point position, goal position, and flow field levels

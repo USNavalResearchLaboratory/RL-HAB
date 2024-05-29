@@ -64,23 +64,25 @@ policy_kwargs = dict(net_arch=[64, 64])
 
 # Define hyperparameters
 config = {
-    "total_timesteps": int(10e6),
+    "total_timesteps": int(100e6),
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
                 'learning_rate': 1e-4,
-                'exploration_fraction':.25,
-                'exploration_initial_eps': 0.7,
+                'exploration_fraction':.5,
+                #'exploration_initial_eps': 0.7,
                 'exploration_final_eps': 0.1,
                 'batch_size': 32,
                 'train_freq': 4,
                 'gamma': .993,
                 'buffer_size': int(1e6),
-                'target_update_interval': 10000,
+                'target_update_interval': 100000,
                 'stats_window_size': 1000,
+                'device': "cpu",
+
             },
     "env_name": "static-2dflow-DQN",
-    "NOTES": "Added repeated action penalty. Trying to retrain off of chocolate-shape-8."
+    "NOTES": "Trying Chinthan's negative Distance reward idea. Using same hyperparameters as chocolate-shape-8. Also changing to CPU"
 
     # Add other hyperparameters here
 }
@@ -115,12 +117,11 @@ model = DQN(env=env,
 
 
 #OVerwrite
-old_model = DQN.load("RL_models_static/chocolate-shape-8/static-2dflow-DQN_10000000_steps", env)
+#model = DQN.load("RL_models_static/magic-mountain-31/static-2dflow-DQN_8000000_steps", env)
 # Extract the policy weights
-policy_weights = old_model.policy.state_dict()
-
+#policy_weights = old_model.policy.state_dict()
 # Load the policy weights into the new model
-model.policy.load_state_dict(policy_weights)
+#model.policy.load_state_dict(policy_weights)
 
 
 #################
@@ -135,7 +136,7 @@ model.learn(
         gradient_save_freq=1000,
         model_save_path=f"RL_models_static/{run.name}",
         verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000)],
-    progress_bar=True, reset_num_timesteps=True #added this for restarting a training
+    progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )
 
 run.finish()
