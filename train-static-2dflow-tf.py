@@ -7,12 +7,13 @@ from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback,
 from datetime import datetime
 from stable_baselines3.common.env_util import make_vec_env
 
-import wandb
-from wandb.integration.sb3 import WandbCallback
+#import wandb
+#from wandb.integration.sb3 import WandbCallback
 import numpy as np
 from collections import deque
 
 from FlowEnv2DSTATIC import FlowFieldEnv
+from gymnasium.envs.registration import register
 
 
 class TargetReachedCallback(BaseCallback):
@@ -61,7 +62,7 @@ if not os.path.exists(logdir):
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[128, 128, 128])
+policy_kwargs = dict(net_arch=[64, 64])
 
 # Define hyperparameters
 config = {
@@ -69,15 +70,15 @@ config = {
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 2e-6,
+                'learning_rate': 1e-4,
                 'exploration_fraction':.25,
                 #'exploration_initial_eps': 0.7,
-                'exploration_final_eps': 0.05,
+                'exploration_final_eps': 0.1,
                 'batch_size': 32,
                 'train_freq': 4,
                 'gamma': .993,
-                'buffer_size': int(2e6),
-                'target_update_interval': 100,
+                'buffer_size': int(1e6),
+                'target_update_interval': 100000,
                 'stats_window_size': 1000,
                 'device': "cpu",
 
@@ -88,14 +89,7 @@ config = {
     # Add other hyperparameters here
 }
 
-run = wandb.init(
-    #anonymous="allow",
-    project="static-2dflow-DQN",
-    config=config,
-    sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-    # monitor_gym=True,  # auto-upload the videos of agents playing the game
-    save_code=True,  # optional
-)
+
 
 #Training Parameters
 SAVE_FREQ = 500000
@@ -103,21 +97,27 @@ SAVE_FREQ = 500000
 
 
 # Define the checkpoint callback to save the model every 1000 steps
-checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_static/{run.name}",
+checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_static/{run_id}",
                                           name_prefix=model_name)
 
 # Create environment
 #env = FlowFieldEnv()
 #env = Monitor(env)
 
+
+myEnv_id = 'FlowFieldEnv-v0' # It is best practice to have a space name and version number.
+
+
 n_procs = 16
 
 env = make_vec_env(FlowFieldEnv, n_envs=n_procs)
 
+#train_env = make_vec_env(FlowFieldEnv(), n_envs=n_procs)
+
 
 model = DQN(env=env,
             verbose=1,
-            tensorboard_log=logdir + "/" + run.name,
+            tensorboard_log=logdir + "/" + run_id,
             **config['parameters'],
             )
 
@@ -136,12 +136,9 @@ model = DQN(env=env,
 model.learn(
     total_timesteps=config["total_timesteps"],
     #tb_log_name=run.name,  #added this for restarting a training
-    log_interval=100,
-    callback=[WandbCallback(
-        gradient_save_freq=1000,
-        model_save_path=f"RL_models_static/{run.name}",
-        verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000)],
+    log_interval=10,
+    callback=[checkpoint_callback, TargetReachedCallback(moving_avg_length=1000)],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )
 
-run.finish()
+

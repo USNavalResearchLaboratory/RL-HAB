@@ -42,6 +42,13 @@ class FlowFieldEnv(gym.Env):
             'goal_y': spaces.Box(low=0, high=self.HEIGHT, shape=(1,), dtype=np.float64)
         })
 
+        # Precompute interpolated flow fields for each altitude level
+        self.horizontal_flows = []
+        for altitude_level in range(self.NUM_FLOW_LEVELS):
+            horizontal_flow = interpolate.interp1d(np.arange(self.WIDTH), self.interp_flow_field[altitude_level],
+                                                   kind='cubic')
+            self.horizontal_flows.append(horizontal_flow)
+
     def reset_flow(self):
         while True:
             # Generate STATIC flow field
@@ -303,10 +310,8 @@ class FlowFieldEnv(gym.Env):
         altitude_level = np.clip(int((point["y"] / self.HEIGHT) * self.NUM_FLOW_LEVELS), 0, self.NUM_FLOW_LEVELS - 1)
         # Adjust x to be within the range [0, WIDTH-1]
         adjusted_x = np.clip(point["x"] + 100, 0, self.WIDTH - 1)
-        # Interpolate the flow field at the altitude level to get the horizontal flow
-        horizontal_flow = interpolate.interp1d(np.arange(self.WIDTH), self.interp_flow_field[altitude_level], kind='cubic')
-        # Return the horizontal flow at the adjusted x position
-        return horizontal_flow(adjusted_x)
+        # Return the precomputed horizontal flow at the altitude level and adjusted x position
+        return self.horizontal_flows[altitude_level](adjusted_x)
 
     def is_point_valid(self, point):
         return point[0] >= -100 and point[0] <= 100 and point[1] >= 0 and point[1] <= self.HEIGHT

@@ -12,7 +12,7 @@ from wandb.integration.sb3 import WandbCallback
 import numpy as np
 from collections import deque
 
-from FlowEnv2DSTATIC import FlowFieldEnv
+from FlowEnv3Dstationkeeping import FlowFieldEnv3d
 
 
 class TargetReachedCallback(BaseCallback):
@@ -33,35 +33,32 @@ class TargetReachedCallback(BaseCallback):
             infos = self.locals['infos'][0]
             #print(infos)
 
-            if infos.get("target_reached"):
-                self.target_reached_history.append(1)
-            else:
-                self.target_reached_history.append(0)
+            self.target_reached_history.append(infos.get("twr"))
 
             if len(self.target_reached_history) > self.moving_avg_length:
                 self.target_reached_history.pop(0)
 
             moving_avg = np.mean(self.target_reached_history)
-            self.logger.record('target_reached', moving_avg)
+            self.logger.record('twr', moving_avg)
 
         return True
 
 #Directory Initializtion
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_name = "static-2dflow-DQN"
-models_dir = "RL_models_static/" + model_name
+model_name = "3dflow-DQN"
+models_dir = "RL_models_3D/" + model_name
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-logdir = "logs_static"
+logdir = "logs_3D"
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[128, 128, 128])
+policy_kwargs = dict(net_arch=[64, 64, 64, 64])
 
 # Define hyperparameters
 config = {
@@ -69,28 +66,28 @@ config = {
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 2e-6,
+                'learning_rate': 1e-5,
                 'exploration_fraction':.25,
-                #'exploration_initial_eps': 0.7,
-                'exploration_final_eps': 0.05,
+                'exploration_initial_eps': .7,
+                'exploration_final_eps': 0.1,
                 'batch_size': 32,
                 'train_freq': 4,
-                'gamma': .993,
-                'buffer_size': int(2e6),
-                'target_update_interval': 100,
+                'gamma': .99,
+                'buffer_size': int(1e6),
+                'target_update_interval': 10000,
                 'stats_window_size': 1000,
                 'device': "cpu",
 
             },
-    "env_name": "static-2dflow-DQN",
-    "NOTES": "Trying Chinthan's negative Distance reward idea. Using same hyperparameters as chocolate-shape-8. Also changing to CPU"
+    "env_name": "3dflow-DQN",
+    "NOTES": "Random Flow every 1000 episodes.  4 layer 64 node network" #change this to lower case
 
     # Add other hyperparameters here
 }
 
 run = wandb.init(
     #anonymous="allow",
-    project="static-2dflow-DQN",
+    project="3dflow-DQN",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     # monitor_gym=True,  # auto-upload the videos of agents playing the game
@@ -98,21 +95,23 @@ run = wandb.init(
 )
 
 #Training Parameters
-SAVE_FREQ = 500000
+SAVE_FREQ = 250000  #with num of procs = 16,  this will be every 2 mil steps
 #TIMESTEPS = int(10e6)
+
+n_procs = 16
+#SAVE_FREQ = 500000/16
+
+env = make_vec_env(FlowFieldEnv3d, n_envs=n_procs)
 
 
 # Define the checkpoint callback to save the model every 1000 steps
-checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_static/{run.name}",
+checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_3D/{run.name}",
                                           name_prefix=model_name)
 
 # Create environment
 #env = FlowFieldEnv()
 #env = Monitor(env)
 
-n_procs = 16
-
-env = make_vec_env(FlowFieldEnv, n_envs=n_procs)
 
 
 model = DQN(env=env,
@@ -122,7 +121,7 @@ model = DQN(env=env,
             )
 
 #OVerwrite
-#model = DQN.load("RL_models_static/comic-serenity-32/static-2dflow-DQN_34000000_steps", env)
+#old_model = DQN.load("RL_models_3D/super-salad-20/3dflow-DQN_44000000_steps", env=env, )
 # Extract the policy weights
 #policy_weights = old_model.policy.state_dict()
 # Load the policy weights into the new model
@@ -139,7 +138,7 @@ model.learn(
     log_interval=100,
     callback=[WandbCallback(
         gradient_save_freq=1000,
-        model_save_path=f"RL_models_static/{run.name}",
+        model_save_path=f"RL_models_3D/{run.name}",
         verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000)],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )

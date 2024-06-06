@@ -14,6 +14,30 @@ class FlowField3D:
         self.max_vel = max_vel
         self.flow_field, self.directions, self.magnitudes = self.generate_random_planar_flow_field()
 
+    def randomize_arrays(self, directions, magnitudes):
+        # Ensure both input arrays have at least one unique value
+        if len(directions) == 0 or len(magnitudes) == 0:
+            raise ValueError("Both directions and magnitudes must have at least one element.")
+
+        # Create the result arrays with at least one occurrence of each value
+        directions_result = np.random.choice(directions, 6, replace=True).tolist()
+        magnitudes_result = np.random.choice(magnitudes, 6, replace=True).tolist()
+
+        # Ensure each value from the original arrays appears at least once
+        for value in directions:
+            if value not in directions_result:
+                directions_result[np.random.randint(6)] = value
+        for value in magnitudes:
+            if value not in magnitudes_result:
+                magnitudes_result[np.random.randint(6)] = value
+
+        # Shuffle the arrays to randomize the order
+        np.random.shuffle(directions_result)
+        np.random.shuffle(magnitudes_result)
+
+        return directions_result, magnitudes_result
+
+
     def generate_random_planar_flow_field(self):
         directions = np.random.uniform(0, 2 * np.pi, size=self.num_levels)
         magnitudes = np.random.uniform(self.min_vel, self.max_vel, size=self.num_levels)
@@ -21,8 +45,16 @@ class FlowField3D:
 
 
         #Static Debugging:
-        #directions = [0,  np.pi, np.pi/2,np.pi, 3*np.pi/2]
-        #magnitudes = [5, 5, 5, 10, 10]
+        #directions = [0,  np.pi/2, np.pi, 3*np.pi/2, 0, np.pi]
+        #magnitudes = [5, 10, 5, 10, 10, 5]
+
+        #Semi-random
+        directions_bucket = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+        magnitudes_bucket = [5, 10]
+
+        directions, magnitudes = self.randomize_arrays(directions_bucket, magnitudes_bucket)
+        #print("Randomized Directions:", directions)
+        #print("Randomized Magnitudes:", magnitudes)
 
 
         flow_field = np.zeros((self.num_levels, self.x_dim, self.y_dim, 4))
@@ -56,10 +88,12 @@ class FlowField3D:
 
         # Interpolate the flow at the current x, y, and z positions
         frac = (z % (self.z_dim / self.num_levels)) / (self.z_dim / self.num_levels)
-        u_below = flow_below[int(y), int(x), 0]
-        v_below = flow_below[int(y), int(x), 1]
-        u_above = flow_above[int(y), int(x), 0]
-        v_above = flow_above[int(y), int(x), 1]
+
+        #Clip ranges, so that the agent can go out of bounds, taking the nearest value
+        u_below = flow_below[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 0]
+        v_below = flow_below[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 1]
+        u_above = flow_above[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 0]
+        v_above = flow_above[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 1]
 
         u = u_below + frac * (u_above - u_below)
         v = v_below + frac * (v_above - v_below)
@@ -162,7 +196,7 @@ if __name__ == '__main__':
     x_dim = 500
     y_dim = 500
     z_dim = 100
-    num_levels = 5
+    num_levels = 6
     min_vel = 1
     max_vel = 10
     skip = x_dim // 10
