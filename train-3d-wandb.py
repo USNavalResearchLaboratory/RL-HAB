@@ -43,6 +43,25 @@ class TargetReachedCallback(BaseCallback):
 
         return True
 
+class FlowChangeCallback(BaseCallback):
+    """
+    Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
+    """
+    def __init__(self, verbose=0):
+        super(FlowChangeCallback, self).__init__(verbose)
+        #self.env = env  # type: Union[gym.Env, VecEnv, None]
+
+    def _on_step(self) -> bool:
+        # Check if the episode has ended
+        done = self.locals['dones'][0]
+
+        if done:
+            infos = self.locals['infos'][0]
+
+            self.logger.record('num_flow_changes', infos.get("num_flow_changes"))
+
+        return True
+
 #Directory Initializtion
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 model_name = "3dflow-DQN"
@@ -58,7 +77,7 @@ if not os.path.exists(logdir):
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[64, 64, 64, 64])
+policy_kwargs = dict(net_arch=[64, 64])
 
 # Define hyperparameters
 config = {
@@ -66,10 +85,10 @@ config = {
     'parameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 1e-5,
+                'learning_rate': 1e-4,
                 'exploration_fraction':.25,
-                'exploration_initial_eps': .7,
-                'exploration_final_eps': 0.1,
+                'exploration_initial_eps': 1,
+                'exploration_final_eps': 0.05,
                 'batch_size': 32,
                 'train_freq': 4,
                 'gamma': .99,
@@ -80,10 +99,25 @@ config = {
 
             },
     "env_name": "3dflow-DQN",
-    "NOTES": "Random Flow every 1000 episodes.  4 layer 64 node network" #change this to lower case
+    "seed": 6,
+    "NOTES": "Gradually randomize flow, seed 6" #change this to lower case
 
     # Add other hyperparameters here
 }
+
+
+#charmned flower:
+#[4.71238898038469, 3.141592653589793, 4.71238898038469, 4.71238898038469, 1.5707963267948966, 3.141592653589793]
+#[5, 5, 5, 5, 5, 5]
+
+#crimsondream
+#[0.0, 3.141592653589793, 4.71238898038469, 3.141592653589793, 3.141592653589793, 3.141592653589793]
+#[5, 5, 5, 5, 5, 5]
+
+#golden-paper
+#[0.0, 3.141592653589793, 4.71238898038469, 4.71238898038469, 0.0, 1.5707963267948966]
+#[5, 5, 5, 5, 5, 5]
+
 
 run = wandb.init(
     #anonymous="allow",
@@ -139,7 +173,7 @@ model.learn(
     callback=[WandbCallback(
         gradient_save_freq=1000,
         model_save_path=f"RL_models_3D/{run.name}",
-        verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000)],
+        verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000), FlowChangeCallback()],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )
 

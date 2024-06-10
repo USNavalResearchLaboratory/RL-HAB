@@ -9,6 +9,7 @@ import random
 import time
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
+from stable_baselines3.common.env_util import make_vec_env
 
 from generate3dflow import FlowField3D, PointMass
 
@@ -25,6 +26,11 @@ class FlowFieldEnv3d(gym.Env):
         self.dt = 1
         self.radius = 100
 
+        self.num_flow_changes = 0
+
+        self.seed = 6
+        np.random.seed(self.seed)
+
 
 
         self.episode_length = 400
@@ -32,11 +38,11 @@ class FlowFieldEnv3d(gym.Env):
 
 
         self.random_flow_episode_count = 0
-        self.random_flow_episode_length = 1000
+        self.random_flow_episode_length = 100
 
         self.render_mode = render_mode
 
-        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel)
+        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, self.seed)
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,
@@ -58,13 +64,20 @@ class FlowFieldEnv3d(gym.Env):
             'goal_z': spaces.Box(low=0, high=self.z_dim, shape=(1,), dtype=np.float64),
             'flow_field': spaces.Box(low=-self.max_vel, high=self.max_vel, shape=(self.num_levels, 2), dtype=np.float64)
 
+
+            #relative velocity
+            #relative distance
+            #local flow
         })
 
     def reset(self, seed=None, options=None):
 
-        if self.random_flow_episode_count >= self.random_flow_episode_length:
-            self.FlowField3D.generate_random_planar_flow_field()
+        if self.random_flow_episode_count > self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
+            #self.FlowField3D.generate_random_planar_flow_field()
+            self.FlowField3D.gradualize_random_flow()
+            #self.FlowField3D.randomize_flow()
             self.random_flow_episode_count = 0
+            self.num_flow_changes +=1
         else:
             self.random_flow_episode_count +=1
 
@@ -85,9 +98,10 @@ class FlowFieldEnv3d(gym.Env):
 
         self.total_steps = 0
 
-        self.state["x"] = random.uniform(0 + self.x_dim/4, self.x_dim - self.x_dim/4)
-        self.state["y"] = random.uniform(0 + self.y_dim/4, self.y_dim - self.y_dim/4)
-        self.state["z"] = random.uniform(0 + self.z_dim/4, self.z_dim - self.z_dim/4)
+        #Make it discrete spawnings for now
+        self.state["x"] = int(random.uniform(0 + self.x_dim/4, self.x_dim - self.x_dim/4))
+        self.state["y"] = int(random.uniform(0 + self.y_dim/4, self.y_dim - self.y_dim/4))
+        self.state["z"] = int(random.uniform(0 + self.z_dim/4, self.z_dim - self.z_dim/4))
 
         self.goal = {"x": self.x_dim/2,
                       "y": self.x_dim/2,
@@ -114,7 +128,7 @@ class FlowFieldEnv3d(gym.Env):
 
         self.state["x_vel"] = u
         self.state["y_vel"] = v
-        self.state["z_vel"] = self.alt_move
+        self.state["z_vel"] = self.alt_move*(action-1) #this can be done since theres only 3 actions
 
         self.path.append((self.state["x"], self.state["y"], self.state["z"]))
         self.altitude_history.append(self.state["z"])
@@ -156,7 +170,7 @@ class FlowFieldEnv3d(gym.Env):
             done = True
         '''
 
-        if self.total_steps > self.episode_length:
+        if self.total_steps > self.episode_length - 1:
             #reward += -100
             done = True
             print("episode length", self.total_steps, "TWR", self._get_info()["twr"])
@@ -201,6 +215,7 @@ class FlowFieldEnv3d(gym.Env):
             "distance": np.sqrt((self.state["x"] - self.goal["x"])**2 + (self.state["y"] - self.goal["y"])**2),
             "within_target": self.within_target,
             "twr": self.twr,
+            "num_flow_changes": self.num_flow_changes,
 
         }
 
@@ -299,6 +314,9 @@ if __name__ == '__main__':
     env = FlowFieldEnv3d()
     obs = env.reset()
 
+    #n_procs = 16
+    #env = make_vec_env(FlowFieldEnv3d, n_envs=n_procs)
+
     while True:
         env.reset()
         total_reward = 0
@@ -315,4 +333,6 @@ if __name__ == '__main__':
             if done:
                 break
             env.render()
+        #print(obs)
+        #print(env.FlowField3D.flow_field[:,0,0,0])
         print("Total reward:", total_reward, info)

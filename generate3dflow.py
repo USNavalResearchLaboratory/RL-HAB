@@ -5,29 +5,31 @@ from matplotlib import cm
 
 
 class FlowField3D:
-    def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel):
+    def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed):
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.z_dim = z_dim
         self.num_levels = num_levels
         self.min_vel = min_vel
         self.max_vel = max_vel
-        self.flow_field, self.directions, self.magnitudes = self.generate_random_planar_flow_field()
+        self.flow_field, self.directions, self.magnitudes = self.initialize_flow()
+        np.random.seed(seed)
 
-    def randomize_arrays(self, directions, magnitudes):
-        # Ensure both input arrays have at least one unique value
-        if len(directions) == 0 or len(magnitudes) == 0:
-            raise ValueError("Both directions and magnitudes must have at least one element.")
+    def randomize_flow(self):
+
+        directions_bucket = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+        magnitudes_bucket = [5]
+
 
         # Create the result arrays with at least one occurrence of each value
-        directions_result = np.random.choice(directions, 6, replace=True).tolist()
-        magnitudes_result = np.random.choice(magnitudes, 6, replace=True).tolist()
+        directions_result = np.random.choice(directions_bucket, 6, replace=True).tolist()
+        magnitudes_result = np.random.choice(magnitudes_bucket, 6, replace=True).tolist()
 
         # Ensure each value from the original arrays appears at least once
-        for value in directions:
+        for value in directions_bucket:
             if value not in directions_result:
                 directions_result[np.random.randint(6)] = value
-        for value in magnitudes:
+        for value in  magnitudes_bucket:
             if value not in magnitudes_result:
                 magnitudes_result[np.random.randint(6)] = value
 
@@ -35,32 +37,64 @@ class FlowField3D:
         np.random.shuffle(directions_result)
         np.random.shuffle(magnitudes_result)
 
-        return directions_result, magnitudes_result
+        self.directions = directions_result
+        self.magnitudes = magnitudes_result
+
+        print(self.directions)
+        print(self.magnitudes)
+
+        self.generate_random_planar_flow_field()
+
+
+    def gradualize_random_flow(self, max_angle_change=np.deg2rad(10)):
+        #print(max_angle_change, self.directions)
+
+        new_directions = []
+        for direction in self.directions:
+            angle_change = np.random.uniform(-max_angle_change, max_angle_change)
+            new_direction = (direction + angle_change) #% (2 * np.pi)
+            new_directions.append(new_direction)
+
+        self.directions = new_directions
+        self.generate_random_planar_flow_field()
+
+
+    def initialize_flow(self):
+        self.directions = np.random.uniform(0, 2 * np.pi, size=self.num_levels)
+        self.magnitudes = np.random.uniform(self.min_vel, self.max_vel, size=self.num_levels)
+
+        # Static Debugging:
+        #self.directions = [0,  np.pi/2, np.pi, 3*np.pi/2, 0, np.pi]
+        #self.magnitudes = [5, 10, 5, 10, 10, 5]
+
+        # Static Debugging2:
+        self.directions = [np.pi, 0, np.pi, 3 * np.pi / 2, np.pi / 2, 0]
+        self.magnitudes = [10, 5, 10, 5, 10, 5]
+
+        self.randomize_flow()
+
+        return self.generate_random_planar_flow_field()
 
 
     def generate_random_planar_flow_field(self):
-        directions = np.random.uniform(0, 2 * np.pi, size=self.num_levels)
-        magnitudes = np.random.uniform(self.min_vel, self.max_vel, size=self.num_levels)
+        """
+        The shape of the flow field is (num_levels, x_dim, y_dim, 4) where x y and z are index values:
+
+            1. flow_field[z, x, y, 0]: The horizontal flow component in the X direction (u).
+            2. flow_field[z, x, y, 1]: The horizontal flow component in the Y direction (v).
+            3. flow_field[z, x, y, 2]: The vertical flow component, which is set to 0 since the flow is only in the X-Y plane (w).
+            4. flow_field[z, x, y, 3]: The altitude level corresponding to the Z dimension.
+
+        :return:
+        """
         alt_levels = np.linspace(0, self.z_dim, self.num_levels, endpoint=True)
 
-
-        #Static Debugging:
-        #directions = [0,  np.pi/2, np.pi, 3*np.pi/2, 0, np.pi]
-        #magnitudes = [5, 10, 5, 10, 10, 5]
-
-        #Semi-random
-        directions_bucket = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
-        magnitudes_bucket = [5, 10]
-
-        directions, magnitudes = self.randomize_arrays(directions_bucket, magnitudes_bucket)
-        #print("Randomized Directions:", directions)
-        #print("Randomized Magnitudes:", magnitudes)
-
+        #print(alt_levels)
 
         flow_field = np.zeros((self.num_levels, self.x_dim, self.y_dim, 4))
         for z in range(self.num_levels):
-            u = np.cos(directions[z]) * magnitudes[z]
-            v = np.sin(directions[z]) * magnitudes[z]
+            u = round(np.cos(self.directions[z]) * self.magnitudes[z],2)
+            v = round(np.sin(self.directions[z]) * self.magnitudes[z], 2)
             flow_field[z, :, :, 0] = u
             flow_field[z, :, :, 1] = v
             flow_field[z, :, :, 2] = 0  # Flow is only in the X-Y plane
@@ -68,7 +102,7 @@ class FlowField3D:
 
         self.flow_field = flow_field
 
-        return flow_field, directions, magnitudes
+        return self.flow_field, self.directions, self.magnitudes
 
     def interpolate_flow(self, x, y, z):
         # Determine the indices of the levels below and above the current altitude
@@ -200,8 +234,10 @@ if __name__ == '__main__':
     min_vel = 1
     max_vel = 10
     skip = x_dim // 10
+    seed = 0
+    np.random.seed(seed)
 
-    flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel)
+    flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed)
 
     # Initialize the point mass
     mass = 1.0  # Mass of the point mass

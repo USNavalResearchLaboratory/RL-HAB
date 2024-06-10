@@ -25,8 +25,12 @@ print("Loading model")
 #model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
 #model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
-model = DQN.load("RL_models_3D/fiery-frog-5/3dflow-DQN_96000000_steps", env=env, )
+#model = DQN.load("RL_models_3D/fiery-frog-5/3dflow-DQN_96000000_steps", env=env, )
 #model = DQN.load("RL_models_3D/stilted-snowflake-16/3dflow-DQN_44000000_steps", env=env, )
+
+model = DQN.load("RL_models_3D/dutiful-surf-33/3dflow-DQN_76000000_steps", env=env, )
+
+#print(model.o)
 
 # Evaluate the agent
 # NOTE: If you use wrappers with your environment that modify rewards,
@@ -39,6 +43,7 @@ n_procs = 16
 
 env = make_vec_env(FlowFieldEnv3d, n_envs=n_procs)
 
+'''
 # Evaluate the agent with deterministic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
 print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
@@ -46,8 +51,8 @@ print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std
 # Evaluate the agent with stochastic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
+'''
 
-dfgdf
 # Enjoy trained agent
 vec_env = model.get_env()
 
@@ -66,7 +71,7 @@ while True:
         #print(action)
 
         obs, rewards, dones, info = vec_env.step(action)
-        #print(obs)
+        print(obs)
         total_reward += rewards
         total_steps+=1
         vec_env.render(mode='human')
