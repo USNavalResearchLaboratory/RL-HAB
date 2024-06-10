@@ -1,93 +1,97 @@
+[![Python 3.9](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-390/)
+
 # FLOW2D
 
+FLOW2D provides custom physics-based simulation environments (in the standard gym structure) for testing path planning algorithms. 
+This includes a simplified 2D target reaching simulation with horizontal flow bands, as well as a 3D station keeping environment.  
 
+These enviorments are inspired by high altitude balloons that can only actuate up and down but then leverage changes in winds at various altitudes to
+have limited horizontal control
 
-## Getting started
+Also see Google's Balloon Learning Environment: https://balloon-learning-environment.readthedocs.io/en/latest/
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://spork.nre.navy.mil/ncarai/5517/FLOW2D.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://spork.nre.navy.mil/ncarai/5517/FLOW2D/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+![alt text](img/station-keeping.png)
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+1. ### Install [Anaconda3](https://www.anaconda.com/download)
+    Conda virtual environments are preferred for machine learning projects where dependency version numbers are very important, and might vary from one package to another.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+    If your machine has a GPU, you can additionally install [GPU support](https://www.anaconda.com/blog/getting-started-with-gpu-computing-in-anaconda)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+2. ### Install Python Dependencies
+    For easy install on WSL and Ubuntu use:
+    ```
+    pip install -r requirements.txt
+    ```
+    
+    Tested to work on Windows 11 WSL with the following:
+    * Python Version 3.12
+    * Conda Version 23.7.4
+   
+3. Make a Wandb Account and set up on your local machine 
+   https://docs.wandb.ai/quickstart
+    
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Running Reinforcement Learning Simulations
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Run scripts from the main Flow2D directory
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### env3d
+   ![alt text](img/3D-stationkeeping.png)
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+   **generate3Dflow.py** - is how we currently develop 3D horizontal flows at various altitudes in the XY plane
 
-## License
-For open source projects, say how it is licensed.
+   **FlowEnv3D.py** -  has no kinematics (only up/down 2 units at a time) and instanteneous flow velocity. Goal is to reach goal in 3D.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+   **FlowEnv3Dstationkeping.py** - similar to FlowEnv3D, but now the goal is a cylindrical radius to stay with instead of a point
+
+   *Note* The reset method for FlowEnv3D.py and FlowEnv3Dstationkeping.py has options to switch between static flow, gradually updating the flow every episode, and randomizing the flow every episode within specified directional bins
+
+   **train-\*.py** gives examples of how to train a stationkeeping agent using StableBaselines3 and wandb
+
+   **evaluate2d.py** gives examples of how evaulate a 3D trained stationkeeping agent using StableBaselines3 
+### env2d
+   ![alt text](img/2D-Flow.png)
+   
+   **FlowEnv2D.py** - has no kinematics (only up/down 2 units at a time) and instanteneous flow velocity. The flow is randomly generated each episode
+   
+   **FlowEnv2DSTATIC.py** - similar to *FlowEnv2D.py*, but with the same flow every episode
+   
+   **RRT2D.py** gives an example of solving the path planning problem using RRT
+   
+   **train-\*.py** gives examples of how to train an agent using StableBaselines3 in the various 2D environments, with or without wandb
+
+   **evaluate2d.py** gives examples of how evaulate a 2D trained agent using StableBaselines3 
+
+## Notes/Discussion
+   * Chinthan's Branch has examples with of the enviorments with kinematics added in
+   * The 2D environment gets caught in local minima and only reaches the taget about 75% of the time. 
+   * The current 3D station keeping environment is good at training agents to station keep with STATIC flowfields.  
+      * We do not have success with graudally or fully randomizing flow generations each eipsode.
+   * Simulation updates/variations to implement/try to improve learning performance:
+      * Kinematics vs. no Kinematics
+      * Different reward structures
+      * Limit control frequency  (currently every step)
+      * Change observation space
+        * Add or remove dimensions
+        * CHange to local coordinates (distance/bearing)
+        * Change structure of "flow map"
+    
+## Future/TODO
+   * Time varrying flow fields
+   * Generate flow fields from netcdf4 forecasts (historical ERA5)
+        * Generate netcdf4 "forecasts" from radiosonde data
+   * Generate flow fields to mimic fan flow fields in the high bay with blimps
+        * Determine Fan thrust decay rate as wel as turbulence when there are multiple fans 
+   * Update simulation environment and kinematics to match HABS
+        * Vertical ascent/descent profile
+        * Atmospheric changes (tempr, pressure, cloud coverage, solar radiation)  
+        * Power usage, solar charging 
+        * air drag for horizontal motion
+        * burst or loss of lift conditions
+        * altitude constraints (flying too low)
+
+## Authors
+* **Tristan Schuler** - *U.S. Naval Research Laboratory*
+* **Chinthan Prasad** - *U.S. Naval Research Laboratory*
