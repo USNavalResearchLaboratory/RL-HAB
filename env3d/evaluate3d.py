@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath('src'))
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
 #from FlowEnv2D import FlowFieldEnv
-from FlowEnv3Dstationkeeping import FlowFieldEnv3d
+from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy

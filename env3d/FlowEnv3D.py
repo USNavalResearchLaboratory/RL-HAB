@@ -12,7 +12,7 @@ import time
 
 from generate3dflow import FlowField3D
 
-class FlowFieldEnv(gym.Env):
+class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
     def __init__(self, render_mode="human"):
@@ -243,7 +243,7 @@ class FlowFieldEnv(gym.Env):
 
 
 if __name__ == '__main__':
-    env = FlowFieldEnv()
+    env = FlowFieldEnv3d()
     obs = env.reset()
 
     while True:

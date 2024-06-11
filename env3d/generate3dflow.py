@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
-
 
 class FlowField3D:
     def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed):
@@ -12,64 +10,68 @@ class FlowField3D:
         self.num_levels = num_levels
         self.min_vel = min_vel
         self.max_vel = max_vel
+
+        self.seed(seed)
+
         self.flow_field, self.directions, self.magnitudes = self.initialize_flow()
-        np.random.seed(seed)
+
+    def seed(self, seed=None):
+        if seed != None:
+            self.np_rng = np.random.default_rng(seed)
+        else:
+            self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
     def randomize_flow(self):
-
+        #Create buckets to randomly choose from
         directions_bucket = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
         magnitudes_bucket = [5]
 
-
         # Create the result arrays with at least one occurrence of each value
-        directions_result = np.random.choice(directions_bucket, 6, replace=True).tolist()
-        magnitudes_result = np.random.choice(magnitudes_bucket, 6, replace=True).tolist()
+        directions_result = self.np_rng.choice(directions_bucket, 6, replace=True).tolist()
+        magnitudes_result = self.np_rng.choice(magnitudes_bucket, 6, replace=True).tolist()
 
         # Ensure each value from the original arrays appears at least once
         for value in directions_bucket:
             if value not in directions_result:
-                directions_result[np.random.randint(6)] = value
+                directions_result[self.np_rng.integers(6)] = value
         for value in  magnitudes_bucket:
             if value not in magnitudes_result:
-                magnitudes_result[np.random.randint(6)] = value
+                magnitudes_result[self.np_rng.integers(6)] = value
 
         # Shuffle the arrays to randomize the order
-        np.random.shuffle(directions_result)
-        np.random.shuffle(magnitudes_result)
+        self.np_rng.shuffle(directions_result)
+        self.np_rng.shuffle(magnitudes_result)
 
         self.directions = directions_result
         self.magnitudes = magnitudes_result
 
-        print(self.directions)
-        print(self.magnitudes)
+        print("New flows:", self.directions)
 
         self.generate_random_planar_flow_field()
 
 
     def gradualize_random_flow(self, max_angle_change=np.deg2rad(10)):
-        #print(max_angle_change, self.directions)
-
         new_directions = []
         for direction in self.directions:
-            angle_change = np.random.uniform(-max_angle_change, max_angle_change)
+            angle_change = self.np_rng.uniform(-max_angle_change, max_angle_change)
             new_direction = (direction + angle_change) #% (2 * np.pi)
             new_directions.append(new_direction)
 
         self.directions = new_directions
+        print("New flows:", self.directions)
         self.generate_random_planar_flow_field()
 
-
     def initialize_flow(self):
-        self.directions = np.random.uniform(0, 2 * np.pi, size=self.num_levels)
-        self.magnitudes = np.random.uniform(self.min_vel, self.max_vel, size=self.num_levels)
+        self.directions = self.np_rng.uniform(0, 2 * np.pi, size=self.num_levels)
+        self.magnitudes = self.np_rng.uniform(self.min_vel, self.max_vel, size=self.num_levels)
 
         # Static Debugging:
-        #self.directions = [0,  np.pi/2, np.pi, 3*np.pi/2, 0, np.pi]
-        #self.magnitudes = [5, 10, 5, 10, 10, 5]
+        self.directions = [0,  np.pi/2, np.pi, 3*np.pi/2, 0, np.pi]
+        self.magnitudes = [5, 10, 5, 10, 10, 5]
 
         # Static Debugging2:
-        self.directions = [np.pi, 0, np.pi, 3 * np.pi / 2, np.pi / 2, 0]
-        self.magnitudes = [10, 5, 10, 5, 10, 5]
+        #self.directions = [np.pi, 0, np.pi, 3 * np.pi / 2, np.pi / 2, 0]
+        #self.magnitudes = [10, 5, 10, 5, 10, 5]
 
         self.randomize_flow()
 
@@ -88,8 +90,6 @@ class FlowField3D:
         :return:
         """
         alt_levels = np.linspace(0, self.z_dim, self.num_levels, endpoint=True)
-
-        #print(alt_levels)
 
         flow_field = np.zeros((self.num_levels, self.x_dim, self.y_dim, 4))
         for z in range(self.num_levels):
@@ -223,10 +223,8 @@ class PointMass:
         ax.set_ylim(0, self.flow_field_3d.y_dim)
         ax.set_zlim(0, self.flow_field_3d.z_dim)
 
-
+# Example usage
 if __name__ == '__main__':
-
-    # Example usage
     x_dim = 500
     y_dim = 500
     z_dim = 100
@@ -234,10 +232,13 @@ if __name__ == '__main__':
     min_vel = 1
     max_vel = 10
     skip = x_dim // 10
-    seed = 0
-    np.random.seed(seed)
+    seed = None
+
+    #If you uncomment seeding,  the random path generation will be the same every time as long as seed is not None
+    #np.random.seed(seed) #seeding
 
     flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed)
+    flow_field_3d.randomize_flow()
 
     # Initialize the point mass
     mass = 1.0  # Mass of the point mass

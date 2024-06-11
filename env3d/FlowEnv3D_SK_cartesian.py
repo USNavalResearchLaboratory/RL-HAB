@@ -10,39 +10,40 @@ import time
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3 import DQN
 
 from generate3dflow import FlowField3D, PointMass
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, render_mode="human"):
+    def __init__(self, seed=None, render_mode="human"):
+        super(FlowFieldEnv3d, self).__init__()
         self.x_dim = 500
         self.y_dim = 500
         self.z_dim = 100
         self.min_vel = 1
         self.max_vel = 10
-        self.num_levels = 6
+        self.num_levels = 6  # how many levels of different flow changes there are
         self.dt = 1
-        self.radius = 100
+        self.radius = 100  # station keeping radius
+        self.alt_move = 2  # how many units the agent can move up/down  (no kinematics)
 
-        self.num_flow_changes = 0
+        # Counting Defaults
+        self.num_flow_changes = 0  # do not change from 0
+        self.random_flow_episode_count = 0  # do not change from 0
+        self.total_steps = 0  # do not change from 0
 
-        self.seed = 6
-        np.random.seed(self.seed)
-
-
-
-        self.episode_length = 400
-        self.alt_move = 2
-
-
-        self.random_flow_episode_count = 0
-        self.random_flow_episode_length = 100
+        self.episode_length = 400  # how long an episode is
+        self.random_flow_episode_length = 2  # how many episodes before randomizing flow field
+        self.render_count = 1  # how many steps before rendering
 
         self.render_mode = render_mode
 
-        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, self.seed)
+        self.seed(seed)
+
+        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel,
+                                       seed)
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,
@@ -63,19 +64,20 @@ class FlowFieldEnv3d(gym.Env):
             'goal_y': spaces.Box(low=0, high=self.y_dim, shape=(1,), dtype=np.float64),
             'goal_z': spaces.Box(low=0, high=self.z_dim, shape=(1,), dtype=np.float64),
             'flow_field': spaces.Box(low=-self.max_vel, high=self.max_vel, shape=(self.num_levels, 2), dtype=np.float64)
-
-
-            #relative velocity
-            #relative distance
-            #local flow
         })
 
-    def reset(self, seed=None, options=None):
+    def seed(self, seed=None):
+        print("seed", seed)
+        if seed != None:
+            self.np_rng = np.random.default_rng(seed)
+        else:
+            self.np_rng = np.random.default_rng(np.random.randint(0, 2 ** 32))
 
+    def reset(self, seed=None, options=None):
         if self.random_flow_episode_count > self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
             #self.FlowField3D.generate_random_planar_flow_field()
-            self.FlowField3D.gradualize_random_flow()
-            #self.FlowField3D.randomize_flow()
+            #self.FlowField3D.gradualize_random_flow()
+            self.FlowField3D.randomize_flow()
             self.random_flow_episode_count = 0
             self.num_flow_changes +=1
         else:
@@ -311,11 +313,19 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 if __name__ == '__main__':
-    env = FlowFieldEnv3d()
-    obs = env.reset()
+    seed = np.random.randint(0, 2 ** 32) #Randomize random number generation, but kep the same across processes
+    n_procs = 4
 
-    #n_procs = 16
-    #env = make_vec_env(FlowFieldEnv3d, n_envs=n_procs)
+    # If you uncomment seeding,  the random path generation will be the same every time as long as seed is not None
+    # np.random.seed(seed) #seeding
+
+    env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
+
+    # Initialize the PPO model with the environment
+    model = DQN("MultiInputPolicy", env, seed=None, verbose=1, device='cpu')
+
+    # Train the model
+    model.learn(total_timesteps=10000)
 
     while True:
         env.reset()

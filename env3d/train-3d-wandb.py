@@ -6,13 +6,17 @@ from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
 from datetime import datetime
 from stable_baselines3.common.env_util import make_vec_env
+import random
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import numpy as np
 from collections import deque
 
-from FlowEnv3Dstationkeeping import FlowFieldEnv3d
+#Choose which enviorment to use for training
+#from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
+#from FlowEnv3D import FlowFieldEnv3d
+from FlowEnv3D_SK_relative import FlowFieldEnv3d
 
 
 class TargetReachedCallback(BaseCallback):
@@ -86,7 +90,7 @@ config = {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
                 'learning_rate': 1e-4,
-                'exploration_fraction':.25,
+                'exploration_fraction':.2,
                 'exploration_initial_eps': 1,
                 'exploration_final_eps': 0.05,
                 'batch_size': 32,
@@ -96,11 +100,10 @@ config = {
                 'target_update_interval': 10000,
                 'stats_window_size': 1000,
                 'device': "cpu",
-
             },
     "env_name": "3dflow-DQN",
-    "seed": 6,
-    "NOTES": "Gradually randomize flow, seed 6" #change this to lower case
+    "seed": random.randint(0, 10000),
+    "NOTES": "Trying with random seeding and relative distance and bearing" #change this to lower case
 
     # Add other hyperparameters here
 }
@@ -135,7 +138,9 @@ SAVE_FREQ = 250000  #with num of procs = 16,  this will be every 2 mil steps
 n_procs = 16
 #SAVE_FREQ = 500000/16
 
-env = make_vec_env(FlowFieldEnv3d, n_envs=n_procs)
+print("seed top level ", config['seed'])
+env_temp = FlowFieldEnv3d(seed = config['seed'])
+env = make_vec_env(env_temp, n_envs=n_procs, )
 
 
 # Define the checkpoint callback to save the model every 1000 steps

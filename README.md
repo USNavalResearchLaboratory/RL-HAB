@@ -65,6 +65,14 @@ Run scripts from the main Flow2D directory
    **evaluate2d.py** gives examples of how evaulate a 2D trained agent using StableBaselines3 
 
 ## Notes/Discussion
+   * **Important notes on seeding:**
+        * Specifying a seed in ```np.random.seed(seed)``` at the top level of a script will produce the same order of random numbers everytime
+          ```np.random``` is called. If using multiple threads/processes,  the random numbers generated will not be identical across the multiple processes, 
+          burt the random numbers in each process will be the same everytime the script is run.
+        * To have the same random numbers be generated across multiple threads/processes we have to set a seed for random 
+          number generation```self.np_random = np.random.default_rng(seed)``` and then use ```self.np_random``` everywhere in place of ```np.random```
+        * SB3 model decleration also takes an optional seed variable.  If a seed is specified,  the same random actions will be taken everytime. We typically don't want this.   
+   * CPU is faster for training then GPU right now with how simple the physics simulation is  
    * Chinthan's Branch has examples with of the enviorments with kinematics added in
    * The 2D environment gets caught in local minima and only reaches the taget about 75% of the time. 
    * The current 3D station keeping environment is good at training agents to station keep with STATIC flowfields.  
