@@ -81,7 +81,7 @@ if not os.path.exists(logdir):
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[64, 64])
+policy_kwargs = dict(net_arch=[64, 64, 64])
 
 # Define hyperparameters
 config = {
@@ -90,7 +90,7 @@ config = {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
                 'learning_rate': 1e-4,
-                'exploration_fraction':.2,
+                'exploration_fraction':.4,
                 'exploration_initial_eps': 1,
                 'exploration_final_eps': 0.05,
                 'batch_size': 32,
@@ -102,25 +102,9 @@ config = {
                 'device': "cpu",
             },
     "env_name": "3dflow-DQN",
-    "seed": random.randint(0, 10000),
-    "NOTES": "Trying with random seeding and relative distance and bearing" #change this to lower case
-
-    # Add other hyperparameters here
+    "seed": np.random.randint(0, 2 ** 32), #A random seed needs to be defined, to generated the same random numbers across processes
+    "NOTES": "relative bearing fixed, and flow field relative. Random 10. arch [64,64,64] " #change this to lower case
 }
-
-
-#charmned flower:
-#[4.71238898038469, 3.141592653589793, 4.71238898038469, 4.71238898038469, 1.5707963267948966, 3.141592653589793]
-#[5, 5, 5, 5, 5, 5]
-
-#crimsondream
-#[0.0, 3.141592653589793, 4.71238898038469, 3.141592653589793, 3.141592653589793, 3.141592653589793]
-#[5, 5, 5, 5, 5, 5]
-
-#golden-paper
-#[0.0, 3.141592653589793, 4.71238898038469, 4.71238898038469, 0.0, 1.5707963267948966]
-#[5, 5, 5, 5, 5, 5]
-
 
 run = wandb.init(
     #anonymous="allow",
@@ -138,9 +122,9 @@ SAVE_FREQ = 250000  #with num of procs = 16,  this will be every 2 mil steps
 n_procs = 16
 #SAVE_FREQ = 500000/16
 
-print("seed top level ", config['seed'])
-env_temp = FlowFieldEnv3d(seed = config['seed'])
-env = make_vec_env(env_temp, n_envs=n_procs, )
+
+seed = config['seed']
+env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
 
 
 # Define the checkpoint callback to save the model every 1000 steps

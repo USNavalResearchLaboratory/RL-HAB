@@ -37,18 +37,14 @@ class FlowFieldEnv3d(gym.Env):
         self.total_steps = 0 # do not change from 0
 
         self.episode_length = 400 #how long an episode is
-        self.random_flow_episode_length = 2 # how many episodes before randomizing flow field
+        self.random_flow_episode_length = 10 # how many episodes before randomizing flow field
         self.render_count = 1 #how many steps before rendering
-
-
 
         self.render_mode = render_mode
 
         self.seed(seed)
 
         self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, seed)
-
-
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,
@@ -58,10 +54,13 @@ class FlowFieldEnv3d(gym.Env):
 
         self.observation_space = spaces.Dict({
             'altitude': spaces.Box(low=0, high=self.z_dim, shape=(1,), dtype=np.float64),
-            'rel_distance': spaces.Box(low=0, high=np.sqrt(self.x_dim ** 2 + self.y_dim ** 2), shape=(1,),
+            'distance': spaces.Box(low=0, high=np.sqrt(self.x_dim ** 2 + self.y_dim ** 2), shape=(1,),
                                        dtype=np.float64),
             'rel_bearing': spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float64),
-            'flow_field': spaces.Box(low=-self.max_vel, high=self.max_vel, shape=(self.num_levels, 2), dtype=np.float64)
+            'flow_field': spaces.Box(
+                                low=np.array([[0, self.min_vel]] * self.num_levels, dtype=np.float64),
+                                high=np.array([[np.pi, self.max_vel]] * self.num_levels, dtype=np.float64),
+                                dtype=np.float64)
         })
 
     def seed(self, seed=None):
@@ -154,15 +153,6 @@ class FlowFieldEnv3d(gym.Env):
 
         reward += self.reward_google()
 
-        #Check if agent has gone out of bounds?
-        '''
-        if self.state["x"] < 0 or self.state["x"] > self.x_dim or \
-                self.state["y"] < 0 or self.state["y"] > self.y_dim or \
-                self.state["z"] < 0 or self.state["z"] > self.z_dim:
-            reward += -100
-            done = True
-        '''
-
         if self.total_steps > self.episode_length - 1:
             #reward += -100
             done = True
@@ -173,36 +163,79 @@ class FlowFieldEnv3d(gym.Env):
         else:
             self.render_step += 1
 
-
         observation = self._get_obs()
         info = self._get_info()
 
         return observation, reward, done, False, info
 
-    def _get_obs(self):
-        distance = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
-        #Should we cut off at raidus, or do distance to station?
+    def calculate_relative_angle(self, x, y, goal_x, goal_y, heading_x, heading_y):
+        """
+        Calculates the relative angle of motion of the blimp in relation to the goal based off of true bearing FROM POSITION TO GOAL
+        and the true heading.  The relative angle of motion is then between 0 and 180 degrees, where...
 
-        # Calculate the current heading based on velocity
-        current_heading = np.arctan2(self.state["y_vel"], self.state["x_vel"])
+        If the balloon moves directly to the goal at one altitude, the value would be 0 degrees.  Alternatively, if the balloon moved directly
+        away from the goal at another altitude level, that would be 180 degrees.
 
-        #True bearing
-        true_bearing = np.arctan2(self.goal["y"] - self.state["y"], self.goal["x"] - self.state["x"])
+        :param x: current balloon x position
+        :param y: current balloon y position
+        :param goal_x:
+        :param goal_y:
+        :param heading_x: current balloon x velocity
+        :param heading_y: current balloon y velocity
+        :return: relative bearing of balloon motion in relation to goal
+        """
 
-        # Calculate the relative bearing
-        rel_bearing = true_bearing - current_heading
-        # Ensure the relative bearing is between 0 and pi
+        # Calculate the current heading based on the heading vector
+        heading = np.arctan2(heading_y, heading_x)
+
+        # Calculate the true (inverted) bearing FROM POSITION TO GOAL
+        true_bearing = np.arctan2(goal_y - y, goal_x - x)
+
+        # Find the absolute difference between the two angles
+        rel_bearing = np.abs(heading - true_bearing)
+
+        # map from [-pi, pi] to [0,pi]
         rel_bearing = abs((rel_bearing + np.pi) % (2 * np.pi) - np.pi)
+
+        return rel_bearing
+
+    def calculate_relative_flow_map(self):
+        """
+        Builds off of the same calculation as calculate_relative_angle() to caluclate the relative Calculates the relative
+        "flow map" vertical slice from the balloons current position between 0 and 180 degrees.
+
+        :return: flowfield with relative bearins and magnitude
+        """
 
         flow_field_u = self.FlowField3D.flow_field[:, 0, 0, 0]
         flow_field_v = self.FlowField3D.flow_field[:, 0, 0, 1]
-        flow_field = np.stack((flow_field_u, flow_field_v), axis=-1)
+
+        flow_field_rel_angle = []
+        flow_field_magnitude = []
+
+        for i in range (0,len(flow_field_u)):
+            rel_angle = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], flow_field_u[i], flow_field_v[i])
+            magnitude = math.sqrt(flow_field_u[i]**2 + flow_field_v[i]**2)
+
+            flow_field_rel_angle.append(rel_angle)
+            flow_field_magnitude.append(magnitude)
+
+        rel_flow_field = np.stack((flow_field_rel_angle, flow_field_magnitude), axis=-1)
+
+        return rel_flow_field
+
+    def _get_obs(self):
+
+        distance = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        rel_bearing = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], self.state["x_vel"], self.state["y_vel"])
+
+        rel_flow_field = self.calculate_relative_flow_map()
 
         observation = {
             'altitude': np.array([self.state["z"]]),
-            'rel_distance': np.array([distance]),
+            'distance': np.array([distance]),
             'rel_bearing': np.array([rel_bearing]),
-            'flow_field': flow_field
+            'flow_field': rel_flow_field
         }
 
         #print(distance, math.degrees(true_bearing), math.degrees(rel_bearing) )
@@ -303,12 +336,13 @@ def on_press(key):
         pass
 
 # Global variable to store the last action pressed
-last_action = 0  # Default action
+last_action = 1  # Default action
 listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 if __name__ == '__main__':
-    seed = np.random.randint(0, 2 ** 32)  # Randomize random number generation, but kep the same across processes
+    seed = None #np.random.randint(0, 2 ** 32)  # Randomize random number generation, but kep the same across processes
+    '''
     n_procs = 4
 
     # If you uncomment seeding,  the random path generation will be the same every time as long as seed is not None
@@ -321,17 +355,21 @@ if __name__ == '__main__':
 
     # Train the model
     model.learn(total_timesteps=10000)
+    
+    '''
 
+    env = FlowFieldEnv3d(seed)
     while True:
         env.reset()
         total_reward = 0
         for step in range(400):
-            action = env.action_space.sample()
             # Use this for random action
-            obs, reward, done, _, info = env.step(action)
+            #action = env.action_space.sample()
+            #obs, reward, done, _, info = env.step(action)
 
             #Use this for keyboard input
-            #obs, reward, done, truncated, info = env.step(last_action)
+            obs, reward, done, truncated, info = env.step(last_action)
+            print(obs)
 
             #print(step, reward)
             total_reward += reward

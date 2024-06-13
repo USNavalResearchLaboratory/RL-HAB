@@ -35,7 +35,7 @@ class FlowFieldEnv3d(gym.Env):
         self.total_steps = 0  # do not change from 0
 
         self.episode_length = 400  # how long an episode is
-        self.random_flow_episode_length = 2  # how many episodes before randomizing flow field
+        self.random_flow_episode_length = 0  # how many episodes before randomizing flow field
         self.render_count = 1  # how many steps before rendering
 
         self.render_mode = render_mode
@@ -67,7 +67,6 @@ class FlowFieldEnv3d(gym.Env):
         })
 
     def seed(self, seed=None):
-        print("seed", seed)
         if seed != None:
             self.np_rng = np.random.default_rng(seed)
         else:
@@ -327,6 +326,7 @@ if __name__ == '__main__':
     # Train the model
     model.learn(total_timesteps=10000)
 
+    '''
     while True:
         env.reset()
         total_reward = 0
@@ -346,3 +346,4 @@ if __name__ == '__main__':
         #print(obs)
         #print(env.FlowField3D.flow_field[:,0,0,0])
         print("Total reward:", total_reward, info)
+    '''
