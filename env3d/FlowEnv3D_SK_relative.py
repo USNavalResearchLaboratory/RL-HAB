@@ -18,33 +18,39 @@ from generate3dflow import FlowField3D, PointMass
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
-
-    def __init__(self, seed=None, render_mode="human"):
+    # UPDATE: Now the enviornment takes in parameters we can keep track of.
+    def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
+                 num_levels=6, dt=1, radius=100, alt_move=2, episode_length=400, decay_flow=False,
+                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human"):
         super(FlowFieldEnv3d, self).__init__()
-        self.x_dim = 500
-        self.y_dim = 500
-        self.z_dim = 100
-        self.min_vel = 1
-        self.max_vel = 10
-        self.num_levels = 6 # how many levels of different flow changes there are
-        self.dt = 1
-        self.radius = 100 # station keeping radius
-        self.alt_move = 2 # how many units the agent can move up/down  (no kinematics)
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.z_dim = z_dim
+        self.min_vel = min_vel
+        self.max_vel = max_vel
+        self.num_levels = num_levels # how many levels of different flow changes there are
+        self.dt = dt
+        self.radius = radius # station keeping radius
+        self.alt_move = alt_move # how many units the agent can move up/down  (no kinematics)
+
+        self.decay_flow = decay_flow #new feature
 
         # Counting Defaults
         self.num_flow_changes = 0 # do not change from 0
         self.random_flow_episode_count = 0  # do not change from 0
         self.total_steps = 0 # do not change from 0
 
-        self.episode_length = 400 #how long an episode is
-        self.random_flow_episode_length = 10 # how many episodes before randomizing flow field
-        self.render_count = 1 #how many steps before rendering
+        self.episode_length = episode_length #how long an episode is
+        self.random_flow_episode_length = random_flow_episode_length # how many episodes before randomizing flow field
 
+        self.render_count = render_count #how many steps before rendering
+        self.render_skip = render_skip
         self.render_mode = render_mode
 
         self.seed(seed)
+        self.res = 1
 
-        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, seed)
+        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, self.res, seed)
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,
@@ -52,6 +58,7 @@ class FlowFieldEnv3d(gym.Env):
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
 
+        #These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
         self.observation_space = spaces.Dict({
             'altitude': spaces.Box(low=0, high=self.z_dim, shape=(1,), dtype=np.float64),
             'distance': spaces.Box(low=0, high=np.sqrt(self.x_dim ** 2 + self.y_dim ** 2), shape=(1,),
@@ -79,6 +86,9 @@ class FlowFieldEnv3d(gym.Env):
         else:
             self.random_flow_episode_count +=1
 
+        if self.decay_flow:
+            self.FlowField3D.apply_boundary_decay(decay_type='linear')
+
         self.within_target = False
         self.twr = 0 # time within radius
 
@@ -100,7 +110,7 @@ class FlowFieldEnv3d(gym.Env):
         self.state["z"] = int(random.uniform(0 + self.z_dim/4, self.z_dim - self.z_dim/4))
 
         self.goal = {"x": self.x_dim/2,
-                      "y": self.x_dim/2,
+                      "y": self.y_dim/2,
                      "z": 0}
 
         self.path = [(self.state["x"], self.state["y"], self.state["z"])]
@@ -116,7 +126,8 @@ class FlowFieldEnv3d(gym.Env):
         elif action == 2:
             self.state["z"] = self.state["z"] + self.alt_move
 
-        u, v, _ = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
+        # UDPATE: NO longer rounding to the nearest index value for interpolating
+        u, v, _ = self.FlowField3D.interpolate_flow(self.state["x"], self.state["y"], self.state["z"])
 
         self.state["x"] = self.state["x"] + u * self.dt
         self.state["y"] = self.state["y"] + v * self.dt
@@ -249,6 +260,22 @@ class FlowFieldEnv3d(gym.Env):
             "num_flow_changes": self.num_flow_changes,
         }
 
+    def plot_circle(self, ax, center_x,center_y, radius, plane='xy'):
+        #UPDATE: This is a new function because the radius wasn't plotting properly for smaller radii
+        # Create the angle array
+        theta = np.linspace(0, 2 * np.pi, 100)
+
+        # Generate the circle points in 2D
+        circle_x = radius * np.cos(theta)
+        circle_y = radius * np.sin(theta)
+
+        if plane == 'xy':
+            x = center_x + circle_x
+            y = center_y + circle_y
+            z = np.full_like(x, 0)
+
+        ax.plot(x, y, z, 'g--')
+
     def render(self, mode='human'):
         if not hasattr(self, 'fig'):
             self.fig = plt.figure(figsize=(18, 10))
@@ -274,20 +301,16 @@ class FlowFieldEnv3d(gym.Env):
             self.scatter_goal = self.ax.scatter([], [], [], color='green')
             self.canvas = self.fig.canvas
 
-            self.FlowField3D.visualize_3d_planar_flow(self.ax2, skip=50)
+            self.FlowField3D.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
 
             self.current_state_line, = self.ax.plot([], [], [], 'r--')
             #self.current_goal_line, = self.ax.plot([], [], [], 'g-')
 
             # Draw target circle on the XY plane
-            theta = np.linspace(0, 2*np.pi, self.radius)
-            x_circle = self.goal["x"] + self.radius * np.cos(theta)
-            y_circle = self.goal["y"] + self.radius * np.sin(theta)
-            z_circle = np.zeros_like(x_circle)
-            self.ax.plot(x_circle, y_circle, z_circle, 'g--')
+            self.plot_circle(self.ax,self.goal["x"],self.goal["y"], self.radius)
 
             self.altitude_line, = self.ax3.plot([], [], 'b-')
-            self.ax3.set_xlabel('Time Step')
+            self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
             self.ax3.set_ylabel('Altitude')
             self.ax3.set_xlim(0, self.episode_length)
             self.ax3.set_ylim(0, self.z_dim)
@@ -305,9 +328,6 @@ class FlowFieldEnv3d(gym.Env):
 
             self.current_state_line.set_data([self.state["x"], self.state["x"]], [self.state["y"], self.state["y"]])
             self.current_state_line.set_3d_properties([0, self.state["z"]])
-
-            #self.current_goal_line.set_data([self.goal["x"], self.goal["x"]], [self.goal["y"], self.goal["y"]])
-            #self.current_goal_line.set_3d_properties([0, self.z_dim])
 
             self.altitude_line.set_data(range(len(self.altitude_history)), self.altitude_history)
 
@@ -358,8 +378,28 @@ if __name__ == '__main__':
     
     '''
 
-    env = FlowFieldEnv3d(seed)
     while True:
+        env_params = {
+            'x_dim': 500,
+            'y_dim': 500,
+            'z_dim': 100,
+            'min_vel': 5,
+            'max_vel': 5,
+            'num_levels': 6,
+            'dt': 1,
+            'radius': 100,
+            'alt_move': 2,  # For discrete altitude moves
+            'episode_length': 400,
+            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
+            'decay_flow': False,
+            'render_count': 1,
+            'render_skip': 100,
+            'render_mode': 'human',
+            'seed': np.random.randint(0, 2 ** 32),
+            # A random seed needs to be defined, to generated the same random numbers across processes
+        }
+
+        env = FlowFieldEnv3d(**env_params)
         env.reset()
         total_reward = 0
         for step in range(400):
@@ -376,6 +416,7 @@ if __name__ == '__main__':
             if done:
                 break
             env.render()
+            #time.sleep(2)
         #print(obs)
         #print(env.FlowField3D.flow_field[:,0,0,0])
-        print("Total reward:", total_reward, info)
+        print("Total reward:", total_reward, info, env_params['seed'])

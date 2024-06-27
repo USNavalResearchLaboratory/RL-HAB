@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 sys.path.append(os.path.abspath('src'))
 
 
@@ -15,23 +16,42 @@ from stable_baselines3.common.env_util import make_vec_env
 
 ### EVALUATION ### ----------------------------------------------------------------------
 
-env = FlowFieldEnv3d(seed =1957066223, render_mode="human")
-
 # Load the trained agent
 # NOTE: if you have loading issue, you can pass `print_system_info=True`
 # to compare the system on which the model was trained vs the current one
 # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 
+model_name = "RL_models_3D/iconic-sponge-111/3dflow-DQN_80000000_steps"
+seed = 3272669519
+
+model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_76000000_steps"
+seed = None
+
+env_params = {
+    'x_dim': 500,
+    'y_dim': 500,
+    'z_dim': 100,
+    'min_vel': 5,
+    'max_vel': 5,
+    'num_levels': 6,
+    'dt': 1,
+    'radius': 100,
+    'alt_move': 2, # For discrete altitude moves
+    'episode_length': 400,
+    'random_flow_episode_length': 1, #how many episodes to regenerate random flow
+    'render_count': 1,
+    'render_mode': 'human',
+    'seed': seed,
+}
+
 print("Loading model")
-#model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
-#model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
-#model = DQN.load("RL_models_3D/fiery-frog-5/3dflow-DQN_96000000_steps", env=env, )
-#model = DQN.load("RL_models_3D/stilted-snowflake-16/3dflow-DQN_44000000_steps", env=env, )
 
-#model = DQN.load("RL_models_3D/dutiful-surf-33/3dflow-DQN_76000000_steps", env=env, )
+#model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_80000000_steps"
 
-model = DQN.load("RL_models_3D/dark-haze-65/3dflow-DQN_16000000_steps", env=env, )
+
+env = FlowFieldEnv3d(**env_params)
+model = DQN.load(model_name, env=env, )
 
 #print(model.o)
 
@@ -42,10 +62,6 @@ model = DQN.load("RL_models_3D/dark-haze-65/3dflow-DQN_16000000_steps", env=env,
 print ("Evaluating Model")
 
 n_procs = 1
-#SAVE_FREQ = 500000/16
-#seed
-
-#env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
 
 '''
 # Evaluate the agent with deterministic actions

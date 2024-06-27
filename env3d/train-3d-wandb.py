@@ -18,7 +18,6 @@ from collections import deque
 #from FlowEnv3D import FlowFieldEnv3d
 from FlowEnv3D_SK_relative import FlowFieldEnv3d
 
-
 class TargetReachedCallback(BaseCallback):
     """
     Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
@@ -81,18 +80,34 @@ if not os.path.exists(logdir):
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[64, 64, 64])
+policy_kwargs = dict(net_arch=[200,200,200])
 
-# Define hyperparameters
+env_params = {
+    'x_dim': 500,
+    'y_dim': 500,
+    'z_dim': 100,
+    'min_vel': 5,
+    'max_vel': 5,
+    'num_levels': 6,
+    'dt': 1,
+    'radius': 100,
+    'alt_move': 2, # For discrete altitude moves
+    'episode_length': 400,
+    'random_flow_episode_length': 1, #how many episodes to regenerate random flow
+    'render_count': 1,
+    'render_mode': 'human',
+    'seed': np.random.randint(0, 2 ** 32), #A random seed needs to be defined, to generated the same random numbers across processes
+}
+
 config = {
     "total_timesteps": int(100e6),
-    'parameters': {
+    'hyperparameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
                 'learning_rate': 1e-4,
-                'exploration_fraction':.4,
+                'exploration_fraction':.5,
                 'exploration_initial_eps': 1,
-                'exploration_final_eps': 0.05,
+                'exploration_final_eps': 0.2,
                 'batch_size': 32,
                 'train_freq': 4,
                 'gamma': .99,
@@ -101,9 +116,10 @@ config = {
                 'stats_window_size': 1000,
                 'device': "cpu",
             },
+    "env_parameters": env_params,
     "env_name": "3dflow-DQN",
-    "seed": np.random.randint(0, 2 ** 32), #A random seed needs to be defined, to generated the same random numbers across processes
-    "NOTES": "relative bearing fixed, and flow field relative. Random 10. arch [64,64,64] " #change this to lower case
+    "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+    "NOTES": "Trying the New Flow Field Fixes with Random Flow" #change this to lower case
 }
 
 run = wandb.init(
@@ -123,8 +139,7 @@ n_procs = 16
 #SAVE_FREQ = 500000/16
 
 
-seed = config['seed']
-env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
+env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
 
 
 # Define the checkpoint callback to save the model every 1000 steps
@@ -140,11 +155,11 @@ checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_mod
 model = DQN(env=env,
             verbose=1,
             tensorboard_log=logdir + "/" + run.name,
-            **config['parameters'],
+            **config['hyperparameters'],
             )
 
 #OVerwrite
-#old_model = DQN.load("RL_models_3D/super-salad-20/3dflow-DQN_44000000_steps", env=env, )
+#old_model = DQN.load("RL_models_3D/faithful-oath-94/3dflow-DQN_60000000_steps", env=env, )
 # Extract the policy weights
 #policy_weights = old_model.policy.state_dict()
 # Load the policy weights into the new model

@@ -1,15 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from scipy.interpolate import RegularGridInterpolator
 
 class FlowField3D:
-    def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed):
+    def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, res, seed):
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.z_dim = z_dim
         self.num_levels = num_levels
         self.min_vel = min_vel
         self.max_vel = max_vel
+        self.res = res
 
         self.seed(seed)
 
@@ -22,21 +24,29 @@ class FlowField3D:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
     def randomize_flow(self):
+        '''
+        Generates a flow field with N number of levels choosing from angles of [0, np.pi / 2, np.pi, 3 * np.pi / 2].
+        All angles need to appear at least once, but their order and repetition is random.
+
+        '''
+        #UPDATE: This code was not randomizing correctly, Occasionally there were flows that didn't include all 4 angles.
+
         #Create buckets to randomly choose from
         directions_bucket = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
-        magnitudes_bucket = [5]
+        magnitudes_bucket = [self.max_vel]
 
-        # Create the result arrays with at least one occurrence of each value
-        directions_result = self.np_rng.choice(directions_bucket, 6, replace=True).tolist()
-        magnitudes_result = self.np_rng.choice(magnitudes_bucket, 6, replace=True).tolist()
 
-        # Ensure each value from the original arrays appears at least once
-        for value in directions_bucket:
-            if value not in directions_result:
-                directions_result[self.np_rng.integers(6)] = value
-        for value in  magnitudes_bucket:
-            if value not in magnitudes_result:
-                magnitudes_result[self.np_rng.integers(6)] = value
+        directions_result = directions_bucket
+        magnitudes_result = magnitudes_bucket
+
+        #Extend and shuffle arrays to ranndomize flow field
+
+        while len(directions_result) < self.num_levels:
+            directions_result.append(self.np_rng.choice(directions_bucket))
+
+        while len(magnitudes_result) < self.num_levels:
+            magnitudes_result.append(self.np_rng.choice(magnitudes_bucket))
+
 
         # Shuffle the arrays to randomize the order
         self.np_rng.shuffle(directions_result)
@@ -51,6 +61,14 @@ class FlowField3D:
 
 
     def gradualize_random_flow(self, max_angle_change=np.deg2rad(10)):
+        """
+        Gradually randomizes the flow field over time instead of fully new flow field each episode.
+
+        The flow at each level is altered by a maximum of +/- ANGLE_CHANGE.
+
+        NOTE: THis function doesn't garuntee random flows will have solveable paths for future episodes,
+        since the gradual changes are non uniform every episode and can be either positive or negative.
+        """
         new_directions = []
         for direction in self.directions:
             angle_change = self.np_rng.uniform(-max_angle_change, max_angle_change)
@@ -62,6 +80,11 @@ class FlowField3D:
         self.generate_random_planar_flow_field()
 
     def initialize_flow(self):
+        """
+        Technically this function is unecessary now.  However it gives a way to override the random flow function
+        and generate a static flow instead of a random flow.
+
+        """
         self.directions = self.np_rng.uniform(0, 2 * np.pi, size=self.num_levels)
         self.magnitudes = self.np_rng.uniform(self.min_vel, self.max_vel, size=self.num_levels)
 
@@ -73,10 +96,9 @@ class FlowField3D:
         #self.directions = [np.pi, 0, np.pi, 3 * np.pi / 2, np.pi / 2, 0]
         #self.magnitudes = [10, 5, 10, 5, 10, 5]
 
-        self.randomize_flow()
+        self.randomize_flow() #Comment this out, to have hard coded static flows.
 
         return self.generate_random_planar_flow_field()
-
 
     def generate_random_planar_flow_field(self):
         """
@@ -91,7 +113,8 @@ class FlowField3D:
         """
         alt_levels = np.linspace(0, self.z_dim, self.num_levels, endpoint=True)
 
-        flow_field = np.zeros((self.num_levels, self.x_dim, self.y_dim, 4))
+        #Update:  dimensions have +1 to include flows on the boundaries.
+        flow_field = np.zeros((self.num_levels, self.x_dim+1*self.res, self.y_dim+1*self.res, 4))
         for z in range(self.num_levels):
             u = round(np.cos(self.directions[z]) * self.magnitudes[z],2)
             v = round(np.sin(self.directions[z]) * self.magnitudes[z], 2)
@@ -102,45 +125,96 @@ class FlowField3D:
 
         self.flow_field = flow_field
 
+        #UPDATE new stuff for interpolating
+        # Initialize REgular Grid Interpolator Variables, so they aren't reassigned with every call to interpolate_flow()
+        self.z_space = np.arange(self.flow_field[:, :, :, 0].shape[0])
+        self.x_space = np.arange(self.flow_field[:, :, :, 0].shape[1])
+        self.y_space = np.arange(self.flow_field[:, :, :, 0].shape[2])
+        self.fn_u = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 0])
+        self.fn_v = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 1])
+
         return self.flow_field, self.directions, self.magnitudes
 
-    def interpolate_flow(self, x, y, z):
-        # Determine the indices of the levels below and above the current altitude
-        below_idx = int(np.floor(z / (self.z_dim / self.num_levels)))
-        above_idx = int(np.ceil(z / (self.z_dim / self.num_levels)))
+    #UPDATE new function
+    def apply_boundary_decay(self, decay_type='linear'):
+        '''
+        Decay the flow at an altitude level from the source (wall wind is blowing from) to have more realistic flows in
+        indoor enviormenment.
+        '''
+        for z in range(self.num_levels):
+            for x in range(self.x_dim+1*self.res):
 
-        # Ensure the indices are within bounds
-        below_idx = max(0, min(self.num_levels - 1, below_idx))
-        above_idx = max(0, min(self.num_levels - 1, above_idx))
+                decay_factor_x = self._calculate_decay_factor(x, self.x_dim*self.res, decay_type)
+                if self.flow_field[z, x, :, 0][0] >= 0:
+                    self.flow_field[z, x, :, 0] *= decay_factor_x
+                else:
+                    self.flow_field[z, x, :, 0] *= 1- decay_factor_x
 
-        if below_idx == above_idx:
-            flow_below = self.flow_field[below_idx, :, :, :3]
-            flow_above = flow_below
+            for y in range(self.y_dim+1*self.res):
+                decay_factor_y = self._calculate_decay_factor(y, self.y_dim*self.res, decay_type)
+                if self.flow_field[z, :, y, 1][0] >=0:
+                    self.flow_field[z, :, y, 1] *= decay_factor_y
+                else:
+                    self.flow_field[z, :, y, 1] *= 1-decay_factor_y
+
+    # UPDATE new function
+    def _calculate_decay_factor(self, position, dim_length, decay_type):
+        '''
+        Different Decay Functions.
+
+        Exponential isn't currently working because of the offset for negative directions.
+
+        1- exp  != exp for reversion directions.  Need to fix this bug
+
+        Could add other custom decay functions here to choose from
+        '''
+        if decay_type == 'linear':
+            return 1 - (position / dim_length)
+        elif decay_type == 'exponential':
+            return np.exp(-position / dim_length)
         else:
-            flow_below = self.flow_field[below_idx, :, :, :3]
-            flow_above = self.flow_field[above_idx, :, :, :3]
+            raise ValueError(f"Unknown decay type: {decay_type}")
 
-        # Interpolate the flow at the current x, y, and z positions
-        frac = (z % (self.z_dim / self.num_levels)) / (self.z_dim / self.num_levels)
+    # UPDATE new function
+    def convert_range(self,value, old_min, old_max, new_min, new_max):
+        # Calculate the proportional value
+        new_value = new_min + ((value - old_min) / (old_max - old_min)) * (new_max - new_min)
+        return new_value
 
-        #Clip ranges, so that the agent can go out of bounds, taking the nearest value
-        u_below = flow_below[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 0]
-        v_below = flow_below[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 1]
-        u_above = flow_above[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 0]
-        v_above = flow_above[np.clip(int(y), 0, int(self.y_dim)-1), np.clip(int(x), 0, int(self.x_dim)-1), 1]
+    def interpolate_flow(self, x, y, z):
+        '''Perform a trilinear interpolation to determine the u and v flow components at a particular point.
 
-        u = u_below + frac * (u_above - u_below)
-        v = v_below + frac * (v_above - v_below)
+
+        Completely new Interpolation method using SciPy Regular Grid Interpolator.  I believe this method is more correct,
+        but it's also signifcantly slower.  Almost 4X.  Maybe we can optimize somehow?
+        '''
+
+
+        #need to convert Z to nearest altitude index, since we don't interpolate the flow vertically in 1 degree resolution, and instead just do number of levels.
+        z = np.clip(z, 0, self.z_dim)
+        z_convert =  self.convert_range(z, 0, self.z_dim, 0, self.num_levels-1)
+        pts = np.array([[z_convert,
+                         np.clip(x,0,self.x_dim),
+                         np.clip(y,0,self.y_dim)]])
+
+        #RegularGridInterpolator Functions are initialized in generate_random_planar_flow_field()
+        u = self.fn_u(pts)[0]
+        v = self.fn_v(pts)[0]
 
         return u, v, 0  # Assuming zero vertical flow
 
 
     def visualize_3d_planar_flow(self, ax, skip=1, interpolation_point=None):
+        '''
+        Plot the Flow Field
+        '''
         for z in range(self.flow_field.shape[0]):
-            X, Y = np.meshgrid(np.arange(self.flow_field.shape[1]), np.arange(self.flow_field.shape[2]))
+            #UPDATE added indexing 'ij' which fixed a hidden bug in visualization when flows are not all the same magnitude.
+            X, Y = np.meshgrid(np.arange(self.flow_field.shape[1]), np.arange(self.flow_field.shape[2]), indexing='ij')
             U = self.flow_field[z, :, :, 0]
             V = self.flow_field[z, :, :, 1]
             W = self.flow_field[z, :, :, 2]  # Flow is only in the X-Y plane
+
             Z = np.full_like(X, self.flow_field[z, 0, 0, 3])
 
             # Calculate directions for color mapping
@@ -150,8 +224,11 @@ class FlowField3D:
 
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
-                    ax.quiver(X[i, j], Y[i, j], Z[i, j], U[i, j], V[i, j], W[i, j],
-                              length=self.magnitudes[z] * 2, normalize=True, arrow_length_ratio=.5, color=colors[i, j])
+                    ax.quiver(X[i, j]/self.res, Y[i, j]/self.res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
+                                #For the small arena
+                                #length=self.magnitudes[z] * .5/self.x_dim, arrow_length_ratio=1/self.x_dim, color=colors[i, j])
+                                #For the big arena
+                                length = self.magnitudes[z] * 1 , arrow_length_ratio = .25, color = colors[i, j])
 
         if interpolation_point is not None:
             x, y, z = interpolation_point
@@ -161,10 +238,9 @@ class FlowField3D:
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Altitude')
-        ax.set_xlim(0, self.flow_field.shape[1])
-        ax.set_ylim(0, self.flow_field.shape[2])
-        ax.set_zlim(0, self.flow_field[-1, 0, 0, 3])  # Set the z-axis limit to the maximum altitude
-
+        ax.set_xlim(0, (self.x_dim)/self.res)
+        ax.set_ylim(0, (self.y_dim)/self.res)
+        ax.set_zlim(0, self.z_dim)  # Set the z-axis limit to the maximum altitude
 
 class PointMass:
     def __init__(self, flow_field_3d, x, y, z, mass, dt):
@@ -183,12 +259,13 @@ class PointMass:
 
         :param dz: Change in altitude (can be positive or negative).
         """
-        self.z = np.clip(self.z + dz, 0, self.flow_field_3d.z_dim - 1)
+        self.z = np.clip(self.z + dz, 0, self.flow_field_3d.z_dim )
         u, v, _ = self.flow_field_3d.interpolate_flow(int(self.x), int(self.y), self.z)
 
         # Update position based on flow and timestep
-        self.x = np.clip(self.x + u * self.dt, 0, self.flow_field_3d.x_dim - 1)
-        self.y = np.clip(self.y + v * self.dt, 0, self.flow_field_3d.y_dim - 1)
+        #UPDATE removed -1 from x_dim
+        self.x = np.clip(self.x + u * self.dt, 0, self.flow_field_3d.x_dim)
+        self.y = np.clip(self.y + v * self.dt, 0, self.flow_field_3d.y_dim)
 
         # Update velocity
         self.velocity = np.array([u, v, 0])
@@ -225,29 +302,32 @@ class PointMass:
 
 # Example usage
 if __name__ == '__main__':
-    x_dim = 500
-    y_dim = 500
-    z_dim = 100
+    x_dim = 10
+    y_dim = 10
+    z_dim = 5
     num_levels = 6
-    min_vel = 1
-    max_vel = 10
-    skip = x_dim // 10
+    min_vel = 2
+    max_vel = 2
+    skip = 1 #for speeding up visualization.  skip ever X quiver.
+    res = 1
     seed = None
 
     #If you uncomment seeding,  the random path generation will be the same every time as long as seed is not None
     #np.random.seed(seed) #seeding
 
-    flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, seed)
-    flow_field_3d.randomize_flow()
+    flow_field_3d = FlowField3D(x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, res, seed)
+
+    # Apply the boundary decay
+    #flow_field_3d.apply_boundary_decay(decay_type='linear')
 
     # Initialize the point mass
     mass = 1.0  # Mass of the point mass
-    dt = 1.0  # Time step for simulation
-    point_mass = PointMass(flow_field_3d, x=250, y=250, z=25, mass=mass, dt=dt)
+    dt = 0.1  # Time step for simulation
+    point_mass = PointMass(flow_field_3d, x=5, y=5, z=0, mass=mass, dt=dt)
 
     # Simulate the point mass movement
-    steps = 200
-    dz_func = lambda: np.random.choice([-5, -2, 0, 2, 5])  # Randomly move up, down, or stay at the same altitude
+    steps = 60
+    dz_func = lambda: np.random.choice([.1])  # Randomly move up, down, or stay at the same altitude
     point_mass.simulate(steps, dz_func)
 
     # Create a single figure with two subplots
@@ -260,5 +340,12 @@ if __name__ == '__main__':
     # Plot the point mass path
     ax2 = fig.add_subplot(122, projection='3d')
     point_mass.visualize_path(ax2)
+
+    #Check Interpolation
+    print(flow_field_3d.interpolate_flow(0, 0, 0))
+    print(flow_field_3d.interpolate_flow(0, 0, 1))
+
+    print(flow_field_3d.interpolate_flow(0, 0, .5))
+    print(flow_field_3d.interpolate_flow(4.99,4.99, .5))
 
 plt.show()
