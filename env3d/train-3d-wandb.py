@@ -22,11 +22,12 @@ class TargetReachedCallback(BaseCallback):
     """
     Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
     """
-    def __init__(self, moving_avg_length=1000, verbose=0):
+    def __init__(self, moving_avg_length=1000, radius ='twr', verbose=0):
         super(TargetReachedCallback, self).__init__(verbose)
         #self.env = env  # type: Union[gym.Env, VecEnv, None]
         self.moving_avg_length = moving_avg_length
         self.target_reached_history = []
+        self.radius = radius
 
     def _on_step(self) -> bool:
         # Check if the episode has ended
@@ -36,13 +37,13 @@ class TargetReachedCallback(BaseCallback):
             infos = self.locals['infos'][0]
             #print(infos)
 
-            self.target_reached_history.append(infos.get("twr"))
+            self.target_reached_history.append(infos.get(self.radius))
 
             if len(self.target_reached_history) > self.moving_avg_length:
                 self.target_reached_history.pop(0)
 
             moving_avg = np.mean(self.target_reached_history)
-            self.logger.record('twr', moving_avg)
+            self.logger.record('twr/' + str(self.radius), moving_avg)
 
         return True
 
@@ -80,7 +81,7 @@ if not os.path.exists(logdir):
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[200,200,200])
+policy_kwargs = dict(net_arch=[128,128])
 
 env_params = {
     'x_dim': 500,
@@ -104,10 +105,10 @@ config = {
     'hyperparameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 1e-4,
-                'exploration_fraction':.5,
+                'learning_rate': 5e-5,
+                'exploration_fraction':.4,
                 'exploration_initial_eps': 1,
-                'exploration_final_eps': 0.2,
+                'exploration_final_eps': 0.1,
                 'batch_size': 32,
                 'train_freq': 4,
                 'gamma': .99,
@@ -119,7 +120,7 @@ config = {
     "env_parameters": env_params,
     "env_name": "3dflow-DQN",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
-    "NOTES": "Trying the New Flow Field Fixes with Random Flow" #change this to lower case
+    "NOTES": "Random Flow" #change this to lower case
 }
 
 run = wandb.init(
@@ -177,7 +178,11 @@ model.learn(
     callback=[WandbCallback(
         gradient_save_freq=1000,
         model_save_path=f"RL_models_3D/{run.name}",
-        verbose=1), checkpoint_callback, TargetReachedCallback(moving_avg_length=1000), FlowChangeCallback()],
+        verbose=1), checkpoint_callback,
+        TargetReachedCallback(moving_avg_length=1000, radius='twr'),
+        TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),
+        TargetReachedCallback(moving_avg_length=1000, radius='twr_outer'),
+        FlowChangeCallback()],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )
 

@@ -31,6 +31,10 @@ class FlowFieldEnv3d(gym.Env):
         self.num_levels = num_levels # how many levels of different flow changes there are
         self.dt = dt
         self.radius = radius # station keeping radius
+        self.radius_inner = radius*.5
+        self.radius_outer = radius * 1.5
+
+
         self.alt_move = alt_move # how many units the agent can move up/down  (no kinematics)
 
         self.decay_flow = decay_flow #new feature
@@ -91,6 +95,8 @@ class FlowFieldEnv3d(gym.Env):
 
         self.within_target = False
         self.twr = 0 # time within radius
+        self.twr_inner = 0  # time within radius
+        self.twr_outer = 0  # time within radius
 
         if hasattr(self, 'fig'):
             plt.close(self.fig)
@@ -155,6 +161,14 @@ class FlowFieldEnv3d(gym.Env):
             reward = c_cliff*2*np.exp((-1*(distance_to_target-self.radius)/tau))
             self.within_target = False
 
+
+        #Add more regions to track,  Not doing anything with them yet,  just for metric analysis
+        if distance_to_target <= self.radius_inner:
+            self.twr_inner += 1
+
+        if distance_to_target <= self.radius_outer:
+            self.twr_outer += 1
+
         return reward
 
     def step(self, action):
@@ -167,7 +181,9 @@ class FlowFieldEnv3d(gym.Env):
         if self.total_steps > self.episode_length - 1:
             #reward += -100
             done = True
-            print("episode length", self.total_steps, "TWR", self._get_info()["twr"])
+            print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
+                  "TWR_inner", self._get_info()["twr_inner"],
+                  "TWR_outer", self._get_info()["twr_outer"])
 
         if self.render_step == self.render_count:
             self.render_step = 0
@@ -257,10 +273,12 @@ class FlowFieldEnv3d(gym.Env):
             "distance": np.sqrt((self.state["x"] - self.goal["x"])**2 + (self.state["y"] - self.goal["y"])**2),
             "within_target": self.within_target,
             "twr": self.twr,
+            "twr_inner": self.twr_inner,
+            "twr_outer": self.twr_outer,
             "num_flow_changes": self.num_flow_changes,
         }
 
-    def plot_circle(self, ax, center_x,center_y, radius, plane='xy'):
+    def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):
         #UPDATE: This is a new function because the radius wasn't plotting properly for smaller radii
         # Create the angle array
         theta = np.linspace(0, 2 * np.pi, 100)
@@ -274,7 +292,7 @@ class FlowFieldEnv3d(gym.Env):
             y = center_y + circle_y
             z = np.full_like(x, 0)
 
-        ax.plot(x, y, z, 'g--')
+        ax.plot(x, y, z, color)
 
     def render(self, mode='human'):
         if not hasattr(self, 'fig'):
@@ -307,7 +325,9 @@ class FlowFieldEnv3d(gym.Env):
             #self.current_goal_line, = self.ax.plot([], [], [], 'g-')
 
             # Draw target circle on the XY plane
-            self.plot_circle(self.ax,self.goal["x"],self.goal["y"], self.radius)
+            self.plot_circle(self.ax,self.goal["x"],self.goal["y"], self.radius, color='g-')
+            self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_inner, color='g--')
+            self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_outer, color='g--')
 
             self.altitude_line, = self.ax3.plot([], [], 'b-')
             self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
@@ -409,7 +429,7 @@ if __name__ == '__main__':
 
             #Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)
-            print(obs)
+            #print(obs)
 
             #print(step, reward)
             total_reward += reward

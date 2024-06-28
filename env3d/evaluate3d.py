@@ -27,6 +27,9 @@ seed = 3272669519
 model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_76000000_steps"
 seed = None
 
+model_name = "RL_models_3D/breezy-morning-125/3dflow-DQN_60000000_steps"
+seed = None
+
 env_params = {
     'x_dim': 500,
     'y_dim': 500,
@@ -37,7 +40,7 @@ env_params = {
     'dt': 1,
     'radius': 100,
     'alt_move': 2, # For discrete altitude moves
-    'episode_length': 400,
+    'episode_length': 2000,
     'random_flow_episode_length': 1, #how many episodes to regenerate random flow
     'render_count': 1,
     'render_mode': 'human',
@@ -86,7 +89,7 @@ while True:
     vec_env.reset()
     total_reward = 0
     total_steps = 0
-    for _ in range (500):
+    for _ in range (2000):
         action, _states = model.predict(obs, deterministic=False)
         #print(action)
 
@@ -94,7 +97,7 @@ while True:
         #print(obs)
         total_reward += rewards
         total_steps+=1
-        vec_env.render(mode='human')
+        #vec_env.render(mode='human')
         #print(info)
 
         if dones:
