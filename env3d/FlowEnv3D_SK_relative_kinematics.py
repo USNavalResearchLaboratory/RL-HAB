@@ -16,6 +16,7 @@ from stable_baselines3.common.utils import set_random_seed
 
 from generate3dflow import FlowField3D, PointMass
 
+
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
@@ -41,7 +42,7 @@ class FlowFieldEnv3d(gym.Env):
         self.total_steps = 0 # do not change from 0
 
         self.episode_length = 400 #how long an episode is
-        self.random_flow_episode_length = 10 # how many episodes before randomizing flow field
+        self.random_flow_episode_length = 5 # how many episodes before randomizing flow field (set to 0 to be static)
         self.render_count = 1 #how many steps before rendering
 
         self.render_mode = render_mode
@@ -118,8 +119,8 @@ class FlowFieldEnv3d(gym.Env):
         
         u, v, w = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
 
-        print(f"Current Flow Vel: {u}, {v}, {w}")
-        print(f"Current Agent Vel: {self.state["x_vel"]}, {self.state["y_vel"]}, {self.state["z_vel"]}")
+        #(f"Current Flow Vel: {u}, {v}, {w}")
+        #print(f"Current Agent Vel: {self.state["x_vel"]}, {self.state["y_vel"]}, {self.state["z_vel"]}")
 
         if action == 2:
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
@@ -150,7 +151,7 @@ class FlowFieldEnv3d(gym.Env):
         return 0 #No reward or penalty for moving for now
 
     def reward_google(self):
-        distance_to_target = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        distance_to_target = math.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
         c_cliff = 0.4
         tau = 100
 
@@ -160,7 +161,7 @@ class FlowFieldEnv3d(gym.Env):
             self.within_target = True
         else:
             #reward = np.exp(-0.01 * (distance_to_target - self.radius))
-            reward = c_cliff*2*np.exp((-1*(distance_to_target-self.radius)/tau))
+            reward = c_cliff*2*math.exp((-1*(distance_to_target-self.radius)/tau))
             self.within_target = False
 
         return reward
@@ -205,16 +206,16 @@ class FlowFieldEnv3d(gym.Env):
         """
 
         # Calculate the current heading based on the heading vector
-        heading = np.arctan2(heading_y, heading_x)
+        heading = math.atan2(heading_y, heading_x)
 
         # Calculate the true (inverted) bearing FROM POSITION TO GOAL
-        true_bearing = np.arctan2(goal_y - y, goal_x - x)
+        true_bearing = math.atan2(goal_y - y, goal_x - x)
 
         # Find the absolute difference between the two angles
-        rel_bearing = np.abs(heading - true_bearing)
+        rel_bearing = abs(heading - true_bearing)
 
         # map from [-pi, pi] to [0,pi]
-        rel_bearing = abs((rel_bearing + np.pi) % (2 * np.pi) - np.pi)
+        rel_bearing = abs((rel_bearing + math.pi) % (2 * math.pi) - math.pi)
 
         return rel_bearing
 
@@ -245,7 +246,7 @@ class FlowFieldEnv3d(gym.Env):
 
     def _get_obs(self):
 
-        distance = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        distance = math.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
         rel_bearing = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], self.state["x_vel"], self.state["y_vel"])
 
         rel_flow_field = self.calculate_relative_flow_map()
@@ -262,7 +263,7 @@ class FlowFieldEnv3d(gym.Env):
 
     def _get_info(self):
         return {
-            "distance": np.sqrt((self.state["x"] - self.goal["x"])**2 + (self.state["y"] - self.goal["y"])**2),
+            "distance": math.sqrt((self.state["x"] - self.goal["x"])**2 + (self.state["y"] - self.goal["y"])**2),
             "within_target": self.within_target,
             "twr": self.twr,
             "num_flow_changes": self.num_flow_changes,
