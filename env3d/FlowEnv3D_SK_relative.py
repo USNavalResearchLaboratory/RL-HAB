@@ -13,6 +13,8 @@ from stable_baselines3.common.env_util import make_vec_env
 import math
 from stable_baselines3 import DQN
 from stable_baselines3.common.utils import set_random_seed
+from line_profiler import LineProfiler
+import sys
 
 from generate3dflow import FlowField3D, PointMass
 
@@ -81,7 +83,7 @@ class FlowFieldEnv3d(gym.Env):
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
     def reset(self, seed=None, options=None):
-        if self.random_flow_episode_count > self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
+        if self.random_flow_episode_count >= self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
             #self.FlowField3D.generate_random_planar_flow_field()
             #self.FlowField3D.gradualize_random_flow()
             self.FlowField3D.randomize_flow()
@@ -128,9 +130,9 @@ class FlowFieldEnv3d(gym.Env):
 
     def move_agent(self, action):
         if action == 0:
-            self.state["z"] = self.state["z"] - self.alt_move
+            self.state["z"] = self.state["z"] - self.alt_move * self.dt
         elif action == 2:
-            self.state["z"] = self.state["z"] + self.alt_move
+            self.state["z"] = self.state["z"] + self.alt_move * self.dt
 
         # UDPATE: NO longer rounding to the nearest index value for interpolating
         u, v, _ = self.FlowField3D.interpolate_flow(self.state["x"], self.state["y"], self.state["z"])
@@ -380,8 +382,11 @@ last_action = 1  # Default action
 listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
-if __name__ == '__main__':
-    seed = None #np.random.randint(0, 2 ** 32)  # Randomize random number generation, but kep the same across processes
+
+
+def main():
+    start_time = time.time()
+    seed = None  # np.random.randint(0, 2 ** 32)  # Randomize random number generation, but kep the same across processes
     '''
     n_procs = 4
 
@@ -395,21 +400,21 @@ if __name__ == '__main__':
 
     # Train the model
     model.learn(total_timesteps=10000)
-    
+
     '''
 
     while True:
         env_params = {
-            'x_dim': 500,
-            'y_dim': 500,
-            'z_dim': 100,
-            'min_vel': 5,
-            'max_vel': 5,
+            'x_dim': 250,  # km
+            'y_dim': 250,  # km
+            'z_dim': 10,  # km
+            'min_vel': 5 / 1000.,  # km/s
+            'max_vel': 25 / 1000.,  # km/s
             'num_levels': 6,
-            'dt': 1,
-            'radius': 100,
-            'alt_move': 2,  # For discrete altitude moves
-            'episode_length': 400,
+            'dt': 60,  # seconds
+            'radius': 50,  # km
+            'alt_move': 2 / 1000.,  # km/s
+            'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
             'decay_flow': False,
             'render_count': 1,
@@ -422,21 +427,40 @@ if __name__ == '__main__':
         env = FlowFieldEnv3d(**env_params)
         env.reset()
         total_reward = 0
-        for step in range(400):
+        for step in range(600):
             # Use this for random action
-            #action = env.action_space.sample()
-            #obs, reward, done, _, info = env.step(action)
+            # action = env.action_space.sample()
+            # obs, reward, done, _, info = env.step(action)
 
-            #Use this for keyboard input
+            # Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)
-            #print(obs)
+            # print(obs)
 
-            #print(step, reward)
+            # print(step, reward)
             total_reward += reward
             if done:
                 break
-            env.render()
-            #time.sleep(2)
-        #print(obs)
-        #print(env.FlowField3D.flow_field[:,0,0,0])
+            # env.render()
+            # time.sleep(2)
+        # print(obs)
+        # print(env.FlowField3D.flow_field[:,0,0,0])
         print("Total reward:", total_reward, info, env_params['seed'])
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("Execution time:", execution_time)
+
+
+        sys.exit()
+
+
+if __name__ == '__main__':
+    '''
+    lp = LineProfiler()
+    lp_wrapper = lp(main)
+    lp_wrapper()
+    lp.print_stats()
+    '''
+
+    main()
+

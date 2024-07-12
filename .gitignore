@@ -3,9 +3,11 @@
 RL_models
 RL_models_static
 RL_models_3D
+RL_models_km
 logs
 logs_static
 logs_3D
+logs_km
 wandb
 
 # Byte-compiled / optimized / DLL files

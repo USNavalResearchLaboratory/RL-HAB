@@ -69,7 +69,7 @@ model = PPO(policy = "CnnPolicy",
             )
 '''
 
-model = A2C(ent_coef = 0.01,
+model = PPO(ent_coef = 0.01,
              policy = 'CnnPolicy',
             env = vec_env,
              #normalize = False,

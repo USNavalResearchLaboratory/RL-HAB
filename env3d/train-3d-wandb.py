@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath('src'))
 
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import DQN, PPO, A2C
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
 from datetime import datetime
 from stable_baselines3.common.env_util import make_vec_env
@@ -68,44 +68,47 @@ class FlowChangeCallback(BaseCallback):
 
 #Directory Initializtion
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_name = "3dflow-DQN"
-models_dir = "RL_models_3D/" + model_name
+model_name = "DQN-km"
+models_dir = "RL_models_km/" + model_name
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-logdir = "logs_3D"
+logdir = "logs_km"
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
 
 #Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[128,128])
+policy_kwargs = dict(net_arch=[200,200,200, 200])
 
 env_params = {
-    'x_dim': 500,
-    'y_dim': 500,
-    'z_dim': 100,
-    'min_vel': 5,
-    'max_vel': 5,
-    'num_levels': 6,
-    'dt': 1,
-    'radius': 100,
-    'alt_move': 2, # For discrete altitude moves
-    'episode_length': 400,
-    'random_flow_episode_length': 1, #how many episodes to regenerate random flow
-    'render_count': 1,
-    'render_mode': 'human',
-    'seed': np.random.randint(0, 2 ** 32), #A random seed needs to be defined, to generated the same random numbers across processes
-}
+            'x_dim': 250, # km
+            'y_dim': 250, # km
+            'z_dim': 10, # km
+            'min_vel': 5/1000.,    # km/s
+            'max_vel': 25/1000.,    # km/s
+            'num_levels': 6,
+            'dt': 60, # seconds
+            'radius': 50, #km
+            'alt_move': 2/1000.,  # km/s
+            'episode_length': 600, # dt steps (minutes)
+            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
+            'decay_flow': False,
+            'render_count': 1,
+            'render_skip': 100,
+            'render_mode': 'human',
+            'seed': np.random.randint(0, 2 ** 32),
+            # A random seed needs to be defined, to generated the same random numbers across processes
+        }
 
 config = {
     "total_timesteps": int(100e6),
     'hyperparameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 5e-5,
+                'learning_rate': 5e-4,
                 'exploration_fraction':.4,
                 'exploration_initial_eps': 1,
                 'exploration_final_eps': 0.1,
@@ -118,14 +121,14 @@ config = {
                 'device': "cpu",
             },
     "env_parameters": env_params,
-    "env_name": "3dflow-DQN",
+    "env_name": "DQN-km",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
-    "NOTES": "Random Flow" #change this to lower case
+    "NOTES": "Random Flow. DQN km" #change this to lower case
 }
 
 run = wandb.init(
     #anonymous="allow",
-    project="3dflow-DQN",
+    project="DQN-km",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     # monitor_gym=True,  # auto-upload the videos of agents playing the game
@@ -144,7 +147,7 @@ env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
 
 
 # Define the checkpoint callback to save the model every 1000 steps
-checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_3D/{run.name}",
+checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_km/{run.name}",
                                           name_prefix=model_name)
 
 # Create environment
@@ -177,7 +180,7 @@ model.learn(
     log_interval=100,
     callback=[WandbCallback(
         gradient_save_freq=1000,
-        model_save_path=f"RL_models_3D/{run.name}",
+        model_save_path=f"RL_models_km/{run.name}",
         verbose=1), checkpoint_callback,
         TargetReachedCallback(moving_avg_length=1000, radius='twr'),
         TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),

@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import griddata
+import xarray as xr
+#import ERA5
 
 class FlowField3D:
     def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, res, seed):
@@ -12,6 +15,7 @@ class FlowField3D:
         self.min_vel = min_vel
         self.max_vel = max_vel
         self.res = res
+
 
         self.seed(seed)
 
@@ -45,7 +49,8 @@ class FlowField3D:
             directions_result.append(self.np_rng.choice(directions_bucket))
 
         while len(magnitudes_result) < self.num_levels:
-            magnitudes_result.append(self.np_rng.choice(magnitudes_bucket))
+            #magnitudes_result.append(self.np_rng.choice(magnitudes_bucket))
+            magnitudes_result.append(self.np_rng.uniform(self.min_vel, self.max_vel)) #randomize magnitudes
 
 
         # Shuffle the arrays to randomize the order
@@ -55,7 +60,9 @@ class FlowField3D:
         self.directions = directions_result
         self.magnitudes = magnitudes_result
 
-        print("New flows:", self.directions)
+        #Debug text to make sure flow are being "randomly generated" the same accross multiple envs.
+        #print("New flows:", self.directions)
+        #print("New flows Magnitudes:", self.magnitudes)
 
         self.generate_random_planar_flow_field()
 
@@ -100,6 +107,87 @@ class FlowField3D:
 
         return self.generate_random_planar_flow_field()
 
+    # UPDATE new function
+    def convert_range(self,value, old_min, old_max, new_min, new_max):
+        # Calculate the proportional value
+        new_value = new_min + ((value - old_min) / (old_max - old_min)) * (new_max - new_min)
+        return new_value
+
+    def interpolate_xr(self, x, y, z):
+
+        # Perform interpolation on x, y, and level dimensions
+        interp_ds = self.ds.interp(x=x, y=y, level=self.ds['level'])
+
+        # Now interpolate the result over z
+        # Extract interpolated values and the corresponding z-values
+        z_interp_values = interp_ds['z'].values
+        u_interp_values = interp_ds['u'].values
+        v_interp_values = interp_ds['v'].values
+
+        # Create a function to perform interpolation over z
+        def interpolate_over_z(z_values, data_values, target_z):
+            #print(z_values)
+            #print(data_values)
+            #print(target_z)
+            return griddata(z_values, data_values, target_z, method='linear')
+
+        # Interpolate the data variables over z
+        interp_u = interpolate_over_z(z_interp_values, u_interp_values, z)
+        interp_v = interpolate_over_z(z_interp_values, v_interp_values, z)
+
+        # Create a new dataset with the interpolated values
+        final_ds = xr.Dataset(
+            {
+                "u": ([], interp_u),
+                "v": ([], interp_v)
+            },
+            coords={
+                "x": x,
+                "y": y,
+                "z": z
+            }
+        )
+
+
+
+        return final_ds['u'].values, final_ds['v'].values
+
+    def interpolate_xr2(self, x, y, z):
+        #lev = self.convert_range(z, 0, self.z_dim, 0, self.num_levels)
+
+        #z has already been converted to level
+
+        # Perform interpolation
+        #I think this is wrong
+        final_ds = self.ds.interp(x=x, y=y, level=z)
+
+        return final_ds['u'].values, final_ds['v'].values
+
+
+
+
+    def create_netcdf(self):
+        self.ds = xr.Dataset(
+            {
+                "u": (["level", "x", "y"], self.flow_field[:,:,: ,0]),
+                "v": (["level", "x", "y"], self.flow_field[:,:,:, 1]),
+                "z": (["level", "x", "y"], self.flow_field[:, :, :, 3]),
+            },
+            coords={
+                "level": np.arange(self.flow_field.shape[0]),
+                "x": np.arange(self.flow_field.shape[1]),
+                "y": np.arange(self.flow_field.shape[2])
+            }
+        )
+
+        #Interpolate using EarthSHAB method:
+
+        y = 5 # y (km)
+        x = 5 # x (km)
+        alt = 2 #km
+
+
+
     def generate_random_planar_flow_field(self):
         """
         The shape of the flow field is (num_levels, x_dim, y_dim, 4) where x y and z are index values:
@@ -132,6 +220,8 @@ class FlowField3D:
         self.y_space = np.arange(self.flow_field[:, :, :, 0].shape[2])
         self.fn_u = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 0])
         self.fn_v = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 1])
+
+        self.create_netcdf()
 
         return self.flow_field, self.directions, self.magnitudes
 
@@ -175,11 +265,62 @@ class FlowField3D:
         else:
             raise ValueError(f"Unknown decay type: {decay_type}")
 
-    # UPDATE new function
-    def convert_range(self,value, old_min, old_max, new_min, new_max):
-        # Calculate the proportional value
-        new_value = new_min + ((value - old_min) / (old_max - old_min)) * (new_max - new_min)
-        return new_value
+
+
+    def trilinear_interpolation(self, x, y, z, index):
+        # Get the dimensions of the array
+        #z_dim, x_dim, y_dim, _ = self.flow_field.shape
+
+        # Clamp the coordinates to be within the valid range
+        print(z,x,y)
+        print(self.z_dim)
+        print(self.flow_field.shape)
+        x = np.clip(x, 0, self.x_dim)
+        y = np.clip(y, 0, self.y_dim)
+
+
+        z_alt = self.convert_range(z, 0, self.num_levels, 0,self.z_dim)
+        z = np.clip(z_alt, 0, self.z_dim)
+
+        # Ensure the coordinates are within bounds
+        #if not (0 <= x < x_dim - 1 and 0 <= y < y_dim - 1 and 0 <= z < z_dim - 1):
+        #    raise ValueError("Coordinates out of bounds")
+
+
+        # Get the integer and fractional parts of the coordinates
+        x0 = int(np.floor(x))
+        y0 = int(np.floor(y))
+        z0 = int(np.floor(z))
+        x1 = min(x0 + 1, self.x_dim)
+        y1 = min(y0 + 1, self.y_dim)
+        z1 = min(z0 + 1, self.z_dim)
+
+        xd = x - x0
+        yd = y - y0
+        zd = z - z0
+
+        # Retrieve the values at the eight corners
+        c000 = self.flow_field[z0, x0, y0, index]
+        c001 = self.flow_field[z0, x0, y1, index]
+        c010 = self.flow_field[z0, x1, y0, index]
+        c011 = self.flow_field[z0, x1, y1, index]
+        c100 = self.flow_field[z1, x0, y0, index]
+        c101 = self.flow_field[z1, x0, y1, index]
+        c110 = self.flow_field[z1, x1, y0, index]
+        c111 = self.flow_field[z1, x1, y1, index]
+
+        # Trilinear interpolation
+        c00 = c000 * (1 - xd) + c010 * xd
+        c01 = c001 * (1 - xd) + c011 * xd
+        c10 = c100 * (1 - xd) + c110 * xd
+        c11 = c101 * (1 - xd) + c111 * xd
+
+        c0 = c00 * (1 - yd) + c01 * yd
+        c1 = c10 * (1 - yd) + c11 * yd
+
+        c = c0 * (1 - zd) + c1 * zd
+
+        return c
 
     def interpolate_flow(self, x, y, z):
         '''Perform a trilinear interpolation to determine the u and v flow components at a particular point.
@@ -193,6 +334,10 @@ class FlowField3D:
         #need to convert Z to nearest altitude index, since we don't interpolate the flow vertically in 1 degree resolution, and instead just do number of levels.
         z = np.clip(z, 0, self.z_dim)
         z_convert =  self.convert_range(z, 0, self.z_dim, 0, self.num_levels-1)
+
+        #print(x,y,z,z_convert)
+
+        '''
         pts = np.array([[z_convert,
                          np.clip(x,0,self.x_dim),
                          np.clip(y,0,self.y_dim)]])
@@ -200,6 +345,20 @@ class FlowField3D:
         #RegularGridInterpolator Functions are initialized in generate_random_planar_flow_field()
         u = self.fn_u(pts)[0]
         v = self.fn_v(pts)[0]
+
+        #u_interp = self.trilinear_interpolation(x, y, z, 0)
+        #v_interp = self.trilinear_interpolation(x, y, z, 1)
+
+        #final_ds['u']
+        '''
+
+        u, v = self.interpolate_xr2(np.clip(x,0,self.x_dim), np.clip(y,0,self.y_dim), z_convert)
+
+
+        #print(z, x, y)
+        #print("u_scipy", u, "u_xr", u_interp)
+        #print("v_scipy", v, "v_xr", v_interp)
+        #print()
 
         return u, v, 0  # Assuming zero vertical flow
 
@@ -228,7 +387,8 @@ class FlowField3D:
                                 #For the small arena
                                 #length=self.magnitudes[z] * .5/self.x_dim, arrow_length_ratio=1/self.x_dim, color=colors[i, j])
                                 #For the big arena
-                                length = self.magnitudes[z] * 1 , arrow_length_ratio = .25, color = colors[i, j])
+                                #length = self.magnitudes[z] * 1 , arrow_length_ratio = .25, color = colors[i, j])
+                                length = self.magnitudes[z] * 100000, arrow_length_ratio = .02, color = colors[i, j])
 
         if interpolation_point is not None:
             x, y, z = interpolation_point

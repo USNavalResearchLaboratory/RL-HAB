@@ -30,22 +30,28 @@ seed = None
 model_name = "RL_models_3D/breezy-morning-125/3dflow-DQN_60000000_steps"
 seed = None
 
+model_name = "RL_models_km/honest-yogurt-2/DQN-km_56000000_steps"
+seed = None
+
 env_params = {
-    'x_dim': 500,
-    'y_dim': 500,
-    'z_dim': 100,
-    'min_vel': 5,
-    'max_vel': 5,
-    'num_levels': 6,
-    'dt': 1,
-    'radius': 100,
-    'alt_move': 2, # For discrete altitude moves
-    'episode_length': 2000,
-    'random_flow_episode_length': 1, #how many episodes to regenerate random flow
-    'render_count': 1,
-    'render_mode': 'human',
-    'seed': seed,
-}
+            'x_dim': 250,  # km
+            'y_dim': 250,  # km
+            'z_dim': 10,  # km
+            'min_vel': 5 / 1000.,  # km/s
+            'max_vel': 25 / 1000.,  # km/s
+            'num_levels': 6,
+            'dt': 60,  # seconds
+            'radius': 50,  # km
+            'alt_move': 2 / 1000.,  # km/s
+            'episode_length': 600,  # dt steps (minutes)
+            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
+            'decay_flow': False,
+            'render_count': 1,
+            'render_skip': 100,
+            'render_mode': 'human',
+            'seed': np.random.randint(0, 2 ** 32),
+            # A random seed needs to be defined, to generated the same random numbers across processes
+        }
 
 print("Loading model")
 
@@ -89,7 +95,7 @@ while True:
     vec_env.reset()
     total_reward = 0
     total_steps = 0
-    for _ in range (2000):
+    for _ in range (400):
         action, _states = model.predict(obs, deterministic=False)
         #print(action)
 
@@ -97,7 +103,7 @@ while True:
         #print(obs)
         total_reward += rewards
         total_steps+=1
-        #vec_env.render(mode='human')
+        vec_env.render(mode='human')
         #print(info)
 
         if dones:
