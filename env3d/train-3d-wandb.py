@@ -123,7 +123,7 @@ config = {
     "env_parameters": env_params,
     "env_name": "DQN-km",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
-    "NOTES": "Random Flow. DQN km" #change this to lower case
+    "NOTES": "Trying with new Trilinear Interpolation Method" #change this to lower case
 }
 
 run = wandb.init(

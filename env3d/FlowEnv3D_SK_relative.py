@@ -440,7 +440,7 @@ def main():
             total_reward += reward
             if done:
                 break
-            # env.render()
+            env.render()
             # time.sleep(2)
         # print(obs)
         # print(env.FlowField3D.flow_field[:,0,0,0])
@@ -455,12 +455,8 @@ def main():
 
 
 if __name__ == '__main__':
-    '''
-    lp = LineProfiler()
-    lp_wrapper = lp(main)
-    lp_wrapper()
-    lp.print_stats()
-    '''
+    #'''
+    #'''
 
     main()
 

@@ -165,7 +165,7 @@ class FlowField3D:
 
 
 
-
+    #time this
     def create_netcdf(self):
         self.ds = xr.Dataset(
             {
@@ -185,6 +185,11 @@ class FlowField3D:
         y = 5 # y (km)
         x = 5 # x (km)
         alt = 2 #km
+
+        #self.ds_np= self.ds.to_numpy()
+
+        #print(type(self.ds_np))
+        #print(self.ds_np)
 
 
 
@@ -221,7 +226,8 @@ class FlowField3D:
         self.fn_u = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 0])
         self.fn_v = RegularGridInterpolator((self.z_space, self.x_space, self.y_space), flow_field[:, :, :, 1])
 
-        self.create_netcdf()
+        #leave this out for now
+        #self.create_netcdf()
 
         return self.flow_field, self.directions, self.magnitudes
 
@@ -265,62 +271,68 @@ class FlowField3D:
         else:
             raise ValueError(f"Unknown decay type: {decay_type}")
 
+    def trilinear_interpolate(self, x, y, z):
+        '''
+        Method written by Georgiy to do a trilinear interpolation without Scipy.
 
-
-    def trilinear_interpolation(self, x, y, z, index):
-        # Get the dimensions of the array
-        #z_dim, x_dim, y_dim, _ = self.flow_field.shape
-
-        # Clamp the coordinates to be within the valid range
-        print(z,x,y)
-        print(self.z_dim)
-        print(self.flow_field.shape)
+        Does a X% speed up of RegularGridInterpolator.
+        :param x:
+        :param y:
+        :param z:
+        :return:
+        '''
         x = np.clip(x, 0, self.x_dim)
         y = np.clip(y, 0, self.y_dim)
+        z = np.clip(z, 0, self.z_dim)
 
+        z_convert = self.convert_range(z, 0, self.z_dim, 0, self.num_levels - 1)
 
-        z_alt = self.convert_range(z, 0, self.num_levels, 0,self.z_dim)
-        z = np.clip(z_alt, 0, self.z_dim)
-
-        # Ensure the coordinates are within bounds
-        #if not (0 <= x < x_dim - 1 and 0 <= y < y_dim - 1 and 0 <= z < z_dim - 1):
-        #    raise ValueError("Coordinates out of bounds")
-
-
-        # Get the integer and fractional parts of the coordinates
         x0 = int(np.floor(x))
-        y0 = int(np.floor(y))
-        z0 = int(np.floor(z))
         x1 = min(x0 + 1, self.x_dim)
+        y0 = int(np.floor(y))
         y1 = min(y0 + 1, self.y_dim)
-        z1 = min(z0 + 1, self.z_dim)
+        z0 = int(np.floor(z_convert))
+        z1 = min(z0 + 1, self.num_levels - 1)
 
-        xd = x - x0
-        yd = y - y0
-        zd = z - z0
+        xd = (x - x0)
+        yd = (y - y0)
+        zd = (z_convert - z0)
 
-        # Retrieve the values at the eight corners
-        c000 = self.flow_field[z0, x0, y0, index]
-        c001 = self.flow_field[z0, x0, y1, index]
-        c010 = self.flow_field[z0, x1, y0, index]
-        c011 = self.flow_field[z0, x1, y1, index]
-        c100 = self.flow_field[z1, x0, y0, index]
-        c101 = self.flow_field[z1, x0, y1, index]
-        c110 = self.flow_field[z1, x1, y0, index]
-        c111 = self.flow_field[z1, x1, y1, index]
-
-        # Trilinear interpolation
-        c00 = c000 * (1 - xd) + c010 * xd
-        c01 = c001 * (1 - xd) + c011 * xd
-        c10 = c100 * (1 - xd) + c110 * xd
-        c11 = c101 * (1 - xd) + c111 * xd
+        # Interpolating u
+        c00 = self.flow_field[z0, x0, y0, 0] * (1 - xd) + self.flow_field[z0, x1, y0, 0] * xd
+        c01 = self.flow_field[z0, x0, y1, 0] * (1 - xd) + self.flow_field[z0, x1, y1, 0] * xd
+        c10 = self.flow_field[z1, x0, y0, 0] * (1 - xd) + self.flow_field[z1, x1, y0, 0] * xd
+        c11 = self.flow_field[z1, x0, y1, 0] * (1 - xd) + self.flow_field[z1, x1, y1, 0] * xd
 
         c0 = c00 * (1 - yd) + c01 * yd
         c1 = c10 * (1 - yd) + c11 * yd
 
-        c = c0 * (1 - zd) + c1 * zd
+        u = c0 * (1 - zd) + c1 * zd
 
-        return c
+        # Interpolating v
+        c00 = self.flow_field[z0, x0, y0, 1] * (1 - xd) + self.flow_field[z0, x1, y0, 1] * xd
+        c01 = self.flow_field[z0, x0, y1, 1] * (1 - xd) + self.flow_field[z0, x1, y1, 1] * xd
+        c10 = self.flow_field[z1, x0, y0, 1] * (1 - xd) + self.flow_field[z1, x1, y0, 1] * xd
+        c11 = self.flow_field[z1, x0, y1, 1] * (1 - xd) + self.flow_field[z1, x1, y1, 1] * xd
+
+        c0 = c00 * (1 - yd) + c01 * yd
+        c1 = c10 * (1 - yd) + c11 * yd
+
+        v = c0 * (1 - zd) + c1 * zd
+
+        return u, v, 0
+
+    def lookup(self):
+
+        #print(self.ds['u'].sel(x=1.9, y=2, level=1, method="nearest"))
+
+        #self.ds['u'].isel(x=1, y=2, level=1)
+
+        #self.flow_field[1,1,2,0]
+
+        #print(self.ds_np)
+
+        print()
 
     def interpolate_flow(self, x, y, z):
         '''Perform a trilinear interpolation to determine the u and v flow components at a particular point.
@@ -332,12 +344,10 @@ class FlowField3D:
 
 
         #need to convert Z to nearest altitude index, since we don't interpolate the flow vertically in 1 degree resolution, and instead just do number of levels.
+        '''
         z = np.clip(z, 0, self.z_dim)
         z_convert =  self.convert_range(z, 0, self.z_dim, 0, self.num_levels-1)
 
-        #print(x,y,z,z_convert)
-
-        '''
         pts = np.array([[z_convert,
                          np.clip(x,0,self.x_dim),
                          np.clip(y,0,self.y_dim)]])
@@ -352,8 +362,9 @@ class FlowField3D:
         #final_ds['u']
         '''
 
-        u, v = self.interpolate_xr2(np.clip(x,0,self.x_dim), np.clip(y,0,self.y_dim), z_convert)
+        #u, v = self.interpolate_xr2(np.clip(x,0,self.x_dim), np.clip(y,0,self.y_dim), z_convert)
 
+        u, v, w = self.trilinear_interpolate(x,y,z)
 
         #print(z, x, y)
         #print("u_scipy", u, "u_xr", u_interp)
