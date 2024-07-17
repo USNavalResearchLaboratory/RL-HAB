@@ -16,7 +16,6 @@ class FlowField3D:
         self.max_vel = max_vel
         self.res = res
 
-
         self.seed(seed)
 
         self.flow_field, self.directions, self.magnitudes = self.initialize_flow()
@@ -399,7 +398,7 @@ class FlowField3D:
                                 #length=self.magnitudes[z] * .5/self.x_dim, arrow_length_ratio=1/self.x_dim, color=colors[i, j])
                                 #For the big arena
                                 #length = self.magnitudes[z] * 1 , arrow_length_ratio = .25, color = colors[i, j])
-                                length = self.magnitudes[z] * 100000, arrow_length_ratio = .02, color = colors[i, j])
+                                length = self.magnitudes[z] * 100000, arrow_length_ratio = .05, color = colors[i, j])
 
         if interpolation_point is not None:
             x, y, z = interpolation_point
@@ -473,13 +472,13 @@ class PointMass:
 
 # Example usage
 if __name__ == '__main__':
-    x_dim = 10
-    y_dim = 10
-    z_dim = 5
+    x_dim = 250
+    y_dim = 250
+    z_dim = 10
     num_levels = 6
-    min_vel = 2
-    max_vel = 2
-    skip = 1 #for speeding up visualization.  skip ever X quiver.
+    min_vel = 5 / 1000.
+    max_vel = 25 / 1000.
+    skip = 100 #for speeding up visualization.  skip ever X quiver.
     res = 1
     seed = None
 
@@ -493,11 +492,11 @@ if __name__ == '__main__':
 
     # Initialize the point mass
     mass = 1.0  # Mass of the point mass
-    dt = 0.1  # Time step for simulation
-    point_mass = PointMass(flow_field_3d, x=5, y=5, z=0, mass=mass, dt=dt)
+    dt = 60  # Time step for simulation
+    point_mass = PointMass(flow_field_3d, x=125, y=125, z=0, mass=mass, dt=dt)
 
     # Simulate the point mass movement
-    steps = 60
+    steps = 100
     dz_func = lambda: np.random.choice([.1])  # Randomly move up, down, or stay at the same altitude
     point_mass.simulate(steps, dz_func)
 
