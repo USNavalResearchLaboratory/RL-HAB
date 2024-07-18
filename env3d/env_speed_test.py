@@ -1,0 +1,70 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from scipy import interpolate
+from matplotlib.animation import FuncAnimation
+import gymnasium as gym
+from gymnasium import spaces
+import random
+import time
+from pynput import keyboard
+from pynput.keyboard import Key, Controller
+from stable_baselines3.common.env_util import make_vec_env
+import math
+from stable_baselines3 import DQN
+from stable_baselines3.common.utils import set_random_seed
+from line_profiler import LineProfiler
+import sys
+from FlowEnv3D_SK_relative import FlowFieldEnv3d
+
+env_params = {
+            'x_dim': 250,  # km
+            'y_dim': 250,  # km
+            'z_dim': 10,  # km
+            'min_vel': 5 / 1000.,  # km/s
+            'max_vel': 25 / 1000.,  # km/s
+            'num_levels': 6,
+            'dt': 60,  # seconds
+            'radius': 50,  # km
+            'alt_move': 2 / 1000.,  # km/s
+            'episode_length': 600,  # dt steps (minutes)
+            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
+            'decay_flow': False,
+            'render_count': 1,
+            'render_skip': 100,
+            'render_mode': 'human',
+            'seed': np.random.randint(0, 2 ** 16),
+            # A random seed needs to be defined, to generated the same random numbers across processes
+        }
+
+config = {
+    "total_timesteps": int(100e6),
+    'hyperparameters': {
+                'policy': "MultiInputPolicy",
+                'learning_rate': 5e-4,
+                'exploration_fraction':.4,
+                'exploration_initial_eps': 1,
+                'exploration_final_eps': 0.1,
+                'batch_size': 32,
+                'train_freq': 4,
+                'gamma': .99,
+                'buffer_size': int(1e6),
+                'target_update_interval': 10000,
+                'stats_window_size': 1000,
+                'device': "cuda",
+            },
+    "env_parameters": env_params,
+    "env_name": "DQN-km",
+    "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+    "NOTES": "Trying with new Trilinear Interpolation Method" #change this to lower case
+}
+
+env = FlowFieldEnv3d(**env_params)
+env.reset()
+
+n_procs = 50
+env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
+
+model = DQN(env=env, verbose=1,**config['hyperparameters'])
+
+model.learn(total_timesteps=int(10e5),log_interval=100, progress_bar=True, reset_num_timesteps=False)

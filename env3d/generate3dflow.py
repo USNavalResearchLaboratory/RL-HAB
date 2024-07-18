@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import matplotlib as mpl
 from scipy.interpolate import RegularGridInterpolator
 from scipy.interpolate import griddata
 import xarray as xr
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 #import ERA5
 
 class FlowField3D:
@@ -280,6 +282,8 @@ class FlowField3D:
         :param z:
         :return:
         '''
+
+
         x = np.clip(x, 0, self.x_dim)
         y = np.clip(y, 0, self.y_dim)
         z = np.clip(z, 0, self.z_dim)
@@ -389,11 +393,11 @@ class FlowField3D:
             # Calculate directions for color mapping
             directions = np.arctan2(V, U)
             norm = plt.Normalize(-np.pi, np.pi)
-            colors = cm.rainbow(norm(directions))
+            colors = cm.hsv(norm(directions))
 
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
-                    ax.quiver(X[i, j]/self.res, Y[i, j]/self.res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
+                    q = ax.quiver(X[i, j]/self.res, Y[i, j]/self.res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                                 #For the small arena
                                 #length=self.magnitudes[z] * .5/self.x_dim, arrow_length_ratio=1/self.x_dim, color=colors[i, j])
                                 #For the big arena
@@ -410,7 +414,21 @@ class FlowField3D:
         ax.set_zlabel('Altitude')
         ax.set_xlim(0, (self.x_dim)/self.res)
         ax.set_ylim(0, (self.y_dim)/self.res)
-        ax.set_zlim(0, self.z_dim)  # Set the z-axis limit to the maximum altitude
+        ax.set_zlim(0, self.z_dim)  # Set the z-axis limit to the maximum
+
+        # create an axes on the right side of ax. The width of cax will be 5%
+        # of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        #divider = make_axes_locatable(ax)
+        #cax = divider.append_axes("right", size="5%", pad=0.05)
+
+
+        colormap = plt.colormaps.get_cmap('hsv')
+        #colors = colormap(scaled_z)
+        sm = plt.cm.ScalarMappable(cmap=colormap)
+        sm.set_clim(vmin=-np.pi, vmax=np.pi)
+        plt.colorbar(sm, ax=ax, shrink = .4, pad=.1)
+
+
 
 class PointMass:
     def __init__(self, flow_field_3d, x, y, z, mass, dt):
@@ -458,7 +476,7 @@ class PointMass:
         # Calculate directions for color mapping
         directions = np.arctan2(np.diff(path[:, 1]), np.diff(path[:, 0]))
         norm = plt.Normalize(-np.pi, np.pi)
-        colors = cm.rainbow(norm(directions))
+        colors = cm.hsv(norm(directions))
 
         for i in range(len(directions)):
             ax.plot(path[i:i+2, 0], path[i:i+2, 1], path[i:i+2, 2], color=colors[i], marker='.')
@@ -506,6 +524,8 @@ if __name__ == '__main__':
     # Plot the flow field
     ax1 = fig.add_subplot(121, projection='3d')
     flow_field_3d.visualize_3d_planar_flow(ax1, skip, interpolation_point=(250, 250, 25))
+
+
 
     # Plot the point mass path
     ax2 = fig.add_subplot(122, projection='3d')

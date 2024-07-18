@@ -70,6 +70,7 @@ netcdf_era5 = dict(
     #filename = "SHAB5V-ERA5_20210512_20210513.nc", #SHAB5V
     #filename = "shab10_era_2022-04-09to2022-04-10.nc", #SHAB10V
     filename = "SHAB14V_ERA5_20220822_20220823.nc", #SHAB12/13/14/15V
+    #filename = 'western_hemisphere-11-29-23.nc',
     #filename = "hawaii-ERA5-041823.nc",
     resolution_hr = 1
     )

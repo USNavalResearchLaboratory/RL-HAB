@@ -1,19 +1,16 @@
 import sys
 import os
 sys.path.append(os.path.abspath('src'))
+import numpy as np
 
 from stable_baselines3 import DQN, PPO, A2C
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
 from datetime import datetime
 from stable_baselines3.common.env_util import make_vec_env
-import random
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
-import numpy as np
-from collections import deque
 
-#Choose which enviorment to use for training
 #from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
 #from FlowEnv3D import FlowFieldEnv3d
 from FlowEnv3D_SK_relative import FlowFieldEnv3d

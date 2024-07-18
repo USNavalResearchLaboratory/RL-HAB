@@ -20,6 +20,11 @@ Also see Google's Balloon Learning Environment: https://balloon-learning-environ
     If your machine has a GPU, you can additionally install [GPU support](https://www.anaconda.com/blog/getting-started-with-gpu-computing-in-anaconda)
 
 2. ### Install Python Dependencies
+    Setup Environment:   
+    ```
+    #pip3 install -e .
+    ```
+
     For easy install on WSL and Ubuntu use:
     ```
     pip install -r requirements.txt
