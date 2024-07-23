@@ -115,7 +115,7 @@ config = {
                 'buffer_size': int(1e6),
                 'target_update_interval': 10000,
                 'stats_window_size': 1000,
-                'device': "cpu",
+                'device': "cuda",
             },
     "env_parameters": env_params,
     "env_name": "DQN-km",
@@ -133,25 +133,15 @@ run = wandb.init(
 )
 
 #Training Parameters
-SAVE_FREQ = 250000  #with num of procs = 16,  this will be every 2 mil steps
-#TIMESTEPS = int(10e6)
 
-n_procs = 16
-#SAVE_FREQ = 500000/16
-
+n_procs = 500
+SAVE_FREQ = int(5e6/n_procs)
 
 env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
-
 
 # Define the checkpoint callback to save the model every 1000 steps
 checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_km/{run.name}",
                                           name_prefix=model_name)
-
-# Create environment
-#env = FlowFieldEnv()
-#env = Monitor(env)
-
-
 
 model = DQN(env=env,
             verbose=1,

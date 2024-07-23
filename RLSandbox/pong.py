@@ -37,9 +37,10 @@ checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=models_d
 # There already exists an environment generator
 # that will make and wrap atari environments correctly.
 # Here we are also multi-worker training (n_envs=4 => 4 environments)
-vec_env = make_atari_env("PongNoFrameskip-v4", n_envs=4, seed=0)
+n_procs = 100
+vec_env = make_atari_env("PongNoFrameskip-v4", n_envs=n_procs, seed=0)
 # Frame-stacking with 4 frames
-vec_env = VecFrameStack(vec_env, n_stack=4)
+#vec_env = VecFrameStack(vec_env, n_stack=n_procs)
 
 #model = A2C("CnnPolicy", vec_env, verbose=1)
 #model = A2C("CnnPolicy", vec_env, verbose=1, tensorboard_log=logdir + "/" + run_id)
@@ -75,6 +76,7 @@ model = PPO(ent_coef = 0.01,
              #normalize = False,
             tensorboard_log=logdir + "/" + run_id,
             verbose=1,
+            device = 'cuda'
             )
 
 

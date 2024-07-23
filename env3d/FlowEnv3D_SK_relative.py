@@ -16,7 +16,7 @@ from stable_baselines3.common.utils import set_random_seed
 from line_profiler import LineProfiler
 import sys
 
-from generate3dflow import FlowField3D, PointMass
+from env3d.generate3dflow import FlowField3D, PointMass
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -183,9 +183,10 @@ class FlowFieldEnv3d(gym.Env):
         if self.total_steps > self.episode_length - 1:
             #reward += -100
             done = True
-            print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
-                  "TWR_inner", self._get_info()["twr_inner"],
-                  "TWR_outer", self._get_info()["twr_outer"])
+            #We can add this back in for a different type of verbose if we want
+            #print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
+            #      "TWR_inner", self._get_info()["twr_inner"],
+            #      "TWR_outer", self._get_info()["twr_outer"])
 
         if self.render_step == self.render_count:
             self.render_step = 0
@@ -404,10 +405,11 @@ def main():
     '''
 
     while True:
+        t0 = time.time()
         env_params = {
-            'x_dim': 250,  # km
-            'y_dim': 250,  # km
-            'z_dim': 10,  # km
+            'x_dim': 2_000,  # km
+            'y_dim': 2_000,  # km
+            'z_dim': 100,  # km
             'min_vel': 5 / 1000.,  # km/s
             'max_vel': 25 / 1000.,  # km/s
             'num_levels': 6,
@@ -424,9 +426,16 @@ def main():
             # A random seed needs to be defined, to generated the same random numbers across processes
         }
 
+        #n_procs = 1
+        #env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
         env = FlowFieldEnv3d(**env_params)
         env.reset()
+        print(f"load=: {(time.time() - t0):.1f}s")
+
+
+
         total_reward = 0
+        t1 = time.time()
         for step in range(600):
             # Use this for random action
             # action = env.action_space.sample()
@@ -440,18 +449,18 @@ def main():
             total_reward += reward
             if done:
                 break
-            env.render()
+            #env.render()
             # time.sleep(2)
         # print(obs)
         # print(env.FlowField3D.flow_field[:,0,0,0])
         print("Total reward:", total_reward, info, env_params['seed'])
 
         end_time = time.time()
-        execution_time = end_time - start_time
-        print("Execution time:", execution_time)
+        #execution_time = end_time - start_time
+        #print("Execution time:", execution_time)
 
-
-        sys.exit()
+        print(f"fps=: {1./((time.time() - t1)/600):.0f}s")
+        #sys.exit()
 
 
 if __name__ == '__main__':

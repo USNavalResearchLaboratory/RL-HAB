@@ -1,6 +1,5 @@
 from matplotlib import cm
 import matplotlib.pyplot as plt
-import os
 import xarray as xr
 import numpy as np
 #from mpl_toolkits.basemap import Basemap
@@ -25,13 +24,12 @@ ds = ds.reindex(latitude=list(reversed(ds.latitude)))
 
 
 #ERA5 data variables structure that we download is (time, level, latitude, longitude)
-time_index = 0
+time_index = 1
 
-u = ds['u'][time_index,:,:,:].values
+
+u = ds['u'][time_index,:,:,:].data
 v = ds['v'][time_index,:,:,:].values
 z = ds['z'][time_index,:,:,:].values
-
-
 
 
 #need to reshape array to level, Longitude(X), latitude(Y) for plotting.
@@ -43,8 +41,6 @@ w = np.zeros_like(u)
 levels = ds['level']
 
 print(levels)
-
-
 
 flow_field = np.stack([u, v, w, z], axis=-1)
 
@@ -124,7 +120,7 @@ def visualize_3d_planar_flow(ax, skip=1, interpolation_point=None):
 
 
 fig = plt.figure(figsize=(15, 10))
-skip = 50
+skip = 6
 res = 1
 
 # Plot the flow field

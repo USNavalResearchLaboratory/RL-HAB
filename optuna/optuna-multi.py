@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath('src'))
 import numpy as np
+from termcolor import colored
 
 from stable_baselines3 import DQN, PPO, A2C
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
@@ -13,14 +14,19 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 import torch.nn as nn
 
 import optuna
+import optuna_config
 from optuna.visualization.matplotlib import *
+from optuna.integration.wandb import WeightsAndBiasesCallback
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
 #from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
 #from FlowEnv3D import FlowFieldEnv3d
-from FlowEnv3D_SK_relative import FlowFieldEnv3d
+from env3d.FlowEnv3D_SK_relative import FlowFieldEnv3d
+
+# Add requirement for wandb core
+# wandb.require("core")
 
 class TargetReachedCallback(BaseCallback):
     """
@@ -32,6 +38,8 @@ class TargetReachedCallback(BaseCallback):
         self.moving_avg_length = moving_avg_length
         self.target_reached_history = []
         self.radius = radius
+
+        self.current_twr = 0
 
     def _on_step(self) -> bool:
         # Check if the episode has ended
@@ -47,6 +55,7 @@ class TargetReachedCallback(BaseCallback):
                 self.target_reached_history.pop(0)
 
             moving_avg = np.mean(self.target_reached_history)
+            self.current_twr = moving_avg
             self.logger.record('twr/' + str(self.radius), moving_avg)
 
         return True
@@ -89,26 +98,37 @@ class TrialEvalCallback(BaseCallback):
                 self.best_mean_reward = mean_reward
         return True
 
+
+
+
+n_trials = 20
+
+'''
+wandb_kwargs = {"project": optuna_config.project_name}
+wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs, as_multirun=True)
+@wandbc.track_in_wandb()
+'''
+
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_name = "3dflow-DQN"
-    models_dir = f"RL_models_3D/{model_name}"
+    models_dir = f"{optuna_config.model_path}/{model_name}"
 
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
 
-    logdir = "logs_3D"
+    logdir = optuna_config.log_path
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
     # Suggest hyperparameters using Optuna
-    learning_rate = trial.suggest_loguniform('learning_rate', 1e-6, 1e-2)
-    exploration_fraction = trial.suggest_uniform('exploration_fraction', 0.01, 0.5)
-    exploration_initial_eps = trial.suggest_uniform('exploration_initial_eps', 0.5, 1.0)
-    exploration_final_eps = trial.suggest_uniform('exploration_final_eps', 0.01, 0.5)
+    learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-2, log=True)
+    exploration_fraction = trial.suggest_float('exploration_fraction', 0.01, 0.5)
+    exploration_initial_eps = trial.suggest_float('exploration_initial_eps', 0.5, 1.0)
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.01, 0.5)
     batch_size = trial.suggest_categorical('batch_size', [32, 64, 128])
     train_freq = trial.suggest_categorical('train_freq', [1, 4, 8])
-    gamma = trial.suggest_uniform('gamma', 0.9, 0.999)
+    gamma = trial.suggest_float('gamma', 0.9, 0.999)
     target_update_interval = trial.suggest_int('target_update_interval', 1000, 100000)
 
     # Define a search space for network architecture
@@ -139,7 +159,7 @@ def objective(trial):
     }
 
     config = {
-        "total_timesteps": int(75e6),
+        "total_timesteps": optuna_config.total_timesteps,
         'parameters': {
             'policy': "MultiInputPolicy",
             'policy_kwargs': policy_kwargs,
@@ -162,24 +182,24 @@ def objective(trial):
 
     run = wandb.init(
         #anonymous="allow",
-        project="3dflow-optuna-vogons-km",
+        project=optuna_config.project_name,
         config=config,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         # monitor_gym=True,  # auto-upload the videos of agents playing the game
         save_code=True,  # optional
     )
 
-    n_procs = 500
-    SAVE_FREQ = int(5e6/n_procs)
+    SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
-
+    env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=optuna_config.n_envs)
     eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d(**env_params))])
     eval_env = VecMonitor(eval_env)
 
-    checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_km/{run.name}",
+    checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"{optuna_config.model_path}/{run.name}",
                                              name_prefix=model_name)
-    trial_eval_callback = TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1)
+
+    #set wandb name in optuna
+    trial.set_user_attr("wandb_name", run.name)
 
     model = DQN(env=env, verbose=1, tensorboard_log=logdir + "/" + run.name, **config['parameters'])
 
@@ -188,8 +208,9 @@ def objective(trial):
                     log_interval=100,
                     callback=[WandbCallback(
                         gradient_save_freq=1000,
-                        model_save_path=f"RL_models_km/{run.name}",
+                        model_save_path=f"{optuna_config.model_path}/{run.name}",
                         verbose=1), checkpoint_callback,
+                        TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr'),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr_outer'),
@@ -198,32 +219,17 @@ def objective(trial):
 
         run.finish()
 
-        mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=300, return_episode_rewards=False)
-        return mean_reward  # Change to TWR
+        #How can we add twr here?
+        print(colored(f"Evaluating policy for {run.name}","cyan"))
+        mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=50, return_episode_rewards=False)
+        print(f"Mean reward for {run.name}: {mean_reward}")
+        return mean_reward
     except optuna.exceptions.TrialPruned:
         raise optuna.exceptions.TrialPruned()
 
-def handle_interrupt(study, trial):
-    print("\nKeyboardInterrupt detected. Stopping optimization early and returning the best result so far.")
-    print(f"Best parameters: {study.best_params}")
-    print(f"Best value: {study.best_value}")
-    return study.best_params
 
-def make_plot(study):
-    fig = plot_optimization_history(study)
-    fig.imshow()
+# Load the study from the database
+study = optuna.load_study(study_name=optuna_config.project_name, storage=optuna_config.storage)
 
-study = optuna.create_study(storage="sqlite:///db.sqlite3",
-                            study_name="vogons-test",
-                            direction='maximize',
-                            sampler=optuna.samplers.TPESampler(),
-                            pruner=optuna.pruners.MedianPruner())
-
-try:
-    study.optimize(objective, n_trials=100)
-except KeyboardInterrupt:
-    best_params = handle_interrupt(study, None)
-    print(best_params)
-
-print("Best hyperparameters: ", study.best_params)
-make_plot(study)
+#study.optimize(objective, n_trials=n_trials, callbacks=[wandbc], n_jobs=1)
+study.optimize(objective, n_trials=n_trials)

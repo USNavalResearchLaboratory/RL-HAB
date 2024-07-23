@@ -11,11 +11,13 @@ from pynput import keyboard
 from pynput.keyboard import Key, Controller
 from stable_baselines3.common.env_util import make_vec_env
 import math
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, A2C, PPO
 from stable_baselines3.common.utils import set_random_seed
 from line_profiler import LineProfiler
 import sys
 from FlowEnv3D_SK_relative import FlowFieldEnv3d
+
+policy_kwargs = dict(net_arch=[200,200,200, 200])
 
 env_params = {
             'x_dim': 250,  # km
@@ -41,6 +43,7 @@ config = {
     "total_timesteps": int(100e6),
     'hyperparameters': {
                 'policy': "MultiInputPolicy",
+                'policy_kwargs':policy_kwargs,
                 'learning_rate': 5e-4,
                 'exploration_fraction':.4,
                 'exploration_initial_eps': 1,
@@ -62,9 +65,10 @@ config = {
 env = FlowFieldEnv3d(**env_params)
 env.reset()
 
-n_procs = 50
+n_procs = 200
 env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
 
 model = DQN(env=env, verbose=1,**config['hyperparameters'])
+#model = PPO(env=env, policy = "MultiInputPolicy", verbose=1)
 
 model.learn(total_timesteps=int(10e5),log_interval=100, progress_bar=True, reset_num_timesteps=False)

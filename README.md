@@ -22,7 +22,7 @@ Also see Google's Balloon Learning Environment: https://balloon-learning-environ
 2. ### Install Python Dependencies
     Setup Environment:   
     ```
-    #pip3 install -e .
+    pip3 install -e .
     ```
 
     For easy install on WSL and Ubuntu use:
@@ -68,6 +68,10 @@ Run scripts from the main Flow2D directory
    **train-\*.py** gives examples of how to train an agent using StableBaselines3 in the various 2D environments, with or without wandb
 
    **evaluate2d.py** gives examples of how evaulate a 2D trained agent using StableBaselines3 
+
+
+### Hyperparameter Tuning with Optuna
+    TODO: write some documentation for this
 
 ## Notes/Discussion
    * **Important notes on seeding:**
