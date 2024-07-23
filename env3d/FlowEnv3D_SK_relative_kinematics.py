@@ -22,7 +22,11 @@ class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
     def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
+<<<<<<< HEAD
+                 num_levels=6, dt=1, radius=100, max_accel=1.0, max_ascent_rate = 0.0015, drag_coefficient=0.5, episode_length=400, decay_flow=False,
+=======
                  num_levels=6, dt=1, radius=100, max_accel=1.0, drag_coefficient=0.5, episode_length=400, decay_flow=False,
+>>>>>>> 1ea8d1e3f9b5ed8d11819f2a3c484a1b2f686f39
                  random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human"):
         super(FlowFieldEnv3d, self).__init__()
         self.x_dim = x_dim
@@ -39,6 +43,11 @@ class FlowFieldEnv3d(gym.Env):
 
         self.max_accel = max_accel # acceleration in z-direction
 
+<<<<<<< HEAD
+        self.max_ascent_rate = max_ascent_rate
+
+=======
+>>>>>>> 1ea8d1e3f9b5ed8d11819f2a3c484a1b2f686f39
         self.drag_coefficient = drag_coefficient
 
         self.decay_flow = decay_flow #new feature
@@ -133,8 +142,13 @@ class FlowFieldEnv3d(gym.Env):
     def move_agent(self, action):
         u, v, w = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
 
+<<<<<<< HEAD
+        # print(f"Current Flow Vel: {u}, {v}, {w}")
+        # print(f"Current Agent Vel: {self.state["x_vel"]}, {self.state["y_vel"]}, {self.state["z_vel"]}")
+=======
         print(f"Current Flow Vel: {u}, {v}, {w}")
         print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
+>>>>>>> 1ea8d1e3f9b5ed8d11819f2a3c484a1b2f686f39
 
         if action == 2:
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
@@ -157,7 +171,11 @@ class FlowFieldEnv3d(gym.Env):
         self.state["x_vel"] = self.state["x_vel"] + (accel_x*self.dt)
         self.state["y_vel"] = self.state["y_vel"] + (accel_y*self.dt)
         self.state["z_vel"] = self.state["z_vel"] + (accel_z*self.dt)
+        self.state["z_vel"] = np.clip(self.state["z_vel"], -self.max_ascent_rate, self.max_ascent_rate)
 
+        print(f"Current Flow Vel: {u}, {v}, {w}")
+        print(f"Current Agent Vel: {self.state["x_vel"]}, {self.state["y_vel"]}, {self.state["z_vel"]}")
+        print(f"Current Agent Accel: {accel_x}, {accel_y}, {accel_z}")
 
         self.path.append((self.state["x"], self.state["y"], self.state["z"]))
         self.altitude_history.append(self.state["z"])
@@ -415,10 +433,17 @@ def main():
 
     # Train the model
     model.learn(total_timesteps=10000)
+<<<<<<< HEAD
+
+    '''
+
+    while True:
+=======
 
     '''
     while True:
         dt = 60
+>>>>>>> 1ea8d1e3f9b5ed8d11819f2a3c484a1b2f686f39
         env_params = {
             'x_dim': 250,  # km
             'y_dim': 250,  # km
@@ -426,9 +451,16 @@ def main():
             'min_vel': 5 / 1000.,  # km/s
             'max_vel': 25 / 1000.,  # km/s
             'num_levels': 6,
+<<<<<<< HEAD
+            'dt': 60.0,  # seconds
+            'radius': 50,  # km
+            'max_accel': 1.115e-5, # km/minute^2 -> taken from 0.025 mi/hr^2
+            'max_ascent_rate': 0.0015, # km/s
+=======
             'dt': dt,  # seconds
             'radius': 50,  # km
             'max_accel': 1.115e-5,  # km/min^2
+>>>>>>> 1ea8d1e3f9b5ed8d11819f2a3c484a1b2f686f39
             'drag_coefficient': 0.5,
             'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
