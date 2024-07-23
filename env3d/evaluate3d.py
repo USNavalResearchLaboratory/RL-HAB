@@ -33,25 +33,28 @@ seed = None
 model_name = "RL_models_km/honest-yogurt-2/DQN-km_56000000_steps"
 seed = None
 
+model_name = "RL_models/devout-dew-41/3dflow-DQN_75000000_steps"
+seed = None
+
 env_params = {
-            'x_dim': 250,  # km
-            'y_dim': 250,  # km
-            'z_dim': 10,  # km
-            'min_vel': 5 / 1000.,  # km/s
-            'max_vel': 25 / 1000.,  # km/s
-            'num_levels': 6,
-            'dt': 60,  # seconds
-            'radius': 50,  # km
-            'alt_move': 2 / 1000.,  # km/s
-            'episode_length': 600,  # dt steps (minutes)
-            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
-            'decay_flow': False,
-            'render_count': 1,
-            'render_skip': 100,
-            'render_mode': 'human',
-            'seed': np.random.randint(0, 2 ** 32),
-            # A random seed needs to be defined, to generated the same random numbers across processes
-        }
+        'x_dim': 250,  # km
+        'y_dim': 250,  # km
+        'z_dim': 10,  # km
+        'min_vel': 5 / 1000.,  # km/s
+        'max_vel': 25 / 1000.,  # km/s
+        'num_levels': 6,
+        'dt': 60,  # seconds
+        'radius': 50,  # km
+        'alt_move': 2 / 1000.,  # km/s
+        'episode_length': 600,  # dt steps (minutes)
+        'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
+        'decay_flow': False,
+        'render_count': 1,
+        'render_skip': 100,
+        'render_mode': 'human',
+        'seed': np.random.randint(0, 2 ** 32),
+        # A random seed needs to be defined, to generated the same random numbers across processes
+    }
 
 print("Loading model")
 
@@ -71,6 +74,7 @@ model = DQN.load(model_name, env=env, )
 print ("Evaluating Model")
 
 n_procs = 1
+vec_env = model.get_env()
 
 '''
 # Evaluate the agent with deterministic actions
@@ -82,20 +86,13 @@ mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deter
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
 '''
 
-# Enjoy trained agent
-vec_env = model.get_env()
 
-# Wrap the single environment in a VecEnv
-#vec_env = DummyVecEnv([lambda: env])
-
-obs = vec_env.reset()
-#for i in range(1000):
 
 while True:
-    vec_env.reset()
+    obs = vec_env.reset()
     total_reward = 0
     total_steps = 0
-    for _ in range (400):
+    for _ in range (env_params["episode_length"]):
         action, _states = model.predict(obs, deterministic=False)
         #print(action)
 
