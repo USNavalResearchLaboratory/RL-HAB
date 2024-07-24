@@ -136,7 +136,6 @@ class FlowFieldEnv3d(gym.Env):
         print(f"Current Flow Vel: {u}, {v}, {w}")
         print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
         print(f"Altitude: {self.state['z']}")
-
         if action == 2:  # up
             self.decelerate_flag = False
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
@@ -144,14 +143,18 @@ class FlowFieldEnv3d(gym.Env):
             self.decelerate_flag = False
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
         else:  # stay
-            if self.state["z_vel"] > 0:  # moving up
+            #Need to perform a check to see if we need to deaccelerate or accelerate to 0 depending on our current motion
+            if self.state["z_vel"] > 0:  # moving up, need to deaccelerate down to 0
                 self.decelerate_flag = True
+                self.decelerate_direction = -1  # decelerate down
                 input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
-            elif self.state["z_vel"] < 0:  # moving down
+            elif self.state["z_vel"] < 0:  # moving down, need to deaccelerate up to 0
                 self.decelerate_flag = True
+                self.decelerate_direction = 1  # decelerate up
                 input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
-            else:  # already stationary
+            else:  # already stationary, hold 0 velocity
                 self.decelerate_flag = False
+                self.decelerate_direction = 0
                 input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, 0.0
 
         rel_vel_x = u - self.state["x_vel"]
@@ -169,10 +172,12 @@ class FlowFieldEnv3d(gym.Env):
         self.state["y_vel"] = self.state["y_vel"] + (accel_y*self.dt)
         self.state["z_vel"] = self.state["z_vel"] + (accel_z*self.dt)
 
-        # Ensure z velocity goes to zero when decelerating
-        if self.decelerate_flag and abs(self.state["z_vel"]) < self.max_accel * self.dt:
-            self.state["z_vel"] = 0.0
-            self.decelerate_flag = False  # Reset the flag once velocity is zero
+        # If deaccelerated past 0 velocity when stay has been called, hold at 0 velocity
+        if self.decelerate_flag:
+            if (self.decelerate_direction == -1 and self.state["z_vel"] < 0) or \
+                    (self.decelerate_direction == 1 and self.state["z_vel"] > 0):
+                self.state["z_vel"] = 0.0
+                self.decelerate_flag = False  # Reset the flag once velocity is zero
 
 
 
