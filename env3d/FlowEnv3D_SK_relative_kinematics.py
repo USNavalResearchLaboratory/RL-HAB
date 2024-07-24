@@ -135,13 +135,24 @@ class FlowFieldEnv3d(gym.Env):
 
         print(f"Current Flow Vel: {u}, {v}, {w}")
         print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
+        print(f"Altitude: {self.state['z']}")
 
-        if action == 2:
+        if action == 2:  # up
+            self.decelerate_flag = False
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
-        elif action == 0:
+        elif action == 0:  # down
+            self.decelerate_flag = False
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
-        else:
-            input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, 0.0
+        else:  # stay
+            if self.state["z_vel"] > 0:  # moving up
+                self.decelerate_flag = True
+                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
+            elif self.state["z_vel"] < 0:  # moving down
+                self.decelerate_flag = True
+                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
+            else:  # already stationary
+                self.decelerate_flag = False
+                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, 0.0
 
         rel_vel_x = u - self.state["x_vel"]
         rel_vel_y = v - self.state['y_vel']
@@ -157,6 +168,13 @@ class FlowFieldEnv3d(gym.Env):
         self.state["x_vel"] = self.state["x_vel"] + (accel_x*self.dt)
         self.state["y_vel"] = self.state["y_vel"] + (accel_y*self.dt)
         self.state["z_vel"] = self.state["z_vel"] + (accel_z*self.dt)
+
+        # Ensure z velocity goes to zero when decelerating
+        if self.decelerate_flag and abs(self.state["z_vel"]) < self.max_accel * self.dt:
+            self.state["z_vel"] = 0.0
+            self.decelerate_flag = False  # Reset the flag once velocity is zero
+
+
 
 
         self.path.append((self.state["x"], self.state["y"], self.state["z"]))
@@ -428,7 +446,7 @@ def main():
             'num_levels': 6,
             'dt': dt,  # seconds
             'radius': 50,  # km
-            'max_accel': 1.115e-5,  # km/min^2
+            'max_accel': 1.e-5,  # km/min^2
             'drag_coefficient': 0.5,
             'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
