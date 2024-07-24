@@ -1,8 +1,11 @@
-project_name = "gp3-optuna-no_kinematics-new_hp_ranges"
+project_name = "gp3-optuna-kinematics"
 model_path="RL_models_optuna"
 log_path = "logs_optuna"
+
+device = "cuda:1"
+
 n_envs = 200
-n_threads = 10
+n_threads = 4
 
 total_timesteps = int(1e8)
 

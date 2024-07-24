@@ -5,9 +5,8 @@ sys.path.append(os.path.abspath('src'))
 
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
-#from FlowEnv2D import FlowFieldEnv
-#from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
-from FlowEnv3D_SK_relative import FlowFieldEnv3d
+#from FlowEnv3D_SK_relative import FlowFieldEnv3d
+from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -45,7 +44,14 @@ env_params = {
         'num_levels': 6,
         'dt': 60,  # seconds
         'radius': 50,  # km
-        'alt_move': 2 / 1000.,  # km/s
+
+        # DISCRETE
+        'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
+
+        # KINEMATICS
+        'max_accel': 1.e-5,  # km/min^2
+        'drag_coefficient': 0.5,
+
         'episode_length': 600,  # dt steps (minutes)
         'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
         'decay_flow': False,
@@ -76,7 +82,7 @@ print ("Evaluating Model")
 n_procs = 1
 vec_env = model.get_env()
 
-'''
+#'''
 # Evaluate the agent with deterministic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
 print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
@@ -84,7 +90,7 @@ print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std
 # Evaluate the agent with stochastic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-'''
+#'''
 
 
 

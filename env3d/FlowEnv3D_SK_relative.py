@@ -23,7 +23,8 @@ class FlowFieldEnv3d(gym.Env):
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
     def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
                  num_levels=6, dt=1, radius=100, alt_move=2, episode_length=400, decay_flow=False,
-                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human"):
+                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human",
+                 max_accel = None, drag_coefficient =  None):
         super(FlowFieldEnv3d, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -113,10 +114,9 @@ class FlowFieldEnv3d(gym.Env):
         self.total_steps = 0
 
         #Make it discrete spawnings for now
-        self.state["x"] = int(random.uniform(0 + self.x_dim/4, self.x_dim - self.x_dim/4))
-        self.state["y"] = int(random.uniform(0 + self.y_dim/4, self.y_dim - self.y_dim/4))
-        self.state["z"] = int(random.uniform(0 + self.z_dim/4, self.z_dim - self.z_dim/4))
-
+        self.state["x"] = int(random.uniform(self.x_dim/2-self.radius_inner, self.x_dim/2 + self.radius_inner))
+        self.state["y"] = int(random.uniform(self.y_dim/2-self.radius_inner, self.y_dim/2 +self.radius_inner))
+        self.state["z"] = int(random.uniform(0 + self.z_dim / 4, self.z_dim - self.z_dim / 4))
         self.goal = {"x": self.x_dim/2,
                       "y": self.y_dim/2,
                      "z": 0}
@@ -407,15 +407,22 @@ def main():
     while True:
         t0 = time.time()
         env_params = {
-            'x_dim': 2_000,  # km
-            'y_dim': 2_000,  # km
-            'z_dim': 100,  # km
+            'x_dim': 250,  # km
+            'y_dim': 250,  # km
+            'z_dim': 10,  # km
             'min_vel': 5 / 1000.,  # km/s
             'max_vel': 25 / 1000.,  # km/s
             'num_levels': 6,
             'dt': 60,  # seconds
             'radius': 50,  # km
-            'alt_move': 2 / 1000.,  # km/s
+
+            # DISCRETE
+            'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
+
+            # KINEMATICS
+            'max_accel': 1.e-5,  # km/min^2
+            'drag_coefficient': 0.5,
+
             'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
             'decay_flow': False,
@@ -449,7 +456,7 @@ def main():
             total_reward += reward
             if done:
                 break
-            #env.render()
+            env.render()
             # time.sleep(2)
         # print(obs)
         # print(env.FlowField3D.flow_field[:,0,0,0])

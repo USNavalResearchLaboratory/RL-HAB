@@ -1,26 +1,7 @@
-
 import subprocess
 import psutil
 import time
 import optuna_config
-
-'''
-
-# Number of processes to run in parallel
-num_processes = optuna_config.n_threads
-
-# List to hold the processes
-processes = []
-
-for _ in range(num_processes):
-    process = subprocess.Popen(['python3', 'optuna/optuna-multi.py'])
-    processes.append(process)
-
-# Wait for all processes to complete
-for process in processes:
-    process.wait()
-'''
-
 
 # Number of processes to run in parallel
 num_processes = optuna_config.n_threads

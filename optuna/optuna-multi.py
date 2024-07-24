@@ -23,7 +23,8 @@ from wandb.integration.sb3 import WandbCallback
 
 #from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
 #from FlowEnv3D import FlowFieldEnv3d
-from env3d.FlowEnv3D_SK_relative import FlowFieldEnv3d
+#from env3d.FlowEnv3D_SK_relative import FlowFieldEnv3d
+from env3d.FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 
 # Add requirement for wandb core
 # wandb.require("core")
@@ -148,7 +149,14 @@ def objective(trial):
         'num_levels': 6,
         'dt': 60,  # seconds
         'radius': 50,  # km
-        'alt_move': 2 / 1000.,  # km/s
+
+        # DISCRETE
+        'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
+
+        # KINEMATICS
+        'max_accel': 1.e-5,  # km/min^2
+        'drag_coefficient': 0.5,
+
         'episode_length': 600,  # dt steps (minutes)
         'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
         'decay_flow': False,
@@ -174,10 +182,10 @@ def objective(trial):
             'buffer_size': buffer_size,
             'target_update_interval': target_update_interval,
             'stats_window_size': 1000,
-            'device': "cuda:1",
+            'device': optuna_config.device,
         },
         "env_parameters": env_params,
-        "env_name": "3dflow-km",
+        "env_name": "3dflow-km-kinematics",
         "NOTES": "Optuna tuning run"
     }
 
@@ -211,7 +219,7 @@ def objective(trial):
                         gradient_save_freq=1000,
                         model_save_path=f"{optuna_config.model_path}/{run.name}",
                         verbose=1), checkpoint_callback,
-                        TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1),
+                        #TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr'),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),
                         TargetReachedCallback(moving_avg_length=1000, radius='twr_outer'),

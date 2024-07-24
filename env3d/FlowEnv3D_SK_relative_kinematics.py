@@ -16,14 +16,14 @@ from stable_baselines3.common.utils import set_random_seed
 from line_profiler import LineProfiler
 import sys
 
-from generate3dflow import FlowField3D, PointMass
+from env3d.generate3dflow import FlowField3D, PointMass
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
     def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
                  num_levels=6, dt=1, radius=100, max_accel=1.0, drag_coefficient=0.5, episode_length=400, decay_flow=False,
-                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human"):
+                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human", alt_move = None):
         super(FlowFieldEnv3d, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
@@ -115,9 +115,9 @@ class FlowFieldEnv3d(gym.Env):
         self.total_steps = 0
 
         #Make it discrete spawnings for now
-        self.state["x"] = int(random.uniform(0 + self.x_dim/4, self.x_dim - self.x_dim/4))
-        self.state["y"] = int(random.uniform(0 + self.y_dim/4, self.y_dim - self.y_dim/4))
-        self.state["z"] = int(random.uniform(0 + self.z_dim/4, self.z_dim - self.z_dim/4))
+        self.state["x"] = int(random.uniform(self.x_dim / 2 - self.radius_inner, self.x_dim / 2 + self.radius_inner))
+        self.state["y"] = int(random.uniform(self.y_dim / 2 - self.radius_inner, self.y_dim / 2 + self.radius_inner))
+        self.state["z"] = int(random.uniform(0 + self.z_dim / 4, self.z_dim - self.z_dim / 4))
 
         self.goal = {"x": self.x_dim/2,
                       "y": self.y_dim/2,
@@ -133,9 +133,11 @@ class FlowFieldEnv3d(gym.Env):
     def move_agent(self, action):
         u, v, w = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
 
-        print(f"Current Flow Vel: {u}, {v}, {w}")
-        print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
-        print(f"Altitude: {self.state['z']}")
+        #print(f"Current Flow Vel: {u}, {v}, {w}")
+        #print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
+        #print(f"Altitude: {self.state['z']}")
+
+
         if action == 2:  # up
             self.decelerate_flag = False
             input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
@@ -221,9 +223,9 @@ class FlowFieldEnv3d(gym.Env):
         if self.total_steps > self.episode_length - 1:
             #reward += -100
             done = True
-            print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
-                  "TWR_inner", self._get_info()["twr_inner"],
-                  "TWR_outer", self._get_info()["twr_outer"])
+            #print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
+            #      "TWR_inner", self._get_info()["twr_inner"],
+            #      "TWR_outer", self._get_info()["twr_outer"])
 
         if self.render_step == self.render_count:
             self.render_step = 0
@@ -449,10 +451,16 @@ def main():
             'min_vel': 5 / 1000.,  # km/s
             'max_vel': 25 / 1000.,  # km/s
             'num_levels': 6,
-            'dt': dt,  # seconds
+            'dt': 60,  # seconds
             'radius': 50,  # km
+
+            # DISCRETE
+            'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
+
+            # KINEMATICS
             'max_accel': 1.e-5,  # km/min^2
             'drag_coefficient': 0.5,
+
             'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
             'decay_flow': False,
@@ -494,8 +502,5 @@ def main():
 
 
 if __name__ == '__main__':
-    #'''
-    #'''
-
     main()
 

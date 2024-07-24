@@ -15,7 +15,8 @@ from stable_baselines3 import DQN, A2C, PPO
 from stable_baselines3.common.utils import set_random_seed
 from line_profiler import LineProfiler
 import sys
-from FlowEnv3D_SK_relative import FlowFieldEnv3d
+#from FlowEnv3D_SK_relative import FlowFieldEnv3d
+from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 
 policy_kwargs = dict(net_arch=[200,200,200, 200])
 
@@ -28,14 +29,21 @@ env_params = {
             'num_levels': 6,
             'dt': 60,  # seconds
             'radius': 50,  # km
-            'alt_move': 2 / 1000.,  # km/s
+
+            # DISCRETE
+            'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
+
+            # KINEMATICS
+            'max_accel': 1.e-5,  # km/min^2
+            'drag_coefficient': 0.5,
+
             'episode_length': 600,  # dt steps (minutes)
             'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
             'decay_flow': False,
             'render_count': 1,
             'render_skip': 100,
             'render_mode': 'human',
-            'seed': np.random.randint(0, 2 ** 16),
+            'seed': np.random.randint(0, 2 ** 32),
             # A random seed needs to be defined, to generated the same random numbers across processes
         }
 
@@ -59,7 +67,7 @@ config = {
     "env_parameters": env_params,
     "env_name": "DQN-km",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
-    "NOTES": "Trying with new Trilinear Interpolation Method" #change this to lower case
+    "NOTES": "" #change this to lower case
 }
 
 env = FlowFieldEnv3d(**env_params)
