@@ -18,78 +18,11 @@ from optuna.visualization.matplotlib import *
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
-#from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
-#from FlowEnv3D import FlowFieldEnv3d
-
 #from env3d.FlowEnv3D_SK_relative import FlowFieldEnv3d
 from env3d.FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 
-class TargetReachedCallback(BaseCallback):
-    """
-    Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
-    """
-    def __init__(self, moving_avg_length=1000, radius ='twr', verbose=0):
-        super(TargetReachedCallback, self).__init__(verbose)
-        #self.env = env  # type: Union[gym.Env, VecEnv, None]
-        self.moving_avg_length = moving_avg_length
-        self.target_reached_history = []
-        self.radius = radius
-
-    def _on_step(self) -> bool:
-        # Check if the episode has ended
-        done = self.locals['dones'][0]
-
-        if done:
-            infos = self.locals['infos'][0]
-            #print(infos)
-
-            self.target_reached_history.append(infos.get(self.radius))
-
-            if len(self.target_reached_history) > self.moving_avg_length:
-                self.target_reached_history.pop(0)
-
-            moving_avg = np.mean(self.target_reached_history)
-            self.logger.record('twr/' + str(self.radius), moving_avg)
-
-        return True
-
-class FlowChangeCallback(BaseCallback):
-    """
-    Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
-    """
-    def __init__(self, verbose=0):
-        super(FlowChangeCallback, self).__init__(verbose)
-        #self.env = env  # type: Union[gym.Env, VecEnv, None]
-
-    def _on_step(self) -> bool:
-        # Check if the episode has ended
-        done = self.locals['dones'][0]
-
-        if done:
-            infos = self.locals['infos'][0]
-
-            self.logger.record('num_flow_changes', infos.get("num_flow_changes"))
-
-        return True
-
-class TrialEvalCallback(BaseCallback):
-    def __init__(self, eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=0):
-        super(TrialEvalCallback, self).__init__(verbose)
-        self.eval_env = eval_env
-        self.trial = trial
-        self.n_eval_episodes = n_eval_episodes
-        self.eval_freq = eval_freq
-        self.best_mean_reward = -np.inf
-
-    def _on_step(self) -> bool:
-        if self.n_calls % self.eval_freq == 0:
-            mean_reward, _ = evaluate_policy(self.model, self.eval_env, n_eval_episodes=self.n_eval_episodes, return_episode_rewards=False)
-            self.trial.report(mean_reward, self.n_calls)
-            if self.trial.should_prune():
-                raise optuna.exceptions.TrialPruned()
-            if mean_reward > self.best_mean_reward:
-                self.best_mean_reward = mean_reward
-        return True
+from callbacks.TWRCallback import TWRCallback
+from callbacks.FlowChangeCallback import FlowChangeCallback
 
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -188,7 +121,7 @@ def objective(trial):
 
     checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_km/{run.name}",
                                              name_prefix=model_name)
-    trial_eval_callback = TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1)
+    #trial_eval_callback = TrialEvalCallback(eval_env, trial, n_eval_episodes=5, eval_freq=10000, verbose=1)
 
     model = DQN(env=env, verbose=1, tensorboard_log=logdir + "/" + run.name, **config['parameters'])
 
@@ -199,9 +132,9 @@ def objective(trial):
                         gradient_save_freq=1000,
                         model_save_path=f"RL_models_km/{run.name}",
                         verbose=1), checkpoint_callback,
-                        TargetReachedCallback(moving_avg_length=1000, radius='twr'),
-                        TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),
-                        TargetReachedCallback(moving_avg_length=1000, radius='twr_outer'),
+                        TWRCallback(moving_avg_length=1000, radius='twr'),
+                        TWRCallback(moving_avg_length=1000, radius='twr_inner'),
+                        TWRCallback(moving_avg_length=1000, radius='twr_outer'),
                         FlowChangeCallback()],
                     progress_bar=True)
 
@@ -218,9 +151,9 @@ def handle_interrupt(study, trial):
     print(f"Best value: {study.best_value}")
     return study.best_params
 
-def make_plot(study):
-    fig = plot_optimization_history(study)
-    fig.imshow()
+#def make_plot(study):
+#    fig = plot_optimization_history(study)
+#    fig.imshow()
 
 study = optuna.create_study(storage="sqlite:///old-test-db.sqlite3",
                             study_name="old-test",
@@ -235,4 +168,4 @@ except KeyboardInterrupt:
     print(best_params)
 
 print("Best hyperparameters: ", study.best_params)
-make_plot(study)
+#make_plot(study)

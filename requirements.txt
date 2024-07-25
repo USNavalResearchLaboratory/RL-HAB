@@ -11,5 +11,5 @@ xarray==0.21.0
 optuna==3.6.1
 optuna-dashboard
 optuna-integration==3.6.0
-cupy
+#cupy #install with conda with correct GPU versioning
 termcolor

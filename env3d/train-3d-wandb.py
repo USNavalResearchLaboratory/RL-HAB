@@ -15,53 +15,8 @@ from wandb.integration.sb3 import WandbCallback
 #from FlowEnv3D import FlowFieldEnv3d
 from FlowEnv3D_SK_relative import FlowFieldEnv3d
 
-class TargetReachedCallback(BaseCallback):
-    """
-    Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
-    """
-    def __init__(self, moving_avg_length=1000, radius ='twr', verbose=0):
-        super(TargetReachedCallback, self).__init__(verbose)
-        #self.env = env  # type: Union[gym.Env, VecEnv, None]
-        self.moving_avg_length = moving_avg_length
-        self.target_reached_history = []
-        self.radius = radius
-
-    def _on_step(self) -> bool:
-        # Check if the episode has ended
-        done = self.locals['dones'][0]
-
-        if done:
-            infos = self.locals['infos'][0]
-            #print(infos)
-
-            self.target_reached_history.append(infos.get(self.radius))
-
-            if len(self.target_reached_history) > self.moving_avg_length:
-                self.target_reached_history.pop(0)
-
-            moving_avg = np.mean(self.target_reached_history)
-            self.logger.record('twr/' + str(self.radius), moving_avg)
-
-        return True
-
-class FlowChangeCallback(BaseCallback):
-    """
-    Custom tensorboard callback to keep track of the mean reward.  Tracks the moving average of the window size.
-    """
-    def __init__(self, verbose=0):
-        super(FlowChangeCallback, self).__init__(verbose)
-        #self.env = env  # type: Union[gym.Env, VecEnv, None]
-
-    def _on_step(self) -> bool:
-        # Check if the episode has ended
-        done = self.locals['dones'][0]
-
-        if done:
-            infos = self.locals['infos'][0]
-
-            self.logger.record('num_flow_changes', infos.get("num_flow_changes"))
-
-        return True
+from callbacks.TWRCallback import TWRCallback
+from callbacks.FlowChangeCallback import FlowChangeCallback
 
 #Directory Initializtion
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -176,9 +131,9 @@ model.learn(
         gradient_save_freq=1000,
         model_save_path=f"RL_models_km/{run.name}",
         verbose=1), checkpoint_callback,
-        TargetReachedCallback(moving_avg_length=1000, radius='twr'),
-        TargetReachedCallback(moving_avg_length=1000, radius='twr_inner'),
-        TargetReachedCallback(moving_avg_length=1000, radius='twr_outer'),
+        TWRCallback(moving_avg_length=1000, radius='twr'),
+        TWRCallback(moving_avg_length=1000, radius='twr_inner'),
+        TWRCallback(moving_avg_length=1000, radius='twr_outer'),
         FlowChangeCallback()],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )

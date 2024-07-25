@@ -1,11 +1,12 @@
-project_name = "gp3-optuna-kinematics"
-model_path="RL_models_optuna"
-log_path = "logs_optuna"
+project_name = "asdasd"
+model_path="asdasd"
+log_path = "asdasd"
 
-device = "cuda:1"
+device = "cuda"
 
 n_envs = 200
 n_threads = 4
+n_trials = 20
 
 total_timesteps = int(1e8)
 
