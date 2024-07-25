@@ -17,6 +17,7 @@ from line_profiler import LineProfiler
 import sys
 
 from env3d.generate3dflow import FlowField3D, PointMass
+from env3d.rendering.renderer import MatplotlibRenderer
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -37,7 +38,6 @@ class FlowFieldEnv3d(gym.Env):
         self.radius_inner = radius*.5
         self.radius_outer = radius * 1.5
 
-
         self.alt_move = alt_move # how many units the agent can move up/down  (no kinematics)
 
         self.decay_flow = decay_flow #new feature
@@ -57,7 +57,14 @@ class FlowFieldEnv3d(gym.Env):
         self.seed(seed)
         self.res = 1
 
-        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, self.res, seed)
+        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel,
+                                       self.res, seed)
+
+        self.renderer = MatplotlibRenderer(x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim,
+                                           FlowField3d=self.FlowField3D,
+                                           render_count=self.render_count, render_skip=self.render_skip,
+                                           render_mode=self.render_mode,
+                                           radius=self.radius, dt=self.dt, episode_length=self.episode_length)
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,
@@ -84,32 +91,22 @@ class FlowFieldEnv3d(gym.Env):
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
     def reset(self, seed=None, options=None):
-        if self.random_flow_episode_count >= self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
-            #self.FlowField3D.generate_random_planar_flow_field()
-            #self.FlowField3D.gradualize_random_flow()
+        if self.random_flow_episode_count >= self.random_flow_episode_length - 1 and self.random_flow_episode_length != 0:
+            # self.FlowField3D.generate_random_planar_flow_field()
+            # self.FlowField3D.gradualize_random_flow()
             self.FlowField3D.randomize_flow()
             self.random_flow_episode_count = 0
-            self.num_flow_changes +=1
+            self.num_flow_changes += 1
         else:
-            self.random_flow_episode_count +=1
+            self.random_flow_episode_count += 1
 
         if self.decay_flow:
             self.FlowField3D.apply_boundary_decay(decay_type='linear')
 
         self.within_target = False
-        self.twr = 0 # time within radius
+        self.twr = 0  # time within radius
         self.twr_inner = 0  # time within radius
         self.twr_outer = 0  # time within radius
-
-        if hasattr(self, 'fig'):
-            plt.close(self.fig)
-            delattr(self, 'fig')
-            delattr(self, 'ax')
-            delattr(self, 'ax2')
-            delattr(self, 'ax3')
-            delattr(self, 'goal')
-            delattr(self, 'scatter')
-            delattr(self, 'canvas')
 
         self.total_steps = 0
 
@@ -117,6 +114,7 @@ class FlowFieldEnv3d(gym.Env):
         self.state["x"] = int(random.uniform(self.x_dim/2-self.radius_inner, self.x_dim/2 + self.radius_inner))
         self.state["y"] = int(random.uniform(self.y_dim/2-self.radius_inner, self.y_dim/2 +self.radius_inner))
         self.state["z"] = int(random.uniform(0 + self.z_dim / 4, self.z_dim - self.z_dim / 4))
+
         self.goal = {"x": self.x_dim/2,
                       "y": self.y_dim/2,
                      "z": 0}
@@ -124,7 +122,7 @@ class FlowFieldEnv3d(gym.Env):
         self.path = [(self.state["x"], self.state["y"], self.state["z"])]
         self.altitude_history = [self.state["z"]]
 
-        self.render_step = 0
+        self.renderer.reset(self.goal)
 
         return self._get_obs(), self._get_info()
 
@@ -187,11 +185,6 @@ class FlowFieldEnv3d(gym.Env):
             #print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
             #      "TWR_inner", self._get_info()["twr_inner"],
             #      "TWR_outer", self._get_info()["twr_outer"])
-
-        if self.render_step == self.render_count:
-            self.render_step = 0
-        else:
-            self.render_step += 1
 
         observation = self._get_obs()
         info = self._get_info()
@@ -281,84 +274,8 @@ class FlowFieldEnv3d(gym.Env):
             "num_flow_changes": self.num_flow_changes,
         }
 
-    def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):
-        #UPDATE: This is a new function because the radius wasn't plotting properly for smaller radii
-        # Create the angle array
-        theta = np.linspace(0, 2 * np.pi, 100)
-
-        # Generate the circle points in 2D
-        circle_x = radius * np.cos(theta)
-        circle_y = radius * np.sin(theta)
-
-        if plane == 'xy':
-            x = center_x + circle_x
-            y = center_y + circle_y
-            z = np.full_like(x, 0)
-
-        ax.plot(x, y, z, color)
-
     def render(self, mode='human'):
-        if not hasattr(self, 'fig'):
-            self.fig = plt.figure(figsize=(18, 10))
-            #self.ax = self.fig.add_subplot(231, projection='3d')
-            #self.ax2 = self.fig.add_subplot(232, projection='3d')
-            #self.ax3 = self.fig.add_subplot(212)
-
-            gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
-            self.ax3 = self.fig.add_subplot(gs[0, :])
-            self.ax = self.fig.add_subplot(gs[1, 0], projection='3d')
-            self.ax2 = self.fig.add_subplot(gs[1, 1], projection='3d')
-
-            self.ax.set_xlabel('X')
-            self.ax.set_ylabel('Y')
-            self.ax.set_zlabel('Altitude')
-            self.ax.set_xlim(0, self.x_dim)
-            self.ax.set_ylim(0, self.y_dim)
-            self.ax.set_zlim(0, self.z_dim)
-
-            self.path_plot, = self.ax.plot([], [], [], color='black')
-            self.scatter = self.ax.scatter([], [], [], color='black')
-            self.ground_track, = self.ax.plot([], [], [], color='red')
-            self.scatter_goal = self.ax.scatter([], [], [], color='green')
-            self.canvas = self.fig.canvas
-
-            self.FlowField3D.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
-
-            self.current_state_line, = self.ax.plot([], [], [], 'r--')
-            #self.current_goal_line, = self.ax.plot([], [], [], 'g-')
-
-            # Draw target circle on the XY plane
-            self.plot_circle(self.ax,self.goal["x"],self.goal["y"], self.radius, color='g-')
-            self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_inner, color='g--')
-            self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_outer, color='g--')
-
-            self.altitude_line, = self.ax3.plot([], [], 'b-')
-            self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
-            self.ax3.set_ylabel('Altitude')
-            self.ax3.set_xlim(0, self.episode_length)
-            self.ax3.set_ylim(0, self.z_dim)
-
-        if self.render_step == self.render_count:
-
-            self.path_plot.set_data(np.array(self.path)[:, :2].T)
-            self.path_plot.set_3d_properties(np.array(self.path)[:, 2])
-
-            self.ground_track.set_data(np.array(self.path)[:, :2].T)
-            self.ground_track.set_3d_properties(np.zeros(len(self.path)))
-
-            self.scatter._offsets3d = (np.array([self.state["x"]]), np.array([self.state["y"]]), np.array([self.state["z"]]))
-            self.scatter_goal._offsets3d = (np.array([self.goal["x"]]), np.array([self.goal["y"]]), np.array([0]))
-
-            self.current_state_line.set_data([self.state["x"], self.state["x"]], [self.state["y"], self.state["y"]])
-            self.current_state_line.set_3d_properties([0, self.state["z"]])
-
-            self.altitude_line.set_data(range(len(self.altitude_history)), self.altitude_history)
-
-            self.canvas.draw()
-            #self.canvas.flush_events()
-
-            if mode == 'human':
-                plt.pause(0.001)
+        self.renderer.render(mode='human', state = self.state, path = self.path, altitude_history = self.altitude_history)
 
     def close(self):
         pass
