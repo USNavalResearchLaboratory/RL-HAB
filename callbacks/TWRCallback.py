@@ -1,5 +1,5 @@
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
-
+import numpy as np
 
 class TWRCallback(BaseCallback):
     """
