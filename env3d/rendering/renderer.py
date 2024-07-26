@@ -19,7 +19,7 @@ class MatplotlibRenderer():
         self.dt = dt
         self.episode_length = episode_length
 
-        self.fig = plt.figure(figsize=(18, 10))
+        #self.fig = plt.figure(figsize=(18, 10))
 
     def init_plot(self):
         self.fig = plt.figure(figsize=(18, 10))
@@ -61,7 +61,6 @@ class MatplotlibRenderer():
 
         self.goal = goal
 
-        self.init_plot()
 
         self.render_step = 0
 
@@ -83,6 +82,10 @@ class MatplotlibRenderer():
         ax.plot(x, y, z, color)
 
     def render(self, state, path, altitude_history, mode='human'):
+
+        if not hasattr(self, 'fig'):
+            self.init_plot()
+
         if self.render_step == self.render_count:
 
             self.path_plot.set_data(np.array(path)[:, :2].T)

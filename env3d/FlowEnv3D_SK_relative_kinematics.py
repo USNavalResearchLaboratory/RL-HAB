@@ -129,7 +129,7 @@ class FlowFieldEnv3d(gym.Env):
         u, v, w = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
 
         #print(f"Current Flow Vel: {u}, {v}, {w}")
-        print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
+        ###print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
         #print(f"Altitude: {self.state['z']}")
 
 
