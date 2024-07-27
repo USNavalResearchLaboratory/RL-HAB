@@ -257,6 +257,8 @@ class FlowFieldEnv3d(gym.Env):
         if distance_to_target <= self.radius:
             #Normalize distance within radius,  for a maximum score of 2.
             reward = convert_range(distance_to_target,0,self.radius, 2, 1)
+            self.twr += 1
+            self.within_target = True
 
         else:
             # reward = np.exp(-0.01 * (distance_to_target - self.radius))
