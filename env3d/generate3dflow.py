@@ -7,6 +7,7 @@ from scipy.interpolate import griddata
 import xarray as xr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 #import ERA5
+from utils.convert_range import convert_range
 
 class FlowField3D:
     def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, res, seed):
@@ -108,11 +109,6 @@ class FlowField3D:
 
         return self.generate_random_planar_flow_field()
 
-    # UPDATE new function
-    def convert_range(self,value, old_min, old_max, new_min, new_max):
-        # Calculate the proportional value
-        new_value = new_min + ((value - old_min) / (old_max - old_min)) * (new_max - new_min)
-        return new_value
 
     def interpolate_xr(self, x, y, z):
 
@@ -288,7 +284,7 @@ class FlowField3D:
         y = np.clip(y, 0, self.y_dim)
         z = np.clip(z, 0, self.z_dim)
 
-        z_convert = self.convert_range(z, 0, self.z_dim, 0, self.num_levels - 1)
+        z_convert = convert_range(z, 0, self.z_dim, 0, self.num_levels - 1)
 
         x0 = int(np.floor(x))
         x1 = min(x0 + 1, self.x_dim)

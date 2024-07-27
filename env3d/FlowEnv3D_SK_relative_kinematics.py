@@ -18,6 +18,7 @@ import sys
 
 from env3d.generate3dflow import FlowField3D, PointMass
 from env3d.rendering.renderer import MatplotlibRenderer
+from utils.convert_range import convert_range
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -210,22 +211,68 @@ class FlowFieldEnv3d(gym.Env):
 
         return reward
 
+    def reward_piecewise(self):
+        '''
+        Extra reward possible for station keeping within inner necessary, otherwise following google's structure
+        :return:
+        '''
+        distance_to_target = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        c_cliff = 0.4
+        tau = 100
+
+        if distance_to_target <= self.radius_inner:
+            reward = 2
+            self.twr += 1
+            self.within_target = True
+        elif distance_to_target <= self.radius and distance_to_target > self.radius_inner:
+            reward = 1
+            self.twr += 1
+            self.within_target = True
+        else:
+            # reward = np.exp(-0.01 * (distance_to_target - self.radius))
+            reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
+            self.within_target = False
+
+        return reward
+
+    def reward_euclidian(self):
+        '''
+        Linear Euclidian reward within target region, google cliff function for outside of radius
+
+        :return:
+        '''
+
+
+        distance_to_target = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        c_cliff = 0.4
+        tau = 100
+
+        if distance_to_target <= self.radius:
+            #Normalize distance within radius,  for a maximum score of 2.
+            reward = convert_range(distance_to_target,0,self.radius, 2, 1)
+
+        else:
+            # reward = np.exp(-0.01 * (distance_to_target - self.radius))
+            reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
+            self.within_target = False
+
+        return reward
+
     def step(self, action):
         done = False
         self.total_steps += 1
         reward = self.move_agent(action)
 
-        reward += self.reward_google()
+        reward += self.reward_euclidian()
+
 
         if self.total_steps > self.episode_length - 1:
-            #reward += -100
             done = True
-            #print("episode length", self.total_steps, "TWR", self._get_info()["twr"],
-            #      "TWR_inner", self._get_info()["twr_inner"],
-            #      "TWR_outer", self._get_info()["twr_outer"])
 
         observation = self._get_obs()
         info = self._get_info()
+
+        print(info["distance"], reward)
 
         return observation, reward, done, False, info
 
