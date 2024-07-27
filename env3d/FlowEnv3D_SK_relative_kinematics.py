@@ -233,6 +233,13 @@ class FlowFieldEnv3d(gym.Env):
             reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
             self.within_target = False
 
+        # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
+        if distance_to_target <= self.radius_inner:
+            self.twr_inner += 1
+
+        if distance_to_target <= self.radius_outer:
+            self.twr_outer += 1
+
         return reward
 
     def reward_euclidian(self):
@@ -256,6 +263,13 @@ class FlowFieldEnv3d(gym.Env):
             reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
             self.within_target = False
 
+        # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
+        if distance_to_target <= self.radius_inner:
+            self.twr_inner += 1
+
+        if distance_to_target <= self.radius_outer:
+            self.twr_outer += 1
+
         return reward
 
     def step(self, action):
@@ -272,7 +286,7 @@ class FlowFieldEnv3d(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
-        print(info["distance"], reward)
+        #print(info["distance"], reward)
 
         return observation, reward, done, False, info
 

@@ -1,11 +1,11 @@
-project_name = "asdasd"
-model_path="asdasd"
-log_path = "asdasd"
+project_name = "gp3-kinematics-euclidian"
+model_path="RL_models"
+log_path = "logs"
 
-device = "cuda"
+device = "cuda:1"
 
-n_envs = 200
-n_threads = 4
+n_envs = 100
+n_threads = 10
 n_trials = 20
 
 total_timesteps = int(1e8)
