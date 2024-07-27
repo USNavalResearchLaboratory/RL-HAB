@@ -53,18 +53,18 @@ def objective(trial):
         os.makedirs(logdir)
 
     # Suggest hyperparameters using Optuna
-    learning_rate = trial.suggest_float('learning_rate', 1e-5, 5e-4, log=True)
-    exploration_fraction = trial.suggest_float('exploration_fraction', 0.2, 0.7)
-    exploration_initial_eps = trial.suggest_float('exploration_initial_eps', 0.4, .8)
-    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.01, 0.25)
-    batch_size = trial.suggest_categorical('batch_size', [32, 64, 128, 256, 512, 1028])
-    train_freq = trial.suggest_categorical('train_freq', [1, 4, 8])
-    gamma = trial.suggest_float('gamma', 0.9, 0.999)
-    target_update_interval = trial.suggest_int('target_update_interval', 1000, 100000)
+    learning_rate = trial.suggest_float('learning_rate', 2e-5, 4e-4, log=True)
+    exploration_fraction = trial.suggest_float('exploration_fraction', 0.2, 0.85)
+    exploration_initial_eps = trial.suggest_float('exploration_initial_eps', 0.4, .9)
+    exploration_final_eps = trial.suggest_float('exploration_final_eps', 0.01, 0.2)
+    batch_size = trial.suggest_categorical('batch_size', [32, 64, 128, 256, 512, 1028, 2048, 4096])
+    train_freq = trial.suggest_categorical('train_freq', [1, 2, 4, 8, 16])
+    gamma = trial.suggest_float('gamma', 0.94, 0.999,  log=True)
+    target_update_interval = trial.suggest_int('target_update_interval', 10000, 90000)
     buffer_size = trial.suggest_categorical('buffer_size', [int(5e5), int(1e6), int(2.5e6)]) #new one
 
     # Define a search space for network architecture
-    num_layers = trial.suggest_int('num_layers', 3, 8)
+    num_layers = trial.suggest_int('num_layers', 2, 6)
     layer_sizes = [trial.suggest_int(f'layer_size_{i}', 32, 600) for i in range(num_layers)]
     net_arch = layer_sizes
 

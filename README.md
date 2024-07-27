@@ -112,3 +112,4 @@ Run scripts from the main Flow2D directory
 ## Authors
 * **Tristan Schuler** - *U.S. Naval Research Laboratory*
 * **Chinthan Prasad** - *U.S. Naval Research Laboratory*
+* **Georgiy Kiselev** - *U.S. Naval Research Laboratory NREIP Intern*
