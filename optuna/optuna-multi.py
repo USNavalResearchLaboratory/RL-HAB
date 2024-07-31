@@ -29,17 +29,7 @@ from env3d.FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from callbacks.TrialEvalCallback import TrialEvalCallback
-
-# Add requirement for wandb core
-# wandb.require("core")
-
-
-'''
-wandb_kwargs = {"project": optuna_config.project_name}
-wandbc = WeightsAndBiasesCallback(wandb_kwargs=wandb_kwargs, as_multirun=True)
-@wandbc.track_in_wandb()
-'''
-
+from env3d.config.env_config import env_params
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_name = "3dflow-DQN"
@@ -69,33 +59,6 @@ def objective(trial):
     net_arch = layer_sizes
 
     policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
-
-    env_params = {
-        'x_dim': 250,  # km
-        'y_dim': 250,  # km
-        'z_dim': 10,  # km
-        'min_vel': 5 / 1000.,  # km/s
-        'max_vel': 25 / 1000.,  # km/s
-        'num_levels': 6,
-        'dt': 60,  # seconds
-        'radius': 50,  # km
-
-        # DISCRETE
-        'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
-
-        # KINEMATICS
-        'max_accel': 1.e-5,  # km/min^2
-        'drag_coefficient': 0.5,
-
-        'episode_length': 600,  # dt steps (minutes)
-        'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
-        'decay_flow': False,
-        'render_count': 1,
-        'render_skip': 100,
-        'render_mode': 'human',
-        'seed': np.random.randint(0, 2 ** 32),
-        # A random seed needs to be defined, to generated the same random numbers across processes
-    }
 
     config = {
         "total_timesteps": optuna_config.total_timesteps,

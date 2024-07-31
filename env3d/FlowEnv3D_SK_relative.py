@@ -1,23 +1,14 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from scipy import interpolate
-from matplotlib.animation import FuncAnimation
 import gymnasium as gym
 from gymnasium import spaces
 import random
 import time
 from pynput import keyboard
-from pynput.keyboard import Key, Controller
-from stable_baselines3.common.env_util import make_vec_env
 import math
-from stable_baselines3 import DQN
-from stable_baselines3.common.utils import set_random_seed
-from line_profiler import LineProfiler
-import sys
 
 from env3d.generate3dflow import FlowField3D, PointMass
 from env3d.rendering.renderer import MatplotlibRenderer
+from env3d.config.env_config import env_params
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -303,52 +294,8 @@ listener.start()
 
 
 def main():
-    start_time = time.time()
-    seed = None  # np.random.randint(0, 2 ** 32)  # Randomize random number generation, but kep the same across processes
-    '''
-    n_procs = 4
-
-    # If you uncomment seeding,  the random path generation will be the same every time as long as seed is not None
-    # np.random.seed(seed) #seeding
-
-    env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
-
-    # Initialize the PPO model with the environment
-    model = DQN("MultiInputPolicy", env, seed=None, verbose=1, device='cpu')
-
-    # Train the model
-    model.learn(total_timesteps=10000)
-
-    '''
-
     while True:
         t0 = time.time()
-        env_params = {
-            'x_dim': 250,  # km
-            'y_dim': 250,  # km
-            'z_dim': 10,  # km
-            'min_vel': 5 / 1000.,  # km/s
-            'max_vel': 25 / 1000.,  # km/s
-            'num_levels': 6,
-            'dt': 60,  # seconds
-            'radius': 50,  # km
-
-            # DISCRETE
-            'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
-
-            # KINEMATICS
-            'max_accel': 1.e-5,  # km/min^2
-            'drag_coefficient': 0.5,
-
-            'episode_length': 600,  # dt steps (minutes)
-            'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
-            'decay_flow': False,
-            'render_count': 1,
-            'render_skip': 100,
-            'render_mode': 'human',
-            'seed': np.random.randint(0, 2 ** 32),
-            # A random seed needs to be defined, to generated the same random numbers across processes
-        }
 
         #n_procs = 1
         #env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)

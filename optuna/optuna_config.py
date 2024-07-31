@@ -1,8 +1,8 @@
-project_name = "gp3-kinematics-euclidian"
-model_path="RL_models"
-log_path = "logs"
+project_name = "test_project"
+model_path="RL_models_test"
+log_path = "logs_test"
 
-device = "cuda:1"
+device = "cuda"
 
 n_envs = 100
 n_threads = 10

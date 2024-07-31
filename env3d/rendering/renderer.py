@@ -57,12 +57,18 @@ class MatplotlibRenderer():
 
     def reset(self, goal):
         if hasattr(self, 'fig'):
-            plt.close('all')
+            plt.close(self.fig)
+            delattr(self, 'fig')
+            delattr(self, 'ax')
+            delattr(self, 'ax2')
+            delattr(self, 'ax3')
+            delattr(self, 'goal')
+            delattr(self, 'scatter')
+            delattr(self, 'canvas')
 
         self.goal = goal
 
-
-        self.render_step = 0
+        self.render_step = 1
 
 
     def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):
@@ -105,6 +111,8 @@ class MatplotlibRenderer():
 
             self.canvas.draw()
             # self.canvas.flush_events()
+
+            self.render_step = 1
 
             if mode == 'human':
                 plt.pause(0.001)

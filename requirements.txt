@@ -12,4 +12,5 @@ optuna==3.6.1
 optuna-dashboard
 optuna-integration==3.6.0
 #cupy #install with conda with correct GPU versioning
+backports-datetime-fromisoformat
 termcolor

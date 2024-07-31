@@ -12,6 +12,7 @@ from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.env_util import make_vec_env
+from env3d.config.env_config import env_params
 
 ### EVALUATION ### ----------------------------------------------------------------------
 
@@ -35,37 +36,10 @@ seed = None
 model_name = "RL_models/devout-dew-41/3dflow-DQN_75000000_steps"
 seed = None
 
-env_params = {
-        'x_dim': 250,  # km
-        'y_dim': 250,  # km
-        'z_dim': 10,  # km
-        'min_vel': 5 / 1000.,  # km/s
-        'max_vel': 25 / 1000.,  # km/s
-        'num_levels': 6,
-        'dt': 60,  # seconds
-        'radius': 50,  # km
-
-        # DISCRETE
-        'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
-
-        # KINEMATICS
-        'max_accel': 1.e-5,  # km/min^2
-        'drag_coefficient': 0.5,
-
-        'episode_length': 600,  # dt steps (minutes)
-        'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
-        'decay_flow': False,
-        'render_count': 1,
-        'render_skip': 100,
-        'render_mode': 'human',
-        'seed': np.random.randint(0, 2 ** 32),
-        # A random seed needs to be defined, to generated the same random numbers across processes
-    }
+model_name = "RL_models/bright-pyramid-103/3dflow-DQN_95000000_steps"
+seed = None
 
 print("Loading model")
-
-
-#model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_80000000_steps"
 
 
 env = FlowFieldEnv3d(**env_params)
@@ -82,7 +56,7 @@ print ("Evaluating Model")
 n_procs = 1
 vec_env = model.get_env()
 
-#'''
+'''
 # Evaluate the agent with deterministic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
 print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
@@ -90,10 +64,9 @@ print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std
 # Evaluate the agent with stochastic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-#'''
+'''
 
-
-
+#Visualize the Model
 while True:
     obs = vec_env.reset()
     total_reward = 0
