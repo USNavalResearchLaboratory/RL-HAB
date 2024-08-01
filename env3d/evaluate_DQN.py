@@ -1,37 +1,49 @@
 import sys
 import os
+import numpy as np
 sys.path.append(os.path.abspath('src'))
 
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
-#from FlowEnv2D import FlowFieldEnv
-#from FlowEnv3D_SK_cartesian import FlowFieldEnv3d
-from FlowEnv3D_SK_relative import FlowFieldEnv3d
+#from FlowEnv3D_SK_relative import FlowFieldEnv3d
+from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.env_util import make_vec_env
+from env3d.config.env_config import env_params
 
 ### EVALUATION ### ----------------------------------------------------------------------
-
-env = FlowFieldEnv3d(seed =1957066223, render_mode="human")
 
 # Load the trained agent
 # NOTE: if you have loading issue, you can pass `print_system_info=True`
 # to compare the system on which the model was trained vs the current one
 # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 
+model_name = "RL_models_3D/iconic-sponge-111/3dflow-DQN_80000000_steps"
+seed = 3272669519
+
+model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_76000000_steps"
+seed = None
+
+model_name = "RL_models_3D/breezy-morning-125/3dflow-DQN_60000000_steps"
+seed = None
+
+model_name = "RL_models_km/honest-yogurt-2/DQN-km_56000000_steps"
+seed = None
+
+model_name = "RL_models/devout-dew-41/3dflow-DQN_75000000_steps"
+seed = None
+
+model_name = "RL_models/bright-pyramid-103/3dflow-DQN_95000000_steps"
+seed = None
+
 print("Loading model")
-#model = DQN.load("RL_models/confused-dust-31/DQN-2dFlow-altitude_1500000_steps", env=env, )
-#model = DQN.load("RL_models/vocal-plant-28/DQN-2dFlow-altitude_7000000_steps", env=env, )
 
-#model = DQN.load("RL_models_3D/fiery-frog-5/3dflow-DQN_96000000_steps", env=env, )
-#model = DQN.load("RL_models_3D/stilted-snowflake-16/3dflow-DQN_44000000_steps", env=env, )
 
-#model = DQN.load("RL_models_3D/dutiful-surf-33/3dflow-DQN_76000000_steps", env=env, )
-
-model = DQN.load("RL_models_3D/dark-haze-65/3dflow-DQN_16000000_steps", env=env, )
+env = FlowFieldEnv3d(**env_params)
+model = DQN.load(model_name, env=env, )
 
 #print(model.o)
 
@@ -39,15 +51,13 @@ model = DQN.load("RL_models_3D/dark-haze-65/3dflow-DQN_16000000_steps", env=env,
 # NOTE: If you use wrappers with your environment that modify rewards,
 #       this will be reflected here. To evaluate with original rewards,
 #       wrap environment in a "Monitor" wrapper before other wrappers.
-print ("Evaluating Model")
+
 
 n_procs = 1
-#SAVE_FREQ = 500000/16
-#seed
+vec_env = model.get_env()
 
-#env = make_vec_env(lambda: FlowFieldEnv3d(seed), n_envs=n_procs, seed=seed)
-
-'''
+#'''
+print ("Evaluating Model")
 # Evaluate the agent with deterministic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
 print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
@@ -55,22 +65,14 @@ print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std
 # Evaluate the agent with stochastic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-'''
+#'''
 
-# Enjoy trained agent
-vec_env = model.get_env()
-
-# Wrap the single environment in a VecEnv
-#vec_env = DummyVecEnv([lambda: env])
-
-obs = vec_env.reset()
-#for i in range(1000):
-
+#Visualize the Model
 while True:
-    vec_env.reset()
+    obs = vec_env.reset()
     total_reward = 0
     total_steps = 0
-    for _ in range (500):
+    for _ in range (env_params["episode_length"]):
         action, _states = model.predict(obs, deterministic=False)
         #print(action)
 

@@ -1,12 +1,11 @@
 .idea/
 
-RL_models
-RL_models_static
-RL_models_3D
-logs
-logs_static
-logs_3D
+
+RL_models*
+logs*
 wandb
+
+*.sqlite3
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
