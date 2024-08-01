@@ -1,14 +1,28 @@
 [![Python 3.9](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-390/)
 
-# FLOW2D
+# RL-HAB
 
-FLOW2D provides custom physics-based simulation environments (in the standard gym structure) for testing path planning algorithms. 
-This includes a simplified 2D target reaching simulation with horizontal flow bands, as well as a 3D station keeping environment.  
+RL-HAB is a high altitude balloon (HAB) reinforcement learning simulation environment for training agents. The simulator is wrapped 
+in the standard [gynmasium](https://gymnasium.farama.org/) structure for training agents with classic open-source reinforcement learning libraries
+such as [stabe-baselines-3](https://stable-baselines3.readthedocs.io/en/master/), [clearnrl](https://docs.cleanrl.dev/), 
+and [RLlib](https://docs.ray.io/en/latest/rllib/index.html). We provide examples of training and evaluating agents with 
+DQN in stable-baselines-3.  This package also include optional integration of wandb and optuna for automated hyperparameter 
+tuning and analysis.
+
 
 These enviorments are inspired by high altitude balloons that can only actuate up and down but then leverage changes in winds at various altitudes to
 have limited horizontal control
 
+HABs can leverage opposing winds to perform station keeping maneuvers for persistent area coverage of a 
+target region over a time period of hours, days, or weeks, which can help with surveillance, in-situ stratospheric meteorological 
+data collection, or communication relays.  With a perfect weather forecast
+this would be a simple deterministic path planning problem, however forecasts frequently have large errors in wind direction (occasionally up to 180 degrees) 
+and also lack vertical and temporal resolution in the altitude region of interest (typically only 5-10 data points for a 10 km region), leading to significant 
+uncertainty in flow fields.  Additionally, wind diversity and opposing wind probabilities follow seasonal and geographical/hemispherical trends throughout the year.
+
+
 Also see Google's Balloon Learning Environment: https://balloon-learning-environment.readthedocs.io/en/latest/
+
 
 ![alt text](img/station-keeping.png)
 
@@ -36,42 +50,57 @@ Also see Google's Balloon Learning Environment: https://balloon-learning-environ
    
 3. Make a Wandb Account and set up on your local machine 
    https://docs.wandb.ai/quickstart
-    
-
-## Running Reinforcement Learning Simulations
-
-Run scripts from the main Flow2D directory
-
-### env3d
-   ![alt text](img/3D-stationkeeping.png)
-
-   **generate3Dflow.py** - is how we currently develop 3D horizontal flows at various altitudes in the XY plane
-
-   **FlowEnv3D.py** -  has no kinematics (only up/down 2 units at a time) and instanteneous flow velocity. Goal is to reach goal in 3D.
-
-   **FlowEnv3Dstationkeping.py** - similar to FlowEnv3D, but now the goal is a cylindrical radius to stay with instead of a point
-
-   *Note* The reset method for FlowEnv3D.py and FlowEnv3Dstationkeping.py has options to switch between static flow, gradually updating the flow every episode, and randomizing the flow every episode within specified directional bins
-
-   **train-\*.py** gives examples of how to train a stationkeeping agent using StableBaselines3 and wandb
-
-   **evaluate2d.py** gives examples of how evaulate a 3D trained stationkeeping agent using StableBaselines3 
-### env2d
-   ![alt text](img/2D-Flow.png)
    
-   **FlowEnv2D.py** - has no kinematics (only up/down 2 units at a time) and instanteneous flow velocity. The flow is randomly generated each episode
-   
-   **FlowEnv2DSTATIC.py** - similar to *FlowEnv2D.py*, but with the same flow every episode
-   
-   **RRT2D.py** gives an example of solving the path planning problem using RRT
-   
-   **train-\*.py** gives examples of how to train an agent using StableBaselines3 in the various 2D environments, with or without wandb
 
-   **evaluate2d.py** gives examples of how evaulate a 2D trained agent using StableBaselines3 
+##  Train and Evaluate RL HAB Agents
+
+![alt text](img/station-keeping-rendered.png)
+
+### Simulated Flow Field
+For now, flowfields are simulated with **generate3Dflow.py**.  The script generates a vector field with constant flows in the XY plane at 
+a user-defined number of altitude levels. The flow directions are randomized between 0, 90, 180, and 270 degrees. The magnitudes are 
+randomized from 5 to 25 m/s.  
+
+**ToDo**  We need more complex flow fields to train on in the future. 
+
+### Setup Environment
+Set enviromental parameters in **env3d.config.env_config.py**
+
+### Training an Agent
+Follow **train-DQN.py** as an example of how to train an agent.
+
+In the imports section, decide between kinematics vs discrete altitude control by importing **FlowEnv3D_SK_relative.py** or **FlowEnv3D_SK_relative_kinematics.py**
+
+The *config dictionary* within the script can be updated with various hyperparemters, training runtime, and other customizations
+
+#### Reccommended Configuration, Hyperparameters and Reward Structure:
+* Kinematics Motion Model
+* Total Train time of 100 mil steps
+* Radius of 50 km
+* Randomly change flow every episode (*random_flow_episode_length* of 1)
+* See *hyperparemters dictionary* within **train-DQN.py** for a starting point
+* Euclidian reward structure (This can me changed in the *step function* of **FlowEnv3D_SK_relative.py** 
+  or **FlowEnv3D_SK_relative_kinematics.py**. Currently set to *reward_euclidian*)
+
+
+### Evaluating an Agent
+Once training is complete, run **evaluate_DQN.py** as an example of how to evaluate a trained agent. This script also provides 
+an example of rendering the path of trained agents. 
+
+Below shows an example of statistics tracked in wandb when running multiple experiments with varrying hyperparemters.
+
+![alt text](img/wandb-example.png)
+
+### env2d (Archived)
+![alt text](img/2D-Flow.png)
 
 
 ### Hyperparameter Tuning with Optuna
     TODO: write some documentation for this
+
+Some example output from hyperparameter tuning with Optuna:
+![alt text](img/optuna-1.png)
+![alt text](img/optuna-2.png)
 
 ## Notes/Discussion
    * **Important notes on seeding:**
@@ -81,11 +110,7 @@ Run scripts from the main Flow2D directory
         * To have the same random numbers be generated across multiple threads/processes we have to set a seed for random 
           number generation```self.np_random = np.random.default_rng(seed)``` and then use ```self.np_random``` everywhere in place of ```np.random```
         * SB3 model decleration also takes an optional seed variable.  If a seed is specified,  the same random actions will be taken everytime. We typically don't want this.   
-   * CPU is faster for training then GPU right now with how simple the physics simulation is  
-   * Chinthan's Branch has examples with of the enviorments with kinematics added in
-   * The 2D environment gets caught in local minima and only reaches the taget about 75% of the time. 
-   * The current 3D station keeping environment is good at training agents to station keep with STATIC flowfields.  
-      * We do not have success with graudally or fully randomizing flow generations each eipsode.
+   * CPU is faster for training then GPU right now with how simple the physics simulation is
    * Simulation updates/variations to implement/try to improve learning performance:
       * Kinematics vs. no Kinematics
       * Different reward structures

@@ -51,12 +51,13 @@ model = DQN.load(model_name, env=env, )
 # NOTE: If you use wrappers with your environment that modify rewards,
 #       this will be reflected here. To evaluate with original rewards,
 #       wrap environment in a "Monitor" wrapper before other wrappers.
-print ("Evaluating Model")
+
 
 n_procs = 1
 vec_env = model.get_env()
 
-'''
+#'''
+print ("Evaluating Model")
 # Evaluate the agent with deterministic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
 print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
@@ -64,7 +65,7 @@ print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std
 # Evaluate the agent with stochastic actions
 mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-'''
+#'''
 
 #Visualize the Model
 while True:
