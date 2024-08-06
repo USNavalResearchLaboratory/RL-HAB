@@ -80,33 +80,33 @@ class Custom3DQuiver(OriginalAxes3D):
 
         return linec
 
-'''
-# Register the custom projection
-register_projection(Custom3DQuiver)
+if __name__ == '__main__':
+    # Register the custom projection
+    register_projection(Custom3DQuiver)
 
-# Create a figure
-fig = plt.figure()
+    # Create a figure
+    fig = plt.figure()
 
-# Add subplots using standard subplot notation
-ax1 = fig.add_subplot(111, projection='custom3dquiver')
-#ax2 = fig.add_subplot(122)
+    # Add subplots using standard subplot notation
+    ax1 = fig.add_subplot(111, projection='custom3dquiver')
+    #ax2 = fig.add_subplot(122)
 
-# Create some data for the 3D quiver plot
-x, y, z = np.meshgrid(np.arange(-1, 2), np.arange(-1, 2), np.arange(-1, 2))
-u = np.sin(x)
-v = np.cos(y)
-w = np.ones_like(z)
+    # Create some data for the 3D quiver plot
+    x, y, z = np.meshgrid(np.arange(-1, 2), np.arange(-1, 2), np.arange(-1, 2))
+    u = np.sin(x)
+    v = np.cos(y)
+    w = np.ones_like(z)
 
-# Plot using the custom quiver function
-ax1.quiver(x, y, z, u, v, w, arrow_head_angle=90)
+    # Plot using the custom quiver function
+    ax1.quiver(x, y, z, u, v, w, arrow_head_angle=90)
 
-# Create some data for the 2D line plot
-t = np.linspace(0, 2 * np.pi, 100)
-s = np.sin(t)
+    # Create some data for the 2D line plot
+    t = np.linspace(0, 2 * np.pi, 100)
+    s = np.sin(t)
 
-# Plot the 2D line plot
-#ax2.plot(t, s)
+    # Plot the 2D line plot
+    #ax2.plot(t, s)
 
-# Show the plot
-plt.show()
-'''
+    # Show the plot
+    plt.title("Test")
+    plt.show()

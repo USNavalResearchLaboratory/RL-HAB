@@ -56,7 +56,9 @@ class MatplotlibRenderer():
         self.ax3.set_ylim(0, self.z_dim)
 
     def reset(self, goal):
+        print("RESET CALLED")
         if hasattr(self, 'fig'):
+            print("has attribute?")
             plt.close(self.fig)
             delattr(self, 'fig')
             delattr(self, 'ax')

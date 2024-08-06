@@ -120,7 +120,7 @@ def visualize_3d_planar_flow(ax, skip=1, interpolation_point=None):
 
 
 fig = plt.figure(figsize=(15, 10))
-skip = 50
+skip = 10
 res = 1
 
 # Plot the flow field

@@ -21,7 +21,7 @@ env_params = {
         'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
         'decay_flow': False,
         'render_count': 20,
-        'render_skip': 100,
+        'render_skip': 50,
         'render_mode': 'human',
         'seed': np.random.randint(0, 2 ** 32),
         # A random seed needs to be defined, to generated the same random numbers across processes

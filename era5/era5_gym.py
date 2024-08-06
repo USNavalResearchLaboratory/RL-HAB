@@ -10,6 +10,11 @@ from env3d.generate3dflow import FlowField3D, PointMass
 from env3d.rendering.renderer import MatplotlibRenderer
 from utils.convert_range import convert_range
 from env3d.config.env_config import env_params
+from era5.forecast_visualizer import ForecastVisualizer
+
+
+import config_earth
+import ERA5
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -18,12 +23,8 @@ class FlowFieldEnv3d(gym.Env):
                  num_levels=6, dt=1, radius=100, max_accel=1.0, drag_coefficient=0.5, episode_length=400, decay_flow=False,
                  random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human", alt_move = None):
         super(FlowFieldEnv3d, self).__init__()
-        self.x_dim = x_dim
-        self.y_dim = y_dim
-        self.z_dim = z_dim
-        self.min_vel = min_vel
-        self.max_vel = max_vel
-        self.num_levels = num_levels # how many levels of different flow changes there are
+
+
         self.dt = dt
         self.radius = radius # station keeping radius
         self.radius_inner = radius*.5
@@ -34,7 +35,26 @@ class FlowFieldEnv3d(gym.Env):
 
         self.drag_coefficient = drag_coefficient
 
-        self.decay_flow = decay_flow #new feature
+        # Import configuration file variables
+        self.coord = config_earth.simulation['start_coord']
+        start = config_earth.simulation['start_time']
+        t = start
+        min_alt = config_earth.simulation['min_alt']
+        float = config_earth.simulation['float']
+        self.dt = config_earth.simulation['dt']
+        sim = config_earth.simulation["sim_time"]
+        self.GFSrate = config_earth.forecast["GFSrate"]
+        forecast_type = config_earth.forecast['forecast_type']
+        # Initialize trajectroy variables
+        el = [min_alt]  # 9000
+        el_new = min_alt
+        self.coords = [self.coord]
+        #lat = [coord["lat"]]
+        #lon = [coord["lon"]]
+        self.gfs = ERA5.ERA5(self.coord)
+        ttt = [t]
+
+
 
         # Counting Defaults
         self.num_flow_changes = 0 # do not change from 0
@@ -51,9 +71,19 @@ class FlowFieldEnv3d(gym.Env):
         self.seed(seed)
         self.res = 1
 
-        self.FlowField3D = FlowField3D(self.x_dim, self.y_dim, self.z_dim, self.num_levels, self.min_vel, self.max_vel, self.res, seed)
+        self.FlowField3D = ForecastVisualizer(config_earth.netcdf_era5['filename'])
+        self.FlowField3D.generate_flow_array(0)
 
-        self.renderer = MatplotlibRenderer(x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim, FlowField3d = self.FlowField3D,
+        ####### OLD STUFF
+        self.x_dim = x_dim
+        self.y_dim = y_dim
+        self.z_dim = z_dim
+        self.min_vel = min_vel
+        self.max_vel = max_vel
+        self.num_levels = num_levels
+        ####################
+
+        self.renderer = MatplotlibRenderer(x_dim=self.FlowField3D.gfs.LON_LOW, y_dim=self.FlowField3D.gfs.LAT_LOW, z_dim=self.z_dim, FlowField3d = self.FlowField3D,
                                            render_count = self.render_count, render_skip = self.render_skip, render_mode = self.render_mode,
                                            radius = self.radius, dt = self.dt, episode_length = self.episode_length)
 
@@ -85,14 +115,14 @@ class FlowFieldEnv3d(gym.Env):
         if self.random_flow_episode_count >= self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
             #self.FlowField3D.generate_random_planar_flow_field()
             #self.FlowField3D.gradualize_random_flow()
-            self.FlowField3D.randomize_flow()
+            #self.FlowField3D.randomize_flow()
             self.random_flow_episode_count = 0
             self.num_flow_changes +=1
         else:
             self.random_flow_episode_count +=1
 
-        if self.decay_flow:
-            self.FlowField3D.apply_boundary_decay(decay_type='linear')
+        #if self.decay_flow:
+        #    self.FlowField3D.apply_boundary_decay(decay_type='linear')
 
         self.within_target = False
         self.twr = 0 # time within radius
@@ -118,7 +148,11 @@ class FlowFieldEnv3d(gym.Env):
         return self._get_obs(), self._get_info()
 
     def move_agent(self, action):
-        u, v, w = self.FlowField3D.interpolate_flow(int(self.state["x"]), int(self.state["y"]), int(self.state["z"]))
+        lat_new,lon_new,x_wind_vel,y_wind_vel, x_wind_vel_old, y_wind_vel_old, bearing,nearest_lat, nearest_lon, nearest_alt = self.gfs.getNewCoord(self.coords[0],self.dt*self.GFSrate)
+
+
+
+        u, v, w = (x_wind_vel,y_wind_vel,0)
 
         #print(f"Current Flow Vel: {u}, {v}, {w}")
         ###print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")

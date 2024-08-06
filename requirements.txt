@@ -14,3 +14,7 @@ optuna-integration==3.6.0
 #cupy #install with conda with correct GPU versioning
 backports-datetime-fromisoformat
 termcolor
+gmplot
+netcdf4
+geographiclib
+imageio
