@@ -19,7 +19,8 @@ class MatplotlibRenderer():
         self.dt = dt
         self.episode_length = episode_length
 
-        #self.fig = plt.figure(figsize=(18, 10))
+        self.goal = {"x": 0, "y": 0} #Dummy numbers to start
+        self.init_plot()
 
     def init_plot(self):
         self.fig = plt.figure(figsize=(18, 10))
@@ -57,7 +58,7 @@ class MatplotlibRenderer():
 
     def reset(self, goal):
         if hasattr(self, 'fig'):
-            plt.close(self.fig)
+            plt.close('all')
             delattr(self, 'fig')
             delattr(self, 'ax')
             delattr(self, 'ax2')
