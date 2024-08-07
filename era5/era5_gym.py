@@ -71,21 +71,23 @@ class FlowFieldEnv3d(gym.Env):
         self.seed(seed)
         self.res = 1
 
-        self.FlowField3D = ForecastVisualizer(config_earth.netcdf_era5['filename'])
+        self.FlowField3D = ForecastVisualizer()
         self.FlowField3D.generate_flow_array(0)
 
         ####### OLD STUFF
-        self.x_dim = x_dim
-        self.y_dim = y_dim
-        self.z_dim = z_dim
+        self.x_dim = -40
+        self.y_dim = 100
+        self.z_dim = 1000
         self.min_vel = min_vel
         self.max_vel = max_vel
         self.num_levels = num_levels
         ####################
 
-        self.renderer = MatplotlibRenderer(x_dim=self.FlowField3D.gfs.LON_LOW, y_dim=self.FlowField3D.gfs.LAT_LOW, z_dim=self.z_dim, FlowField3d = self.FlowField3D,
-                                           render_count = self.render_count, render_skip = self.render_skip, render_mode = self.render_mode,
-                                           radius = self.radius, dt = self.dt, episode_length = self.episode_length)
+        self.renderer = MatplotlibRenderer(x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim,
+                                           FlowField3d=self.FlowField3D,
+                                           render_count=self.render_count, render_skip=self.render_skip,
+                                           render_mode=self.render_mode, radius=self.radius, dt=self.dt,
+                                           episode_length=self.episode_length, coordinate_system = "geographic")
 
         self.state = {"mass":1,
                       "x":0, "y":0, "z":0,

@@ -16,25 +16,58 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 import ERA5
 import imageio
+from forecast import Forecast
+import fluids
+import pvlib
+
+from metpy.calc import pressure_to_height_std
+from metpy.units import units
+
 
 class ForecastVisualizer:
-    def __init__(self, forecast_file):
+    def __init__(self):
+        pres_min = config_earth.rl_params['pres_min']
+        pres_max = config_earth.rl_params['pres_max']
+        rel_dist = config_earth.rl_params['rel_dist']
 
-        self.load_forecast(forecast_file)
+        #No Override of Forecast for now?
+        forecast = Forecast(rel_dist, pres_min, pres_max)
+        self.ds = forecast.ds
+
+        self.mandatory_pressure_levels = self.ds["level"].values
 
         # ERA5 stuff
         coord = config_earth.simulation['start_coord']
         self.gfs = ERA5.ERA5(coord)
 
+        self.alts2 = self.ds.sel(latitude=coord['lat'], longitude=coord['lon'], method='nearest').isel(time=0)['z'].values*.001
+
+        # Assign the new altitude coordinate
+        self.ds = self.ds.assign_coords(altitude=('level', self.alts2))
+
+        # Drop the old pressure coordinate if you want
+        #self.ds = self.ds.swap_dims({'level': 'altitude'})
+
+        print(self.ds)
+
+
         register_projection(Custom3DQuiver)
 
-    def load_forecast(self, filename):
+    def map_pres2alt(self):
+        # Use interpolation to transform the original Z values to the desired visual scale
+        alts = []
 
-        #load Forecast
-        self.ds = xr.open_dataset("forecasts/" + filename)
+        for pres in self.mandatory_pressure_levels:
+            # Define the pressure in Pascals
+            pres = pres * units.millibar  # Example pressure value
 
-        #Reverse order of latitude, since era5 comes reversed for some reason?
-        self.ds = self.ds.reindex(latitude=list(reversed(self.ds.latitude)))
+            # Convert pressure to altitude
+            alt = pressure_to_height_std(pres).magnitude
+            alts.append(alt)
+
+        return alts
+
+
 
     def generate_flow_array(self, time_index):
 
@@ -50,9 +83,10 @@ class ForecastVisualizer:
         self.z = np.swapaxes(self.z, 1, 2)
         self.w = np.zeros_like(self.u)
 
-        self.levels = self.ds['level']
+        self.levels = self.ds['altitude']
 
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
+
 
     def visualize_3d_planar_flow(self, ax, skip=1):
         '''
@@ -82,14 +116,14 @@ class ForecastVisualizer:
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
                     ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
-                              length = .25, arrow_length_ratio=1.5, color=colors[i, j], arrow_head_angle=85)
+                              length = .1, arrow_length_ratio=1.5, color=colors[i, j], arrow_head_angle=75)
 
                     #ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                     #          length=.25, arrow_length_ratio=1.5, color=colors[i, j])
 
-        ax.set_xlabel('Longitude (X)')
-        ax.set_ylabel('Latitude (Y)')
-        ax.set_zlabel('Pressure Level (Z)')
+        ax.set_xlabel('Longitude (degrees)')
+        ax.set_ylabel('Latitude (degrees)')
+        ax.set_zlabel('Pressure Level (mb)')
 
 
         #print(self.ds.longitude[0].values, self.ds.longitude[-1].values)
@@ -111,11 +145,32 @@ class ForecastVisualizer:
         y_min, y_max = plt.ylim()
 
         # Setting custom tick labels without changing the plot bounds
+        #z_ticks = ax.get_zticks()
+
+
+
+        #ax.set_zticks(z_transformed[::-1])
+        #z_ticks = ax.get_zticks()
+        #ax.set_zticks(z_ticks[::-1])
+
+        # Setting custom tick labels without changing the plot bounds
+        #z_ticks = ax.get_zticks()
+        # print(z_ticks)
+        #z_ticks_reversed = z_ticks[::-1]
+        #ax.set_zticks(z_ticks_reversed)
+
+        print(self.mandatory_pressure_levels)
+        #print(z_transformed)
+
+        # Setting custom tick labels without changing the plot bounds
         z_ticks = ax.get_zticks()
-        #print(z_ticks)
+        # print(z_ticks)
         z_ticks_reversed = z_ticks[::-1]
-        ax.set_zticks(z_ticks_reversed)
-        ax.set_zlim(self.levels[-1], self.levels[0])
+        ax.set_zticks(self.alts2)
+        ax.set_zticklabels(self.mandatory_pressure_levels)
+        #ax.set_zlim(self.levels[0], self.levels[-1])
+
+        #ax.set_zlim(self.levels[-1], self.levels[0])
         ax.set_xticks(np.linspace(x_min, x_max, 5), np.linspace(self.ds.longitude[0].values, self.ds.longitude[-1].values, 5, dtype=int))
         ax.set_yticks(np.linspace(y_min, y_max, 5), np.linspace(self.ds.latitude[0].values, self.ds.latitude[-1].values, 5, dtype=int))
 
@@ -135,8 +190,8 @@ if __name__ == '__main__':
     register_projection(Custom3DQuiver)
 
     # Analyze Data
-    forecast_visualizer = ForecastVisualizer(config_earth.netcdf_era5['filename'])
-    skip = 5
+    forecast_visualizer = ForecastVisualizer()
+    skip = 2
 
 
     for i in range(len(forecast_visualizer.ds.time.values)):
@@ -159,7 +214,7 @@ if __name__ == '__main__':
     #plt.show()
 
     #Generate gif of flowfield
-    with imageio.get_writer('wind.gif', mode='I') as writer:
+    with imageio.get_writer('wind2.gif', mode='I') as writer:
         for i in range(len(forecast_visualizer.ds.time.values)):
             image = imageio.imread(str(i) +'.png')
             writer.append_data(image)
