@@ -5,6 +5,7 @@ import random
 import time
 from pynput import keyboard
 import math
+import pandas as pd
 
 from env3d.generate3dflow import FlowField3D, PointMass
 from env3d.rendering.renderer import MatplotlibRenderer
@@ -21,11 +22,10 @@ class FlowFieldEnv3d(gym.Env):
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
     def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
                  num_levels=6, dt=1, radius=100, max_accel=1.0, drag_coefficient=0.5, episode_length=400, decay_flow=False,
-                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human", alt_move = None):
+                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human", alt_move = None,
+                 alt_min = 15000, alt_max = 28000):
         super(FlowFieldEnv3d, self).__init__()
 
-
-        self.dt = dt
         self.radius = radius # station keeping radius
         self.radius_inner = radius*.5
         self.radius_outer = radius * 1.5
@@ -38,22 +38,21 @@ class FlowFieldEnv3d(gym.Env):
         # Import configuration file variables
         self.coord = config_earth.simulation['start_coord']
         start = config_earth.simulation['start_time']
-        t = start
-        min_alt = config_earth.simulation['min_alt']
+        self.t = start
+        min_alt = env_params['alt_min']  #this was switched to env paramaters
         float = config_earth.simulation['float']
         self.dt = config_earth.simulation['dt']
         sim = config_earth.simulation["sim_time"]
-        self.GFSrate = config_earth.forecast["GFSrate"]
-        forecast_type = config_earth.forecast['forecast_type']
-        # Initialize trajectroy variables
-        el = [min_alt]  # 9000
-        el_new = min_alt
-        self.coords = [self.coord]
-        #lat = [coord["lat"]]
-        #lon = [coord["lon"]]
+        GFSrate = config_earth.forecast["GFSrate"]
         self.gfs = ERA5.ERA5(self.coord)
-        ttt = [t]
 
+        # Initialize trajectory variables
+        #self.el = [min_alt]  # 9000
+        #self.el_new = min_alt
+        self.coords = [self.coord]
+        self.lat = [self.coord["lat"]]
+        self.lon = [self.coord["lon"]]
+        self.ttt = [self.t]
 
 
         # Counting Defaults
@@ -136,7 +135,11 @@ class FlowFieldEnv3d(gym.Env):
         #Make it discrete spawnings for now
         self.state["x"] = int(random.uniform(self.x_dim / 2 - self.radius_inner, self.x_dim / 2 + self.radius_inner))
         self.state["y"] = int(random.uniform(self.y_dim / 2 - self.radius_inner, self.y_dim / 2 + self.radius_inner))
-        self.state["z"] = int(random.uniform(0 + self.z_dim / 4, self.z_dim - self.z_dim / 4))
+        self.state["z"] = int(random.uniform(15000,28000))
+        self.el = [self.state["z"]]  # 9000
+        self.el_new = self.state["z"]
+
+        print("Start_alt", self.state["z"])
 
         self.goal = {"x": self.x_dim/2,
                       "y": self.y_dim/2,
@@ -150,64 +153,42 @@ class FlowFieldEnv3d(gym.Env):
         return self._get_obs(), self._get_info()
 
     def move_agent(self, action):
-        lat_new,lon_new,x_wind_vel,y_wind_vel, x_wind_vel_old, y_wind_vel_old, bearing,nearest_lat, nearest_lon, nearest_alt = self.gfs.getNewCoord(self.coords[0],self.dt*self.GFSrate)
+
+        self.t = self.t + pd.Timedelta(hours=(1 / 3600 * self.dt))
+
+        self.lat_new,self.lon_new,self.x_wind_vel,self.y_wind_vel, self.x_wind_vel_old, self.y_wind_vel_old, bearing,nearest_lat, nearest_lon, nearest_alt = self.gfs.getNewCoord(self.coords[self.total_steps],self.dt)
+
+        coord_new = {
+            "lat": self.lat_new,  # (deg) Latitude
+            "lon": self.lon_new,  # (deg) Longitude
+            "alt": self.el_new,  # (m) Elevation
+            "timestamp": self.t,  # Timestamp
+        }
+
+        print(self.el_new, bearing, self.lat_new,self.lon_new)
 
 
-
-        u, v, w = (x_wind_vel,y_wind_vel,0)
-
-        #print(f"Current Flow Vel: {u}, {v}, {w}")
-        ###print(f"Current Agent Vel: {self.state['x_vel']}, {self.state['y_vel']}, {self.state['z_vel']}")
-        #print(f"Altitude: {self.state['z']}")
-
-
+        #Take care of Actions
         if action == 2:  # up
-            self.decelerate_flag = False
-            input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
+            self.el_new += 2 * self.dt  #m/s
         elif action == 0:  # down
-            self.decelerate_flag = False
-            input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
+            self.el_new -= 2 * self.dt #m/s
         else:  # stay
-            #Need to perform a check to see if we need to deaccelerate or accelerate to 0 depending on our current motion
-            if self.state["z_vel"] > 0:  # moving up, need to deaccelerate down to 0
-                self.decelerate_flag = True
-                self.decelerate_direction = -1  # decelerate down
-                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, -self.max_accel
-            elif self.state["z_vel"] < 0:  # moving down, need to deaccelerate up to 0
-                self.decelerate_flag = True
-                self.decelerate_direction = 1  # decelerate up
-                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, self.max_accel
-            else:  # already stationary, hold 0 velocity
-                self.decelerate_flag = False
-                self.decelerate_direction = 0
-                input_accel_x, input_accel_y, input_accel_z = 0.0, 0.0, 0.0
+            pass
 
-        rel_vel_x = u - self.state["x_vel"]
-        rel_vel_y = v - self.state['y_vel']
-        rel_vel_z = w - self.state['z_vel']
+        self.el.append(self.el_new)
+        self.coords.append(coord_new)
+        self.lat.append(self.lat_new)
+        self.lon.append(self.lon_new)
+        self.ttt.append(self.t)
 
-        accel_x = (np.sign(rel_vel_x)*(self.drag_coefficient*(rel_vel_x**2))) + input_accel_x
-        accel_y = (np.sign(rel_vel_y)*(self.drag_coefficient*(rel_vel_y**2))) + input_accel_y
-        accel_z = (np.sign(rel_vel_z)*(self.drag_coefficient*(rel_vel_z**2))) + input_accel_z
+        self.state["x"] = self.state["x"] + self.x_wind_vel * self.dt
+        self.state["y"] = self.state["y"] + self.y_wind_vel * self.dt
+        self.state["z"] = self.el_new
 
-        self.state["x"] = self.state["x"] + (self.state["x_vel"]*self.dt) + (0.5*accel_x*(self.dt**2))
-        self.state["y"] = self.state["y"] + (self.state["y_vel"]*self.dt) + (0.5*accel_y*(self.dt**2))
-        self.state["z"] = self.state["z"] + (self.state["z_vel"]*self.dt) + (0.5*accel_z*(self.dt**2))
-
-
-        self.state["x_vel"] = self.state["x_vel"] + (accel_x*self.dt)
-        self.state["y_vel"] = self.state["y_vel"] + (accel_y*self.dt)
-        self.state["z_vel"] = np.clip(self.state["z_vel"] + (accel_z*self.dt),-self.alt_move,self.alt_move)
-
-        # If deaccelerated past 0 velocity when stay has been called, hold at 0 velocity
-        if self.decelerate_flag:
-            if (self.decelerate_direction == -1 and self.state["z_vel"] < 0) or \
-                    (self.decelerate_direction == 1 and self.state["z_vel"] > 0):
-                self.state["z_vel"] = 0.0
-                self.decelerate_flag = False  # Reset the flag once velocity is zero
-
-
-
+        self.state["x_vel"] = self.x_wind_vel
+        self.state["y_vel"] = self.y_wind_vel
+        self.state["z_vel"] = self.alt_move * (action - 1)  # this can be done since theres only 3 actions
 
         self.path.append((self.state["x"], self.state["y"], self.state["z"]))
         self.altitude_history.append(self.state["z"])
@@ -303,7 +284,6 @@ class FlowFieldEnv3d(gym.Env):
 
     def step(self, action):
         done = False
-        self.total_steps += 1
 
         reward = self.move_agent(action)
         reward += self.reward_euclidian()
@@ -313,6 +293,8 @@ class FlowFieldEnv3d(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
+
+        self.total_steps += 1
 
         #print(info["distance"], reward)
 

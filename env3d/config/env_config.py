@@ -10,6 +10,9 @@ env_params = {
         'dt': 60,  # seconds
         'radius': 50,  # km
 
+        'alt_min': 15000, # m
+        'alt_max': 28000, # m
+
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
 
@@ -21,7 +24,7 @@ env_params = {
         'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
         'decay_flow': False,
         'render_count': 10,
-        'render_skip': 50,
+        'render_skip': 2,
         'render_mode': 'human',
         'seed': np.random.randint(0, 2 ** 32),
         # A random seed needs to be defined, to generated the same random numbers across processes

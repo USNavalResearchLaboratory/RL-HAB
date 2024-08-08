@@ -5,6 +5,7 @@ from pyproj import Proj
 from utils import CoordinateTransformations as transform
 
 from era5 import config_earth
+from env3d.config.env_config import env_params
 
 
 class MatplotlibRenderer():
@@ -125,7 +126,7 @@ class MatplotlibRenderer():
 
         self.ax.set_xlim(-150*1000, 150*1000)
         self.ax.set_ylim(-150*1000, 150*1000)
-        self.ax.set_zlim(0, self.z_dim)
+        self.ax.set_zlim(env_params['alt_min'], env_params['alt_max'])
 
         self.path_plot, = self.ax.plot([], [], [], color='black')
         self.scatter = self.ax.scatter([], [], [], color='black')
@@ -145,7 +146,7 @@ class MatplotlibRenderer():
         self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
         self.ax3.set_ylabel('Altitude (km)')
         self.ax3.set_xlim(0, self.episode_length)
-        self.ax3.set_ylim(0, self.z_dim)
+        self.ax3.set_ylim(env_params['alt_min'],env_params['alt_max'])
 
     def reset(self, goal):
         if hasattr(self, 'fig'):
@@ -182,7 +183,7 @@ class MatplotlibRenderer():
         if plane == 'xy':
             x = center_x + circle_x
             y = center_y + circle_y
-            z = np.full_like(x, 0)
+            z = np.full_like(x, 15000)
 
         ax.plot(x, y, z, color)
 
@@ -205,10 +206,10 @@ class MatplotlibRenderer():
 
             self.scatter._offsets3d = (
             np.array([state["x"]]), np.array([state["y"]]), np.array([state["z"]]))
-            self.scatter_goal._offsets3d = (np.array([self.goal["x"]]), np.array([self.goal["y"]]), np.array([0]))
+            self.scatter_goal._offsets3d = (np.array([self.goal["x"]]), np.array([self.goal["y"]]), np.array([env_params['alt_min']]))
 
             self.current_state_line.set_data([state["x"], state["x"]], [state["y"], state["y"]])
-            self.current_state_line.set_3d_properties([0, state["z"]])
+            self.current_state_line.set_3d_properties([env_params['alt_min'], state["z"]])
 
             self.altitude_line.set_data(range(len(altitude_history)), altitude_history)
 

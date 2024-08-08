@@ -90,7 +90,7 @@ simulation = dict(
                     },
     min_alt = 1000.,            # starting altitude. Generally the same as initial coordinate
     float = 23000,              # for simulating in trapezoid.py
-    dt = 1.0,                   # (s) Integration timestep for simulation (If error's occur, use a lower step size)
+    dt = 60.0,                   # (s) Integration timestep for simulation (If error's occur, use a lower step size)
 
     balloon_trajectory = balloon_trajectory # Default is None. Only accepting trajectories in aprs.fi csv format.
 )
