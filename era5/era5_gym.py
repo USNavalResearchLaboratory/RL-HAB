@@ -12,6 +12,7 @@ from env3d.rendering.renderer import MatplotlibRenderer
 from utils.convert_range import convert_range
 from env3d.config.env_config import env_params
 from era5.forecast_visualizer import ForecastVisualizer
+from env3d.balloon import BalloonState, SimulatorState
 
 
 import config_earth
@@ -26,14 +27,11 @@ class FlowFieldEnv3d(gym.Env):
                  alt_min = 15000, alt_max = 28000):
         super(FlowFieldEnv3d, self).__init__()
 
+
         self.radius = radius # station keeping radius
         self.radius_inner = radius*.5
         self.radius_outer = radius * 1.5
 
-        self.max_accel = max_accel # acceleration in z-direction
-        self.alt_move = alt_move
-
-        self.drag_coefficient = drag_coefficient
 
         # Import configuration file variables
         self.coord = config_earth.simulation['start_coord']
@@ -82,15 +80,11 @@ class FlowFieldEnv3d(gym.Env):
         self.num_levels = num_levels
         ####################
 
-        self.renderer = MatplotlibRenderer(x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim,
+        self.renderer = MatplotlibRenderer(
                                            FlowField3d=self.FlowField3D,
                                            render_count=self.render_count, render_skip=self.render_skip,
-                                           render_mode=self.render_mode, radius=self.radius, dt=self.dt,
+                                           render_mode=self.render_mode, radius=self.radius,
                                            episode_length=self.episode_length, coordinate_system = "geographic")
-
-        self.state = {"mass":1,
-                      "x":0, "y":0, "z":0,
-                      "x_vel": 0, "y_vel": 0, "z_vel": 0}
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
 
@@ -125,6 +119,8 @@ class FlowFieldEnv3d(gym.Env):
         #if self.decay_flow:
         #    self.FlowField3D.apply_boundary_decay(decay_type='linear')
 
+
+
         self.within_target = False
         self.twr = 0 # time within radius
         self.twr_inner = 0  # time within radius
@@ -132,66 +128,88 @@ class FlowFieldEnv3d(gym.Env):
 
         self.total_steps = 0
 
-        #Make it discrete spawnings for now
-        self.state["x"] = int(random.uniform(self.x_dim / 2 - self.radius_inner, self.x_dim / 2 + self.radius_inner))
-        self.state["y"] = int(random.uniform(self.y_dim / 2 - self.radius_inner, self.y_dim / 2 + self.radius_inner))
-        self.state["z"] = int(random.uniform(15000,28000))
-        self.el = [self.state["z"]]  # 9000
-        self.el_new = self.state["z"]
 
-        print("Start_alt", self.state["z"])
-
-        self.goal = {"x": self.x_dim/2,
-                      "y": self.y_dim/2,
+        self.goal = {"x": 0,
+                      "y": 0,
                      "z": 0}
 
-        self.path = [(self.state["x"], self.state["y"], self.state["z"])]
-        self.altitude_history = [self.state["z"]]
 
-        self.renderer.reset(self.goal)
+        self.Balloon = BalloonState(lat = self.coord['lat'],
+                                    lon = self.coord['lon'],
+
+                                    x = 0,
+                                    y = 0,
+                                    z = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
+                                    )
+
+        self.SimulatorState = SimulatorState(self.Balloon)
+
+        #Do an artificial move to get some initial vleocity, disntance, and bearing values, then reset back to initial coordinates
+        self.move_agent(1)
+        self.Balloon.update(lat = self.coord['lat'],lon = self.coord['lon'],x=0,y=0, distance = 0)
+
+        self.renderer.reset(self.goal, self.Balloon, self.SimulatorState )
 
         return self._get_obs(), self._get_info()
 
     def move_agent(self, action):
 
-        self.t = self.t + pd.Timedelta(hours=(1 / 3600 * self.dt))
+        #Update Agent Movement  (NEED TO CHANGE TO HERE
 
-        self.lat_new,self.lon_new,self.x_wind_vel,self.y_wind_vel, self.x_wind_vel_old, self.y_wind_vel_old, bearing,nearest_lat, nearest_lon, nearest_alt = self.gfs.getNewCoord(self.coords[self.total_steps],self.dt)
+        #Need to look up flow at current position then integrate forward
 
-        coord_new = {
-            "lat": self.lat_new,  # (deg) Latitude
-            "lon": self.lon_new,  # (deg) Longitude
-            "alt": self.el_new,  # (m) Elevation
-            "timestamp": self.t,  # Timestamp
+
+        #simulate a coord for ERA5:
+        coord = {
+            "lat": self.Balloon.lat,  # (deg) Latitude
+            "lon": self.Balloon.lon,  # (deg) Longitude
+            "alt": self.Balloon.z,  # (m) Elevation
+            "timestamp": self.SimulatorState.timestamp,  # Timestamp
         }
 
-        print(self.el_new, bearing, self.lat_new,self.lon_new)
+        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.gfs.getNewCoord(coord,self.dt)
+
+
 
 
         #Take care of Actions
         if action == 2:  # up
-            self.el_new += 2 * self.dt  #m/s
+            self.Balloon.z_vel = 2  # m/s
         elif action == 0:  # down
-            self.el_new -= 2 * self.dt #m/s
+            self.Balloon.z_vel = -3  # m/s
         else:  # stay
-            pass
+            self.Balloon.z_vel = 0
 
-        self.el.append(self.el_new)
+
+        '''
+        self.el.append(self.Balloon.z)
         self.coords.append(coord_new)
-        self.lat.append(self.lat_new)
-        self.lon.append(self.lon_new)
+        self.lat.append(self.Balloon.lat)
+        self.lon.append(self.Balloon.lon)
         self.ttt.append(self.t)
+        '''
 
-        self.state["x"] = self.state["x"] + self.x_wind_vel * self.dt
-        self.state["y"] = self.state["y"] + self.y_wind_vel * self.dt
-        self.state["z"] = self.el_new
 
-        self.state["x_vel"] = self.x_wind_vel
-        self.state["y_vel"] = self.y_wind_vel
-        self.state["z_vel"] = self.alt_move * (action - 1)  # this can be done since theres only 3 actions
+        self.Balloon.update(x=self.Balloon.x + self.Balloon.x_vel * self.dt,
+                            y=self.Balloon.y + self.Balloon.y_vel * self.dt,
+                            z=self.Balloon.z + self.Balloon.z_vel * self.dt,
 
-        self.path.append((self.state["x"], self.state["y"], self.state["z"]))
-        self.altitude_history.append(self.state["z"])
+                            last_action = action
+                            )
+
+        self.Balloon.distance = np.sqrt((self.Balloon.x - self.goal["x"]) ** 2 + (self.Balloon.y - self.goal["y"]) ** 2)
+
+        self.Balloon.rel_bearing = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y,
+                                                                 self.goal["x"], self.goal["y"],
+                                                                 self.Balloon.x_vel, self.Balloon.y_vel)
+
+
+
+        #self.path.append((self.Balloon.x, self.Balloon.y, self.Balloon.z))
+        #self.altitude_history.append(self.Balloon.z)
+
+        #update timestamp
+        self.t = self.t + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
         return 0 #No reward or penalty for moving for now
 
@@ -258,7 +276,7 @@ class FlowFieldEnv3d(gym.Env):
         '''
 
 
-        distance_to_target = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        distance_to_target = self.Balloon.distance
         c_cliff = 0.4
         tau = 100
 
@@ -295,6 +313,8 @@ class FlowFieldEnv3d(gym.Env):
         info = self._get_info()
 
         self.total_steps += 1
+
+        self.SimulatorState.step(self.Balloon)
 
         #print(info["distance"], reward)
 
@@ -346,7 +366,7 @@ class FlowFieldEnv3d(gym.Env):
         flow_field_magnitude = []
 
         for i in range (0,len(flow_field_u)):
-            rel_angle = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], flow_field_u[i], flow_field_v[i])
+            rel_angle = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y, self.Balloon.z, self.goal["y"], flow_field_u[i], flow_field_v[i])
             magnitude = math.sqrt(flow_field_u[i]**2 + flow_field_v[i]**2)
 
             flow_field_rel_angle.append(rel_angle)
@@ -358,15 +378,15 @@ class FlowFieldEnv3d(gym.Env):
 
     def _get_obs(self):
 
-        distance = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
-        rel_bearing = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], self.state["x_vel"], self.state["y_vel"])
+        #distance = np.sqrt((self.state["x"] - self.goal["x"]) ** 2 + (self.state["y"] - self.goal["y"]) ** 2)
+        #rel_bearing = self.calculate_relative_angle(self.state["x"], self.state["y"], self.goal["x"], self.goal["y"], self.state["x_vel"], self.state["y_vel"])
 
         rel_flow_field = self.calculate_relative_flow_map()
 
         observation = {
-            'altitude': np.array([self.state["z"]]),
-            'distance': np.array([distance]),
-            'rel_bearing': np.array([rel_bearing]),
+            'altitude': np.array([self.Balloon.z]),
+            'distance': np.array([self.Balloon.distance]),
+            'rel_bearing': np.array([self.Balloon.rel_bearing]),
             'flow_field': rel_flow_field
         }
 
@@ -375,7 +395,7 @@ class FlowFieldEnv3d(gym.Env):
 
     def _get_info(self):
         return {
-            "distance": np.sqrt((self.state["x"] - self.goal["x"])**2 + (self.state["y"] - self.goal["y"])**2),
+            "distance": self.Balloon.distance,
             "within_target": self.within_target,
             "twr": self.twr,
             "twr_inner": self.twr_inner,
@@ -384,7 +404,7 @@ class FlowFieldEnv3d(gym.Env):
         }
 
     def render(self, mode='human'):
-        self.renderer.render(mode='human', state = self.state, path = self.path, altitude_history = self.altitude_history)
+        self.renderer.render(mode='human')
 
     def close(self):
         pass
@@ -422,6 +442,11 @@ def main():
             # Use this for random action
             # action = env.action_space.sample()
             # obs, reward, done, _, info = env.step(action)
+
+            #time.sleep(1)
+            print(env.SimulatorState.timestamp)
+            print(env.Balloon)
+            print()
 
             # Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)

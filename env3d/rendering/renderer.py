@@ -9,19 +9,17 @@ from env3d.config.env_config import env_params
 
 
 class MatplotlibRenderer():
-    def __init__(self, x_dim, y_dim, z_dim, FlowField3d, render_count, render_skip, render_mode,
-                 radius, dt, episode_length, coordinate_system = "cartesian"):
+    def __init__(self, FlowField3d, render_count, render_skip, render_mode,
+                 radius, episode_length, coordinate_system = "geographic"):
 
         self.coordinate_system = coordinate_system
-        self.x_dim = x_dim
-        self.y_dim = y_dim
-        self.z_dim = z_dim
+
         self.FlowField3D = FlowField3d
         self.render_count = render_count
         self.render_skip = render_skip
         self.render_mode = render_mode
 
-        self.dt = dt
+        self.dt = config_earth.simulation['dt']
         self.episode_length = episode_length
 
         #try:
@@ -53,40 +51,6 @@ class MatplotlibRenderer():
         #except:
             #print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian","red"))
 
-    def init_plot(self):
-        self.fig = plt.figure(figsize=(18, 10))
-        gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
-        self.ax3 = self.fig.add_subplot(gs[0, :])
-        self.ax = self.fig.add_subplot(gs[1, 0], projection='3d')
-        self.ax2 = self.fig.add_subplot(gs[1, 1], projection='3d')
-
-        self.ax.set_xlabel('X (km)')
-        self.ax.set_ylabel('Y (km)')
-        self.ax.set_zlabel('Altitude (km)')
-        self.ax.set_xlim(0, self.x_dim)
-        self.ax.set_ylim(0, self.y_dim)
-        self.ax.set_zlim(0, self.z_dim)
-
-        self.path_plot, = self.ax.plot([], [], [], color='black')
-        self.scatter = self.ax.scatter([], [], [], color='black')
-        self.ground_track, = self.ax.plot([], [], [], color='red')
-        self.scatter_goal = self.ax.scatter([], [], [], color='green')
-        self.canvas = self.fig.canvas
-
-        self.FlowField3D.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
-
-        self.current_state_line, = self.ax.plot([], [], [], 'r--')
-
-        self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius, color='g-')
-        self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_inner, color='g--')
-        self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_outer, color='g--')
-
-        self.altitude_line, = self.ax3.plot([], [], 'b-')
-        self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
-        self.ax3.set_ylabel('Altitude (km)')
-        self.ax3.set_xlim(0, self.episode_length)
-        self.ax3.set_ylim(0, self.z_dim)
-
     def init_plot_geographic(self):
         self.fig = plt.figure(figsize=(18, 10))
         gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
@@ -97,32 +61,6 @@ class MatplotlibRenderer():
         self.ax.set_xlabel('X_proj (m)')
         self.ax.set_ylabel('Y_proj (m)')
         self.ax.set_zlabel('Altitude (km)')
-
-
-        rel_x, rel_y = transform.latlon_to_meters_spherical(self.start_coord["lat"],self.start_coord["lon"], self.start_coord["lat"],self.start_coord["lon"])
-
-
-        '''
-        #Figure out projected coordinates
-        x_min1, y_min1 =  self.p(longitude = self.FlowField3D.gfs.LON_LOW, latitude = self.FlowField3D.gfs.LAT_LOW)
-        x_min2, y_max1 = self.p(longitude=self.FlowField3D.gfs.LON_LOW, latitude=self.FlowField3D.gfs.LAT_HIGH)
-
-        x_max1, y_min2 = self.p(longitude=self.FlowField3D.gfs.LON_HIGH, latitude=self.FlowField3D.gfs.LAT_LOW)
-        x_max2, y_max2 = self.p(longitude=self.FlowField3D.gfs.LON_HIGH, latitude=self.FlowField3D.gfs.LAT_HIGH)
-
-
-        x_min = round(min(x_min1, x_min2),-5)
-        x_max = round(max(x_max1, x_max2), -5)
-
-        y_min = round(min(y_min1, y_min2), -5)
-        y_max = round(max(y_max1, y_max2), -5)
-
-        print(x_min,x_max,y_min,y_max)
-        '''
-
-
-        #self.ax.set_xlim(x_min, x_max)
-        #self.ax.set_ylim(y_min, y_max)
 
         self.ax.set_xlim(-150*1000, 150*1000)
         self.ax.set_ylim(-150*1000, 150*1000)
@@ -144,11 +82,11 @@ class MatplotlibRenderer():
 
         self.altitude_line, = self.ax3.plot([], [], 'b-')
         self.ax3.set_xlabel('Number of Steps (dt=' + str(self.dt) + ')')
-        self.ax3.set_ylabel('Altitude (km)')
+        self.ax3.set_ylabel('Altitude (m)')
         self.ax3.set_xlim(0, self.episode_length)
         self.ax3.set_ylim(env_params['alt_min'],env_params['alt_max'])
 
-    def reset(self, goal):
+    def reset(self, goal, Balloon, SimulatorState):
         if hasattr(self, 'fig'):
             plt.close('all')
             delattr(self, 'fig')
@@ -159,14 +97,9 @@ class MatplotlibRenderer():
             delattr(self, 'scatter')
             delattr(self, 'canvas')
 
-        if self.coordinate_system == "geographic":
-            rel_x, rel_y = transform.latlon_to_meters_spherical(self.start_coord["lat"], self.start_coord["lon"],
-                                                                self.start_coord["lat"], self.start_coord["lon"])
-
-            self.goal = {"x": rel_x, "y": rel_y}
-
-        if self.coordinate_system == "cartesian":
-            self.goal = goal
+        self.Balloon = Balloon
+        self.SimulatorState = SimulatorState
+        self.goal = goal
 
         self.render_step = 1
 
@@ -187,7 +120,7 @@ class MatplotlibRenderer():
 
         ax.plot(x, y, z, color)
 
-    def render(self, state, path, altitude_history, mode='human'):
+    def render(self, mode='human'):
 
         if not hasattr(self, 'fig'):
             if self.coordinate_system == "geographic":
@@ -198,20 +131,22 @@ class MatplotlibRenderer():
 
         if self.render_step == self.render_count:
 
+            path = np.array(self.SimulatorState.trajectory)
+
             self.path_plot.set_data(np.array(path)[:, :2].T)
             self.path_plot.set_3d_properties(np.array(path)[:, 2])
 
             self.ground_track.set_data(np.array(path)[:, :2].T)
-            self.ground_track.set_3d_properties(np.zeros(len(path)))
+            self.ground_track.set_3d_properties(np.full(len(path), env_params['alt_min']))
 
             self.scatter._offsets3d = (
-            np.array([state["x"]]), np.array([state["y"]]), np.array([state["z"]]))
+            np.array([self.Balloon.x]), np.array([self.Balloon.y]), np.array([self.Balloon.z]))
             self.scatter_goal._offsets3d = (np.array([self.goal["x"]]), np.array([self.goal["y"]]), np.array([env_params['alt_min']]))
 
-            self.current_state_line.set_data([state["x"], state["x"]], [state["y"], state["y"]])
-            self.current_state_line.set_3d_properties([env_params['alt_min'], state["z"]])
+            self.current_state_line.set_data([self.Balloon.x, self.Balloon.x], [self.Balloon.y, self.Balloon.y])
+            self.current_state_line.set_3d_properties([env_params['alt_min'], self.Balloon.z])
 
-            self.altitude_line.set_data(range(len(altitude_history)), altitude_history)
+            self.altitude_line.set_data(range(len(path)), path[:, 2])
 
             self.canvas.draw()
             # self.canvas.flush_events()
