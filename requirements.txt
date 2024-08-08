@@ -18,5 +18,4 @@ gmplot
 netcdf4
 geographiclib
 imageio
-fluids
 pvlib

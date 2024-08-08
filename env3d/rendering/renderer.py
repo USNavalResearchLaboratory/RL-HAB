@@ -20,10 +20,6 @@ class MatplotlibRenderer():
         self.render_skip = render_skip
         self.render_mode = render_mode
 
-        self.radius = radius * 1000 # m
-        self.radius_inner = radius * .5 * 1000 # m
-        self.radius_outer = radius * 1.5 * 1000 # m
-
         self.dt = dt
         self.episode_length = episode_length
 
@@ -37,13 +33,21 @@ class MatplotlibRenderer():
             x, y = self.p(longitude=self.start_coord["lon"], latitude=self.start_coord["lat"])
 
             self.goal = {"x": x, "y": y}
-            print("goal", self.goal)
+
+
+            self.radius = radius * 1000  # m
+            self.radius_inner = radius * .5 * 1000  # m
+            self.radius_outer = radius * 1.5 * 1000  # m
+
             self.init_plot_geographic()
-
-
 
         if self.coordinate_system == "cartesian":
             self.goal = {"x": 0, "y": 0}  # Dummy numbers to start
+
+            self.radius = radius   # m
+            self.radius_inner = radius * .5   # m
+            self.radius_outer = radius * 1.5  # m
+
             self.init_plot()
         #except:
             #print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian","red"))
@@ -93,11 +97,9 @@ class MatplotlibRenderer():
         self.ax.set_ylabel('Y_proj (m)')
         self.ax.set_zlabel('Altitude (km)')
 
-        print(self.start_coord)
 
         rel_x, rel_y = transform.latlon_to_meters_spherical(self.start_coord["lat"],self.start_coord["lon"], self.start_coord["lat"],self.start_coord["lon"])
 
-        print(rel_x, rel_y)
 
         '''
         #Figure out projected coordinates
@@ -135,7 +137,6 @@ class MatplotlibRenderer():
 
         self.current_state_line, = self.ax.plot([], [], [], 'r--')
 
-        print(self.goal)
         self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius, color='g-')
         self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_inner, color='g--')
         self.plot_circle(self.ax, self.goal["x"], self.goal["y"], self.radius_outer, color='g--')

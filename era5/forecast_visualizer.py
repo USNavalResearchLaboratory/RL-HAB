@@ -33,10 +33,6 @@ class ForecastVisualizer:
         # Assign the new altitude coordinate
         self.ds = self.ds.assign_coords(altitude=('level', self.alts2))
 
-        # Drop the old pressure coordinate if you want
-        #self.ds = self.ds.swap_dims({'level': 'altitude'})
-
-        print(self.ds)
 
         register_projection(Custom3DQuiver)
 
@@ -126,7 +122,7 @@ class ForecastVisualizer:
 
 if __name__ == '__main__':
 
-    register_projection(Custom3DQuiver)
+    #register_projection(Custom3DQuiver)
 
     # Analyze Data
     forecast_visualizer = ForecastVisualizer()

@@ -44,7 +44,6 @@ class Forecast:
         #Do some subsetting of the data
         self.ds = self.ds.sel(latitude=slice(self.lat_min, self.lat_max), longitude=slice(self.lon_min, self.lon_max), level=slice(pres_min,pres_max))
 
-        print(self.ds)
 
 if __name__ == '__main__':
     pres_min = config_earth.rl_params['pres_min']
