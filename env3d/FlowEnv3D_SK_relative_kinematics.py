@@ -11,6 +11,8 @@ from env3d.rendering.renderer import MatplotlibRenderer
 from utils.convert_range import convert_range
 from env3d.config.env_config import env_params
 
+
+
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
@@ -169,8 +171,6 @@ class FlowFieldEnv3d(gym.Env):
                     (self.decelerate_direction == 1 and self.state["z_vel"] > 0):
                 self.state["z_vel"] = 0.0
                 self.decelerate_flag = False  # Reset the flag once velocity is zero
-
-
 
 
         self.path.append((self.state["x"], self.state["y"], self.state["z"]))

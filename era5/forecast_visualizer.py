@@ -1,27 +1,15 @@
 from matplotlib import cm
 import matplotlib.pyplot as plt
-import xarray as xr
 import numpy as np
-#from mpl_toolkits.basemap import Basemap
-
-#import ERA5
-from era5 import config_earth
-
+from metpy.calc import pressure_to_height_std
+from metpy.units import units
 from utils.Custom3DQuiver import Custom3DQuiver
 from matplotlib.projections import register_projection
-register_projection(Custom3DQuiver)
-from matplotlib.colors import Normalize, hsv_to_rgb
 
-from matplotlib.colors import Normalize
-from matplotlib.cm import ScalarMappable
+from era5 import config_earth
 import ERA5
 import imageio
 from forecast import Forecast
-import fluids
-import pvlib
-
-from metpy.calc import pressure_to_height_std
-from metpy.units import units
 
 
 class ForecastVisualizer:
@@ -50,7 +38,6 @@ class ForecastVisualizer:
 
         print(self.ds)
 
-
         register_projection(Custom3DQuiver)
 
     def map_pres2alt(self):
@@ -66,8 +53,6 @@ class ForecastVisualizer:
             alts.append(alt)
 
         return alts
-
-
 
     def generate_flow_array(self, time_index):
 
@@ -99,13 +84,7 @@ class ForecastVisualizer:
             V = self.flow_field[z, :, :, 1]
             W = self.flow_field[z, :, :, 2]  # Flow is only in the X-Y plane
 
-            #Z = np.full_like(X, flow_field[z, 0, 0, 3])
             Z = np.full_like(X, self.levels[z])
-
-            #print(flow_field[z, 0, 0, 3])
-            #print(Z)
-
-            #sdfsd
 
             # Calculate directions for color mapping
             directions = np.arctan2(V, U)
@@ -126,64 +105,24 @@ class ForecastVisualizer:
         ax.set_zlabel('Pressure Level (mb)')
 
 
-        #print(self.ds.longitude[0].values, self.ds.longitude[-1].values)
-        #ax.set_xlim(50, 75)
-        #ax.set_ylim(ds.latitude[0].values, ds.latitude[-1].values)
-        #ax.set_ylim(0, (self.y_dim) / self.res)
-        #ax.set_zlim(0, self.z_dim)  # Set the z-axis limit to the maximum altitude
-
         colormap = plt.colormaps.get_cmap('hsv')
         # colors = colormap(scaled_z)
         sm = plt.cm.ScalarMappable(cmap=colormap)
         sm.set_clim(vmin=-3.14, vmax=3.14)
         plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
 
-        #Change ticks
-
-        # Get current axis limits
         x_min, x_max = plt.xlim()
         y_min, y_max = plt.ylim()
 
         # Setting custom tick labels without changing the plot bounds
-        #z_ticks = ax.get_zticks()
-
-
-
-        #ax.set_zticks(z_transformed[::-1])
-        #z_ticks = ax.get_zticks()
-        #ax.set_zticks(z_ticks[::-1])
-
-        # Setting custom tick labels without changing the plot bounds
-        #z_ticks = ax.get_zticks()
-        # print(z_ticks)
-        #z_ticks_reversed = z_ticks[::-1]
-        #ax.set_zticks(z_ticks_reversed)
-
-        print(self.mandatory_pressure_levels)
-        #print(z_transformed)
-
-        # Setting custom tick labels without changing the plot bounds
-        z_ticks = ax.get_zticks()
-        # print(z_ticks)
-        z_ticks_reversed = z_ticks[::-1]
         ax.set_zticks(self.alts2)
         ax.set_zticklabels(self.mandatory_pressure_levels)
-        #ax.set_zlim(self.levels[0], self.levels[-1])
 
-        #ax.set_zlim(self.levels[-1], self.levels[0])
         ax.set_xticks(np.linspace(x_min, x_max, 5), np.linspace(self.ds.longitude[0].values, self.ds.longitude[-1].values, 5, dtype=int))
         ax.set_yticks(np.linspace(y_min, y_max, 5), np.linspace(self.ds.latitude[0].values, self.ds.latitude[-1].values, 5, dtype=int))
 
-        #plt.title(self.timestamp)
+        plt.title(self.timestamp)
 
-        '''
-        # Customizing tick positions on the x-axis
-        new_y_ticks = np.linspace(ds.latitude[-1].values, ds.latitude[0].values, 5)  # Example: ticks at 0, 2, 4, 6, 8, 10
-        ax.set_yticks(new_y_ticks)
-    
-        new_x_ticks = np.linspace(ds.longitude[0].values, ds.longitude[-1].values, 5)  # Example: ticks at 0, 2, 4, 6, 8, 10
-        ax.set_xticklabels(new_x_ticks)
-        '''
 
 if __name__ == '__main__':
 

@@ -53,7 +53,7 @@ class MatplotlibRenderer():
         gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
         self.ax3 = self.fig.add_subplot(gs[0, :])
         self.ax = self.fig.add_subplot(gs[1, 0], projection='3d')
-        self.ax2 = self.fig.add_subplot(gs[1, 1], projection='custom3dquiver')
+        self.ax2 = self.fig.add_subplot(gs[1, 1], projection='3d')
 
         self.ax.set_xlabel('X (km)')
         self.ax.set_ylabel('Y (km)')
