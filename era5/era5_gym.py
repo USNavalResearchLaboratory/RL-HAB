@@ -299,6 +299,9 @@ class FlowFieldEnv3d(gym.Env):
 
 
         #First need to get altitude coordinate from forecast
+        test = self.forecast.ds.sel(latitude=self.Balloon.lat, longitude=self.Balloon.lat, time= self.SimulatorState.timestamp, method='nearest')
+        print(test)
+        sdfsdf
 
         flow_field_u = self.FlowField3D.flow_field[:, 0, 0, 0]
         flow_field_v = self.FlowField3D.flow_field[:, 0, 0, 1]

@@ -30,6 +30,7 @@ class ForecastVisualizer:
         coord = config_earth.simulation['start_coord']
         self.gfs = ERA5.ERA5(coord)
 
+        #Change this later with times
         self.alts2 = self.ds.sel(latitude=coord['lat'], longitude=coord['lon'], method='nearest').isel(time=0)['z'].values*.001
 
         # Assign the new altitude coordinate
