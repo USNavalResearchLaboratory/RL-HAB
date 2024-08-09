@@ -6,18 +6,22 @@ from utils import CoordinateTransformations as transform
 
 from era5 import config_earth
 from env3d.config.env_config import env_params
+from env3d.balloon import BalloonState, SimulatorState
 
 
 class MatplotlibRenderer():
-    def __init__(self, FlowField3d, render_mode,
+    def __init__(self, Forecast_visualizer, render_mode,
                  radius, coordinate_system = "geographic"):
 
         self.coordinate_system = coordinate_system
 
-        self.FlowField3D = FlowField3d
+        self.Forecast_visualizer = Forecast_visualizer
         self.render_count = env_params['render_count']
         self.render_skip = env_params['render_skip']
         self.render_mode = render_mode
+
+        self.render_timestamp = config_earth.simulation['start_time']
+        self.hour_count = 0
 
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
@@ -34,9 +38,9 @@ class MatplotlibRenderer():
             self.goal = {"x": x, "y": y}
 
 
-            self.radius = radius * 1000  # m
-            self.radius_inner = radius * .5 * 1000  # m
-            self.radius_outer = radius * 1.5 * 1000  # m
+            self.radius = radius   # m
+            self.radius_inner = radius * .5   # m
+            self.radius_outer = radius * 1.5  # m
 
             self.init_plot_geographic()
 
@@ -53,10 +57,10 @@ class MatplotlibRenderer():
 
     def init_plot_geographic(self):
         self.fig = plt.figure(figsize=(18, 10))
-        gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
-        self.ax3 = self.fig.add_subplot(gs[0, :])
-        self.ax = self.fig.add_subplot(gs[1, 0], projection='3d')
-        self.ax2 = self.fig.add_subplot(gs[1, 1], projection='custom3dquiver')
+        self.gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
+        self.ax3 = self.fig.add_subplot(self.gs[0, :])
+        self.ax = self.fig.add_subplot(self.gs[1, 0], projection='3d')
+        self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
 
         self.ax.set_xlabel('X_proj (m)')
         self.ax.set_ylabel('Y_proj (m)')
@@ -72,7 +76,7 @@ class MatplotlibRenderer():
         self.scatter_goal = self.ax.scatter([], [], [], color='green')
         self.canvas = self.fig.canvas
 
-        self.FlowField3D.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+        self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
 
         self.current_state_line, = self.ax.plot([], [], [], 'r--')
 
@@ -151,10 +155,29 @@ class MatplotlibRenderer():
             self.canvas.draw()
             # self.canvas.flush_events()
 
-            self.render_step = 1
+            self.ax3.set_title("Timestamp: " + str(self.SimulatorState.timestamp) + "\nTime Elapsed: " + str((self.SimulatorState.timestamp - self.render_timestamp)))
+
+
+
+
+            duration_in_s = (self.SimulatorState.timestamp - self.render_timestamp).total_seconds()
+            self.hours = int(divmod(duration_in_s, 3600)[0])
+
+
+            if self.hours > self.hour_count:
+                self.ax2.clear()
+                self.ax2.remove()
+
+                self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
+                self.Forecast_visualizer.generate_flow_array(timestamp=self.SimulatorState.timestamp)
+                self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+
+                self.hour_count += 1
 
             if mode == 'human':
                 plt.pause(0.001)
+
+            self.render_step = 1
 
         else:
             self.render_step += 1

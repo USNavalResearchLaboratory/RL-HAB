@@ -8,8 +8,9 @@ from stable_baselines3.common.env_util import make_vec_env
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
-from FlowEnv3D_SK_relative import FlowFieldEnv3d
-from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
+#from FlowEnv3D_SK_relative import FlowFieldEnv3d
+#from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
+from era5.era5_gym import FlowFieldEnv3d
 
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
@@ -17,13 +18,13 @@ from env3d.config.env_config import env_params
 
 # Directory Initialization
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_name = "DQN"
-models_dir = "RL_models_test/" + model_name
+model_name = "DQN-ERA5"
+models_dir = "RL_models_era5/" + model_name
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-logdir = "logs_test"
+logdir = "logs_era5"
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
@@ -50,14 +51,14 @@ config = {
                 'device': "cuda",
             },
     "env_parameters": env_params,
-    "env_name": "DQN-km",
-    "motion_model": "Kinematics", #Discrete or Kinematics, this is just a categorical note for now
-    "NOTES": "Trying with new Trilinear Interpolation Method" #change this to lower case
+    "env_name": "DQN-ERA5-TEST",
+    "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+    "NOTES": "" #change this to lower case
 }
 
 run = wandb.init(
     #anonymous="allow",
-    project="DQN-km",
+    project="DQN-ERA5-TEST",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     # monitor_gym=True,  # auto-upload the videos of agents playing the game
@@ -66,13 +67,13 @@ run = wandb.init(
 
 #Training Parameters
 
-n_procs = 500
+n_procs = 200
 SAVE_FREQ = int(5e6/n_procs)
 
-env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=n_procs)
+env = make_vec_env(lambda: FlowFieldEnv3d(), n_envs=n_procs)
 
 # Define the checkpoint callback to save the model every 1000 steps
-checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_km/{run.name}",
+checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_era5/{run.name}",
                                           name_prefix=model_name)
 
 model = DQN(env=env,

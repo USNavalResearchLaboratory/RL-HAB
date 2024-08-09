@@ -9,9 +9,9 @@ from matplotlib.projections import register_projection
 from env3d.config.env_config import env_params
 from era5 import config_earth
 
-import ERA5
+from era5 import ERA5
 import imageio
-from forecast import Forecast
+from era5.forecast import Forecast
 
 
 class ForecastVisualizer:
@@ -30,8 +30,8 @@ class ForecastVisualizer:
         coord = config_earth.simulation['start_coord']
         self.gfs = ERA5.ERA5(coord)
 
-        #Change this later with times
-        self.alts2 = self.ds.sel(latitude=coord['lat'], longitude=coord['lon'], method='nearest').isel(time=0)['z'].values*.001
+        self.start_time = config_earth.simulation['start_time']
+        self.alts2 = self.ds.sel(latitude=coord['lat'], longitude=coord['lon'], time = self.start_time, method='nearest')['z'].values*.001
 
         # Assign the new altitude coordinate
         self.ds = self.ds.assign_coords(altitude=('level', self.alts2))
@@ -53,9 +53,11 @@ class ForecastVisualizer:
 
         return alts
 
-    def generate_flow_array(self, time_index):
+    def generate_flow_array(self, timestamp):
 
-        self.timestamp = self.ds.time.values[time_index]
+        self.timestamp = timestamp
+        time_index = list(self.ds.time.values).index(self.ds.sel(time=self.timestamp, method='nearest').time)
+
         # ERA5 data variables structure that we download is (time, level, latitude, longitude)
         self.u = self.ds['u'][time_index, :, :, :].data
         self.v = self.ds['v'][time_index, :, :, :].values
@@ -108,7 +110,7 @@ class ForecastVisualizer:
         # colors = colormap(scaled_z)
         sm = plt.cm.ScalarMappable(cmap=colormap)
         sm.set_clim(vmin=-3.14, vmax=3.14)
-        plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
+        #plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
 
         x_min, x_max = plt.xlim()
         y_min, y_max = plt.ylim()

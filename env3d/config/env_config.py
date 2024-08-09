@@ -3,10 +3,10 @@ from era5 import config_earth
 
 env_params = {
         'dt': config_earth.simulation['dt'],  # seconds
-        'radius': 50,  # km
+        'radius': 50_000,  # km
 
-        'alt_min': 15000, # m
-        'alt_max': 28000, # m
+        'alt_min': 15_000, # m
+        'alt_max': 28_000, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE

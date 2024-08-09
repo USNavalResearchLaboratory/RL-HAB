@@ -16,7 +16,7 @@ from scipy import interpolate
 from pytz import timezone
 from datetime import datetime, timedelta
 
-import config_earth #integrate with EARTHSHAB
+from era5 import config_earth #integrate with EARTHSHAB
 
 class ERA5:
     #def __init__(self, start_coord, end_coord, input_file, dt_sec, sim_time_hours, use_time):
@@ -94,8 +94,8 @@ class ERA5:
         self.LAT_HIGH = self.file.variables['latitude'][self.lat_max_idx]
         self.LON_HIGH = self.file.variables['longitude'][self.lon_max_idx-1]
 
-        print("LAT RANGE: min:" + str(self.file.variables['latitude'][self.lat_min_idx-1]), " max: " + str(self.file.variables['latitude'][self.lat_max_idx]) + " size: " + str(self.lat_min_idx-self.lat_max_idx))
-        print("LON RANGE: min:" + str(self.file.variables['longitude'][self.lon_min_idx]), " max: " + str(self.file.variables['longitude'][self.lon_max_idx-1]) + " size: " + str(self.lon_max_idx-self.lon_min_idx))
+        #print("LAT RANGE: min:" + str(self.file.variables['latitude'][self.lat_min_idx-1]), " max: " + str(self.file.variables['latitude'][self.lat_max_idx]) + " size: " + str(self.lat_min_idx-self.lat_max_idx))
+        #print("LON RANGE: min:" + str(self.file.variables['longitude'][self.lon_min_idx]), " max: " + str(self.file.variables['longitude'][self.lon_max_idx-1]) + " size: " + str(self.lon_max_idx-self.lon_min_idx))
 
         # Import the netcdf4 subset to speed up table lookup in this script
         g = 9.80665 # gravitation constant used to convert geopotential height to height
@@ -106,17 +106,17 @@ class ERA5:
         self.vgdrps0 = self.file.variables['v'][self.start_time_idx:self.end_time_idx+1, :, self.lat_max_idx:self.lat_min_idx, self.lon_min_idx:self.lon_max_idx]
         self.hgtprs = self.file.variables['z'][self.start_time_idx:self.end_time_idx+1, :, self.lat_max_idx:self.lat_min_idx, self.lon_min_idx:self.lon_max_idx] / g #what is this divide by g???
 
-        print()
+        #print()
 
         #Check if number of hours will fit in simulation time
         desired_simulation_end_time = self.start_time + timedelta(hours=self.sim_time)
         diff_time = (self.time_convert[self.end_time_idx] - self.start_time).total_seconds() #total number of seconds between 2 timestamps
 
-        print("Sim start time: ", self.start_time)
-        print("NetCDF end time:", self.time_convert[self.end_time_idx])
-        print("Max sim runtime:", diff_time//3600, "hours")
-        print("Des sim runtime:", self.sim_time, "hours")
-        print()
+        #print("Sim start time: ", self.start_time)
+        #print("NetCDF end time:", self.time_convert[self.end_time_idx])
+        #print("Max sim runtime:", diff_time//3600, "hours")
+        #print("Des sim runtime:", self.sim_time, "hours")
+        #print()
 
         if not desired_simulation_end_time <= self.time_convert[self.end_time_idx]:
             print(colored("Desired simulation run time of " + str(self.sim_time)  +
@@ -133,7 +133,7 @@ class ERA5:
         """
 
         results = np.all(~netcdf_ranges.mask)
-        print(results)
+        #print(results)
         if results == False:
             timerange, latrange, lonrange = np.nonzero(~netcdf_ranges.mask)
 
@@ -487,7 +487,8 @@ class ERA5:
 
         #GFS is %360 here.  The files are organized a bit differently
         if g['lat2'] < self.LAT_LOW or g['lat2']  > self.LAT_HIGH or (g['lon2']) < self.LON_LOW or (g['lon2']) > self.LON_HIGH:
-            print(colored("WARNING: Trajectory is out of bounds of downloaded netcdf forecast", "yellow"))
+            #print(colored("WARNING: Trajectory is out of bounds of downloaded netcdf forecast", "yellow"))
+            pass
 
         '''Changed to alt instead of alt_m'''
         if coord["alt"] <= self.min_alt_m:

@@ -1,5 +1,5 @@
-import config_earth
-import ERA5
+from era5 import config_earth
+from era5 import ERA5
 import xarray as xr
 from utils import CoordinateTransformations as transform
 from env3d.config.env_config import env_params

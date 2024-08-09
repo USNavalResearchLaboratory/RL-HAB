@@ -48,7 +48,7 @@ class BalloonState(object):
 
         self.last_action= None
 
-        self.wind_column= None
+        self.rel_wind_column= None
 
         #For later
         power= None
@@ -58,7 +58,7 @@ class BalloonState(object):
                 f"dist={self.distance}, rel_bearing={self.rel_bearing},\n "
                 f"x_vel={self.x_vel}, y_vel={self.y_vel}, z_vel={self.z_vel},\n "
                 f"lat={self.lat}, lon={self.lon}),\n"
-                f"last_action={self.last_action}, wind_column={self.wind_column})")
+                f"last_action={self.last_action}, rel_wind_column={self.rel_wind_column})")
 
     def update(self, **kwargs):
         for attr, value in kwargs.items():
