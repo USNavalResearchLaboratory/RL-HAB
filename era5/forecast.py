@@ -2,12 +2,13 @@ import config_earth
 import ERA5
 import xarray as xr
 from utils import CoordinateTransformations as transform
+from env3d.config.env_config import env_params
 
 class Forecast:
     #Load from config file for now.  Maybe change this later
     def __init__(self, rel_dist, pres_min, pres_max):
 
-        self.relative_dist = 150 * 1000 # m relative distance from central coordiante
+        self.rel_dist = env_params['rel_dist'] # m relative distance from central coordiante
 
         # ERA5 stuff
         self.start_coord = config_earth.simulation['start_coord']
@@ -22,6 +23,7 @@ class Forecast:
         #load Forecast
         #Manual Upload for now?
         self.ds = xr.open_dataset("forecasts/" + config_earth.netcdf_era5['filename'])
+
 
         #Reverse order of latitude, since era5 comes reversed for some reason?
         self.ds = self.ds.reindex(latitude=list(reversed(self.ds.latitude)))
@@ -44,11 +46,12 @@ class Forecast:
         #Do some subsetting of the data
         self.ds = self.ds.sel(latitude=slice(self.lat_min, self.lat_max), longitude=slice(self.lon_min, self.lon_max), level=slice(pres_min,pres_max))
 
+        self.pressure_levels = self.ds.level.values
 
 if __name__ == '__main__':
-    pres_min = config_earth.rl_params['pres_min']
-    pres_max = config_earth.rl_params['pres_max']
-    rel_dist = config_earth.rl_params['rel_dist']
+    pres_min = env_params['pres_min']
+    pres_max = env_params['pres_max']
+    rel_dist = env_params['rel_dist']
 
     gfs = ERA5.ERA5(config_earth.simulation['start_coord'])
     forecast = Forecast(rel_dist, pres_min, pres_max)

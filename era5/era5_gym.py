@@ -14,6 +14,7 @@ from env3d.config.env_config import env_params
 from era5.forecast_visualizer import ForecastVisualizer
 from env3d.balloon import BalloonState, SimulatorState
 from env3d.balloon import AltitudeControlCommand as command
+from forecast import Forecast
 
 import config_earth
 import ERA5
@@ -21,84 +22,37 @@ import ERA5
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
-    def __init__(self, x_dim = 500, y_dim = 500, z_dim = 100, min_vel =1, max_vel =10,
-                 num_levels=6, dt=1, radius=100, max_accel=1.0, drag_coefficient=0.5, episode_length=400, decay_flow=False,
-                 random_flow_episode_length=0,render_count=1, render_skip=100,seed=None, render_mode="human", alt_move = None,
-                 alt_min = 15000, alt_max = 28000):
+    def __init__(self, seed=None, render_mode="human"):
         super(FlowFieldEnv3d, self).__init__()
 
+        self.radius = env_params['radius'] # station keeping radius
+        self.radius_inner = self.radius *.5
+        self.radius_outer = self.radius * 1.5
 
-        self.radius = radius # station keeping radius
-        self.radius_inner = radius*.5
-        self.radius_outer = radius * 1.5
+        self.rel_dist = env_params['rel_dist']
 
 
         # Import configuration file variables
         self.coord = config_earth.simulation['start_coord']
         start = config_earth.simulation['start_time']
-        self.t = start
-        min_alt = env_params['alt_min']  #this was switched to env paramaters
-        float = config_earth.simulation['float']
         self.dt = config_earth.simulation['dt']
-        sim = config_earth.simulation["sim_time"]
-        GFSrate = config_earth.forecast["GFSrate"]
+
         self.gfs = ERA5.ERA5(self.coord)
 
-        # Initialize trajectory variables
-        #self.el = [min_alt]  # 9000
-        #self.el_new = min_alt
-        self.coords = [self.coord]
-        self.lat = [self.coord["lat"]]
-        self.lon = [self.coord["lon"]]
-        self.ttt = [self.t]
-
-
-        # Counting Defaults
-        self.num_flow_changes = 0 # do not change from 0
-        self.random_flow_episode_count = 0  # do not change from 0
-        self.total_steps = 0 # do not change from 0
-
-        self.episode_length = episode_length #how long an episode is
-        self.random_flow_episode_length = random_flow_episode_length # how many episodes before randomizing flow field
-
-        self.render_count = render_count #how many steps before rendering
-        self.render_skip = render_skip
         self.render_mode = render_mode
 
         self.seed(seed)
         self.res = 1
 
         self.FlowField3D = ForecastVisualizer()
-        self.FlowField3D.generate_flow_array(0)
+        self.FlowField3D.generate_flow_array(0) #change this for time?
 
-        ####### OLD STUFF
-        self.x_dim = -40
-        self.y_dim = 100
-        self.z_dim = 1000
-        self.min_vel = min_vel
-        self.max_vel = max_vel
-        self.num_levels = num_levels
-        ####################
 
         self.renderer = MatplotlibRenderer(
                                            FlowField3d=self.FlowField3D,
-                                           render_count=self.render_count, render_skip=self.render_skip,
-                                           render_mode=self.render_mode, radius=self.radius,
-                                           episode_length=self.episode_length, coordinate_system = "geographic")
+                                           render_mode=self.render_mode, radius=self.radius,  coordinate_system = "geographic")
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
-
-        #These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
-        self.observation_space = spaces.Dict({
-            'altitude': spaces.Box(low=0, high=self.z_dim, shape=(1,), dtype=np.float64),
-            'distance': spaces.Box(low=0, high=np.sqrt(self.x_dim ** 2 + self.y_dim ** 2), shape=(1,),
-                                       dtype=np.float64),
-            'rel_bearing': spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float64),
-            'flow_field': spaces.Box(
-                                low=np.array([[0, self.min_vel]] * self.num_levels, dtype=np.float64),
-                                high=np.array([[np.pi, self.max_vel]] * self.num_levels, dtype=np.float64),
-                                dtype=np.float64)
-        })
 
     def seed(self, seed=None):
         if seed!=None:
@@ -107,18 +61,28 @@ class FlowFieldEnv3d(gym.Env):
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
     def reset(self, seed=None, options=None):
-        if self.random_flow_episode_count >= self.random_flow_episode_length -1 and self.random_flow_episode_length !=0:
-            #self.FlowField3D.generate_random_planar_flow_field()
-            #self.FlowField3D.gradualize_random_flow()
-            #self.FlowField3D.randomize_flow()
-            self.random_flow_episode_count = 0
-            self.num_flow_changes +=1
-        else:
-            self.random_flow_episode_count +=1
 
-        #if self.decay_flow:
-        #    self.FlowField3D.apply_boundary_decay(decay_type='linear')
+        #Need to reset the forecast here?
+        #WRITE A FORECAST RANDOMIZER LEVEL
+        forecast = Forecast(self.rel_dist, env_params['pres_min'], env_params['pres_max'])
 
+        min_vel = 0
+        max_vel = 50
+        num_levels = len(forecast.pressure_levels)
+
+        #These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
+        self.observation_space = spaces.Dict({
+            'altitude': spaces.Box(low=env_params['alt_min'], high=env_params['alt_max'], shape=(1,), dtype=np.float64),
+            'distance': spaces.Box(low=0, high=np.sqrt(self.rel_dist ** 2 + self.rel_dist ** 2), shape=(1,),
+                                       dtype=np.float64),
+            'rel_bearing': spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float64),
+
+            #This will be based off of Pressure levels
+            'flow_field': spaces.Box(
+                                low=np.array([[0, min_vel]] * num_levels, dtype=np.float64),
+                                high=np.array([[np.pi, max_vel]] * num_levels, dtype=np.float64),
+                                dtype=np.float64)
+        })
 
 
         self.within_target = False
@@ -126,20 +90,17 @@ class FlowFieldEnv3d(gym.Env):
         self.twr_inner = 0  # time within radius
         self.twr_outer = 0  # time within radius
 
-        self.total_steps = 0
-
 
         self.goal = {"x": 0,
                       "y": 0,
                      "z": 0}
-
 
         self.Balloon = BalloonState(lat = self.coord['lat'],
                                     lon = self.coord['lon'],
 
                                     x = 0,
                                     y = 0,
-                                    z = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
+                                    altitude = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
                                     )
 
         self.SimulatorState = SimulatorState(self.Balloon)
@@ -163,13 +124,11 @@ class FlowFieldEnv3d(gym.Env):
         coord = {
             "lat": self.Balloon.lat,  # (deg) Latitude
             "lon": self.Balloon.lon,  # (deg) Longitude
-            "alt": self.Balloon.z,  # (m) Elevation
+            "alt": self.Balloon.altitude,  # (m) Elevation
             "timestamp": self.SimulatorState.timestamp,  # Timestamp
         }
 
         self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.gfs.getNewCoord(coord,self.dt)
-
-
 
 
         #Take care of Actions
@@ -181,18 +140,10 @@ class FlowFieldEnv3d(gym.Env):
             self.Balloon.z_vel = 0
 
 
-        '''
-        self.el.append(self.Balloon.z)
-        self.coords.append(coord_new)
-        self.lat.append(self.Balloon.lat)
-        self.lon.append(self.Balloon.lon)
-        self.ttt.append(self.t)
-        '''
-
 
         self.Balloon.update(x=self.Balloon.x + self.Balloon.x_vel * self.dt,
                             y=self.Balloon.y + self.Balloon.y_vel * self.dt,
-                            z=self.Balloon.z + self.Balloon.z_vel * self.dt,
+                            altitude=self.Balloon.altitude + self.Balloon.z_vel * self.dt,
 
                             last_action = action
                             )
@@ -203,13 +154,6 @@ class FlowFieldEnv3d(gym.Env):
                                                                  self.goal["x"], self.goal["y"],
                                                                  self.Balloon.x_vel, self.Balloon.y_vel)
 
-
-
-        #self.path.append((self.Balloon.x, self.Balloon.y, self.Balloon.z))
-        #self.altitude_history.append(self.Balloon.z)
-
-        #update timestamp
-        self.t = self.t + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
         return 0 #No reward or penalty for moving for now
 
@@ -301,22 +245,14 @@ class FlowFieldEnv3d(gym.Env):
         return reward
 
     def step(self, action):
-        done = False
-
         reward = self.move_agent(action)
         reward += self.reward_euclidian()
-
-        if self.total_steps > self.episode_length - 1:
-            done = True
 
         observation = self._get_obs()
         info = self._get_info()
 
-        self.total_steps += 1
+        done = self.SimulatorState.step(self.Balloon)
 
-        self.SimulatorState.step(self.Balloon)
-
-        #print(info["distance"], reward)
 
         return observation, reward, done, False, info
 
@@ -353,20 +289,27 @@ class FlowFieldEnv3d(gym.Env):
 
     def calculate_relative_flow_map(self):
         """
-        Builds off of the same calculation as calculate_relative_angle() to caluclate the relative Calculates the relative
+        Builds off of the same calculation as calculate_relative_angle() to calculate the relative
         "flow map" vertical slice from the balloons current position between 0 and 180 degrees.
+
+        (z, magnitude, bearing)  add uncertatinty later)
 
         :return: flowfield with relative bearins and magnitude
         """
 
+
+        #First need to get altitude coordinate from forecast
+
         flow_field_u = self.FlowField3D.flow_field[:, 0, 0, 0]
         flow_field_v = self.FlowField3D.flow_field[:, 0, 0, 1]
+
+        print(flow_field_u)
 
         flow_field_rel_angle = []
         flow_field_magnitude = []
 
         for i in range (0,len(flow_field_u)):
-            rel_angle = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y, self.Balloon.z, self.goal["y"], flow_field_u[i], flow_field_v[i])
+            rel_angle = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y, self.Balloon.altitude, self.goal["y"], flow_field_u[i], flow_field_v[i])
             magnitude = math.sqrt(flow_field_u[i]**2 + flow_field_v[i]**2)
 
             flow_field_rel_angle.append(rel_angle)
@@ -384,7 +327,7 @@ class FlowFieldEnv3d(gym.Env):
         rel_flow_field = self.calculate_relative_flow_map()
 
         observation = {
-            'altitude': np.array([self.Balloon.z]),
+            'altitude': np.array([self.Balloon.altitude]),
             'distance': np.array([self.Balloon.distance]),
             'rel_bearing': np.array([self.Balloon.rel_bearing]),
             'flow_field': rel_flow_field
@@ -400,7 +343,6 @@ class FlowFieldEnv3d(gym.Env):
             "twr": self.twr,
             "twr_inner": self.twr_inner,
             "twr_outer": self.twr_outer,
-            "num_flow_changes": self.num_flow_changes,
         }
 
     def render(self, mode='human'):
@@ -414,18 +356,18 @@ def on_press(key):
     global last_action
     try:
         if key == keyboard.KeyCode.from_char("w"):
-            last_action = 2
+            last_action = command.UP
         elif key == keyboard.KeyCode.from_char("d"):
-            last_action = 1
+            last_action = command.STAY
         elif key == keyboard.KeyCode.from_char("x"):
-            last_action = 0
+            last_action = command.DOWN
         else:
-            last_action = 0  # Default action when no arrow key is pressed
+            last_action = command.STAY  # Default action when no arrow key is pressed
     except AttributeError:
         pass
 
 # Global variable to store the last action pressed
-last_action = 1  # Default action
+last_action = command.STAY  # Default action
 listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
@@ -435,7 +377,7 @@ def main():
     while True:
         start_time = time.time()
 
-        env = FlowFieldEnv3d(**env_params)
+        env = FlowFieldEnv3d()
         env.reset()
         total_reward = 0
         for step in range( env_params["episode_length"]):

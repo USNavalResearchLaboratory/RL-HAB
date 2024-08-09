@@ -2,6 +2,7 @@
 from era5 import config_earth
 import pandas as pd
 import enum
+from env3d.config.env_config import env_params
 
 class BalloonState(object):
     '''Balloon State object for for updating and referencing during a simulation
@@ -12,7 +13,7 @@ class BalloonState(object):
         y: Balloons relative x position in m converted from lat/lng to cartesian using a spherical coordinate
         transformation (see latlon_to_meters_spherical in utils)
 
-        z: Balloon's absolute (m)
+        altitude: Balloon's absolute (m)
 
         x_vel: Balloon's current velocity in m/s
         y_vel: Balloon's current velocity in m/s
@@ -28,10 +29,10 @@ class BalloonState(object):
     '''
 
 
-    def __init__(self, x=None, y=None, z=None, x_vel=0, y_vel=0, z_vel=0, distance=None, lat=None, lon=None, rel_bearing=None, pressure=None):
+    def __init__(self, x=None, y=None, altitude=None, x_vel=0, y_vel=0, z_vel=0, distance=None, lat=None, lon=None, rel_bearing=None, pressure=None):
         self.x = x
         self.y = y
-        self.z = z
+        self.altitude = altitude
 
         self.x_vel = x_vel
         self.y_vel = y_vel
@@ -53,7 +54,7 @@ class BalloonState(object):
         power= None
 
     def __str__(self):
-        return (f"BalloonState(x={self.x}, y={self.y}, z={self.z},\n "
+        return (f"BalloonState(x={self.x}, y={self.y}, altitude={self.altitude},\n "
                 f"dist={self.distance}, rel_bearing={self.rel_bearing},\n "
                 f"x_vel={self.x_vel}, y_vel={self.y_vel}, z_vel={self.z_vel},\n "
                 f"lat={self.lat}, lon={self.lon}),\n"
@@ -65,7 +66,7 @@ class BalloonState(object):
 
 
 class AltitudeControlCommand(enum.IntEnum):
-    """Specifies the command/action for balloon navigation."""
+    """Altitude Control Command"""
     DOWN = 0
     STAY = 1
     UP = 2
@@ -81,6 +82,9 @@ class SimulatorState(object):
 
         self.timestamp = config_earth.simulation['start_time']
         self.dt = config_earth.simulation['dt']
+        self.total_steps = 0
+
+        self.episode_length = env_params['episode_length']
 
         self.trajectory = []
         self.time_history = []
@@ -95,6 +99,15 @@ class SimulatorState(object):
 
         self.timestamp = self.timestamp + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
-        self.trajectory.append((Balloon.x , Balloon.y, Balloon.z))
+        self.trajectory.append((Balloon.x , Balloon.y, Balloon.altitude))
         self.time_history.append(self.timestamp)
+
+        if self.total_steps > self.episode_length - 1:
+            done = True
+        else:
+            done = False
+
+        self.total_steps +=1
+
+        return done
 

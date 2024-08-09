@@ -1,13 +1,8 @@
 import numpy as np
+from era5 import config_earth
 
 env_params = {
-        'x_dim': 250,  # km
-        'y_dim': 250,  # km
-        'z_dim': 10,  # km
-        'min_vel': 5 / 1000.,  # km/s
-        'max_vel': 25 / 1000.,  # km/s
-        'num_levels': 6,
-        'dt': 60,  # seconds
+        'dt': config_earth.simulation['dt'],  # seconds
         'radius': 50,  # km
 
         'alt_min': 15000, # m
@@ -28,4 +23,11 @@ env_params = {
         'render_mode': 'human',
         'seed': np.random.randint(0, 2 ** 32),
         # A random seed needs to be defined, to generated the same random numbers across processes
-    }
+
+
+        'rel_dist': 150000,          # m
+
+        #These need to be mandatory pressure levels
+        'pres_min': 20,              # ~27 km
+        'pres_max': 200              # ~14 km
+}

@@ -103,9 +103,3 @@ earth_properties = dict(
     emissGround = .95,          # assumption
     albedo = 0.17,              # assumption
 )
-
-rl_params = dict(
-    rel_dist = 150000,          # m
-    pres_min = 20,              # ~27 km
-    pres_max = 200              # ~14 km
-)

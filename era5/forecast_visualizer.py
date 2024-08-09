@@ -6,7 +6,9 @@ from metpy.units import units
 from utils.Custom3DQuiver import Custom3DQuiver
 from matplotlib.projections import register_projection
 
+from env3d.config.env_config import env_params
 from era5 import config_earth
+
 import ERA5
 import imageio
 from forecast import Forecast
@@ -14,15 +16,15 @@ from forecast import Forecast
 
 class ForecastVisualizer:
     def __init__(self):
-        pres_min = config_earth.rl_params['pres_min']
-        pres_max = config_earth.rl_params['pres_max']
-        rel_dist = config_earth.rl_params['rel_dist']
+        pres_min = env_params['pres_min']
+        pres_max = env_params['pres_max']
+        rel_dist = env_params['rel_dist']
 
         #No Override of Forecast for now?
         forecast = Forecast(rel_dist, pres_min, pres_max)
         self.ds = forecast.ds
 
-        self.mandatory_pressure_levels = self.ds["level"].values
+        self.pressure_levels = self.ds["level"].values
 
         # ERA5 stuff
         coord = config_earth.simulation['start_coord']
@@ -40,7 +42,7 @@ class ForecastVisualizer:
         # Use interpolation to transform the original Z values to the desired visual scale
         alts = []
 
-        for pres in self.mandatory_pressure_levels:
+        for pres in self.pressure_levels:
             # Define the pressure in Pascals
             pres = pres * units.millibar  # Example pressure value
 
@@ -112,7 +114,7 @@ class ForecastVisualizer:
 
         # Setting custom tick labels without changing the plot bounds
         ax.set_zticks(self.alts2)
-        ax.set_zticklabels(self.mandatory_pressure_levels)
+        ax.set_zticklabels(self.pressure_levels)
 
         ax.set_xticks(np.linspace(x_min, x_max, 5), np.linspace(self.ds.longitude[0].values, self.ds.longitude[-1].values, 5, dtype=int))
         ax.set_yticks(np.linspace(y_min, y_max, 5), np.linspace(self.ds.latitude[0].values, self.ds.latitude[-1].values, 5, dtype=int))

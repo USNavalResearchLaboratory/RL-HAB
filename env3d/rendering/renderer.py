@@ -9,18 +9,18 @@ from env3d.config.env_config import env_params
 
 
 class MatplotlibRenderer():
-    def __init__(self, FlowField3d, render_count, render_skip, render_mode,
-                 radius, episode_length, coordinate_system = "geographic"):
+    def __init__(self, FlowField3d, render_mode,
+                 radius, coordinate_system = "geographic"):
 
         self.coordinate_system = coordinate_system
 
         self.FlowField3D = FlowField3d
-        self.render_count = render_count
-        self.render_skip = render_skip
+        self.render_count = env_params['render_count']
+        self.render_skip = env_params['render_skip']
         self.render_mode = render_mode
 
         self.dt = config_earth.simulation['dt']
-        self.episode_length = episode_length
+        self.episode_length = env_params['episode_length']
 
         #try:
         if self.coordinate_system == "geographic":
@@ -140,11 +140,11 @@ class MatplotlibRenderer():
             self.ground_track.set_3d_properties(np.full(len(path), env_params['alt_min']))
 
             self.scatter._offsets3d = (
-            np.array([self.Balloon.x]), np.array([self.Balloon.y]), np.array([self.Balloon.z]))
+            np.array([self.Balloon.x]), np.array([self.Balloon.y]), np.array([self.Balloon.altitude]))
             self.scatter_goal._offsets3d = (np.array([self.goal["x"]]), np.array([self.goal["y"]]), np.array([env_params['alt_min']]))
 
             self.current_state_line.set_data([self.Balloon.x, self.Balloon.x], [self.Balloon.y, self.Balloon.y])
-            self.current_state_line.set_3d_properties([env_params['alt_min'], self.Balloon.z])
+            self.current_state_line.set_3d_properties([env_params['alt_min'], self.Balloon.altitude])
 
             self.altitude_line.set_data(range(len(path)), path[:, 2])
 
