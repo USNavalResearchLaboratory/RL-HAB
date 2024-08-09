@@ -13,7 +13,7 @@ from utils.convert_range import convert_range
 from env3d.config.env_config import env_params
 from era5.forecast_visualizer import ForecastVisualizer
 from env3d.balloon import BalloonState, SimulatorState
-
+from env3d.balloon import AltitudeControlCommand as command
 
 import config_earth
 import ERA5
@@ -173,11 +173,11 @@ class FlowFieldEnv3d(gym.Env):
 
 
         #Take care of Actions
-        if action == 2:  # up
+        if action == command.UP:  # up
             self.Balloon.z_vel = 2  # m/s
-        elif action == 0:  # down
+        elif action == command.DOWN:  # down
             self.Balloon.z_vel = -3  # m/s
-        else:  # stay
+        elif action == command.STAY:  # stay
             self.Balloon.z_vel = 0
 
 

@@ -1,9 +1,34 @@
 
 from era5 import config_earth
 import pandas as pd
+import enum
 
 class BalloonState(object):
-    def __init__(self, x=None, y=None, z=None, x_vel=0, y_vel=0, z_vel=0, distance=None, lat=None, lon=None, rel_bearing=None):
+    '''Balloon State object for for updating and referencing during a simulation
+
+    Attributes:
+        x: Balloons relative x position in m converted from lat/lng to cartesian using a spherical coordinate
+        transformation (see latlon_to_meters_spherical in utils)
+        y: Balloons relative x position in m converted from lat/lng to cartesian using a spherical coordinate
+        transformation (see latlon_to_meters_spherical in utils)
+
+        z: Balloon's absolute (m)
+
+        x_vel: Balloon's current velocity in m/s
+        y_vel: Balloon's current velocity in m/s
+        z_vel: Balloon's current ascent/descent velocity in m/s
+
+        lat: The current latitude of balloon  (what numbering style?)
+        lon: The current longitude of balloon (what numbering style?)
+
+        distance: Current Distance to Station (XY plane) in m
+        rel_bearing:  The relative bearing of the direction of motion the balloon is traveling to in reference to the station
+
+        atm_pressure: The atmospheric pressure around the balloon at the current altitude
+    '''
+
+
+    def __init__(self, x=None, y=None, z=None, x_vel=0, y_vel=0, z_vel=0, distance=None, lat=None, lon=None, rel_bearing=None, pressure=None):
         self.x = x
         self.y = y
         self.z = z
@@ -17,6 +42,8 @@ class BalloonState(object):
 
         self.distance= distance
         self.rel_bearing = rel_bearing
+
+        self.atm_pressure = None  #Figure this out later
 
         self.last_action= None
 
@@ -36,7 +63,18 @@ class BalloonState(object):
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
+
+class AltitudeControlCommand(enum.IntEnum):
+    """Specifies the command/action for balloon navigation."""
+    DOWN = 0
+    STAY = 1
+    UP = 2
+
 class SimulatorState(object):
+    '''
+    A Simulator Class for keeping track of overall simulator state variables
+
+    '''
     def __init__(self,Balloon):
 
         self.Balloon = Balloon
@@ -48,6 +86,13 @@ class SimulatorState(object):
         self.time_history = []
 
     def step(self,Balloon):
+        '''
+        Steps the simulator global variables and updates accordingly.  This should match the step rate in gym environments
+
+        :param Balloon:
+        :return:
+        '''
+
         self.timestamp = self.timestamp + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
         self.trajectory.append((Balloon.x , Balloon.y, Balloon.z))
