@@ -21,7 +21,6 @@ class MatplotlibRenderer():
         self.render_mode = render_mode
 
         self.render_timestamp = config_earth.simulation['start_time']
-        self.hour_count = 0
 
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
@@ -106,6 +105,7 @@ class MatplotlibRenderer():
         self.goal = goal
 
         self.render_step = 1
+        self.hour_count = 0
 
 
     def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):

@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath('src'))
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
 #from FlowEnv3D_SK_relative import FlowFieldEnv3d
-from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
+from era5.era5_gym import FlowFieldEnv3d
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -39,10 +39,13 @@ seed = None
 model_name = "RL_models/bright-pyramid-103/3dflow-DQN_95000000_steps"
 seed = None
 
+model_name = "RL_models_era5/tough-cloud-1/DQN-ERA5_30000000_steps"
+seed = None
+
 print("Loading model")
 
 
-env = FlowFieldEnv3d(**env_params)
+env = FlowFieldEnv3d(render_mode="human")
 model = DQN.load(model_name, env=env, )
 
 #print(model.o)

@@ -45,11 +45,10 @@ class FlowFieldEnv3d(gym.Env):
         self.seed(seed)
         self.res = 1
 
-        self.Forecast_visualizer = ForecastVisualizer()
-        self.Forecast_visualizer.generate_flow_array(self.start_time) #change this for time?
-
-
         if self.render_mode=="human":
+            self.Forecast_visualizer = ForecastVisualizer()
+            self.Forecast_visualizer.generate_flow_array(self.start_time)  # change this for time?
+
             self.renderer = MatplotlibRenderer(
                                                Forecast_visualizer=self.Forecast_visualizer,
                                                render_mode=self.render_mode, radius=self.radius,  coordinate_system = "geographic")
@@ -228,23 +227,29 @@ class FlowFieldEnv3d(gym.Env):
         c_cliff = 0.4
         tau = 100
 
-        if distance_to_target <= self.radius:
-            #Normalize distance within radius,  for a maximum score of 2.
-            reward = convert_range(distance_to_target,0,self.radius, 2, 1)
-            self.twr += 1
-            self.within_target = True
+        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
 
+            if distance_to_target <= self.radius:
+                #Normalize distance within radius,  for a maximum score of 2.
+                reward = convert_range(distance_to_target,0,self.radius, 2, 1)
+                self.twr += 1
+                self.within_target = True
+
+            else:
+                # reward = np.exp(-0.01 * (distance_to_target - self.radius))
+                reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
+                self.within_target = False
+
+            # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
+            if distance_to_target <= self.radius_inner:
+                self.twr_inner += 1
+
+            if distance_to_target <= self.radius_outer:
+                self.twr_outer += 1
+
+        #no reward for going outside of altitude control bounds
         else:
-            # reward = np.exp(-0.01 * (distance_to_target - self.radius))
-            reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
-            self.within_target = False
-
-        # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
-        if distance_to_target <= self.radius_inner:
-            self.twr_inner += 1
-
-        if distance_to_target <= self.radius_outer:
-            self.twr_outer += 1
+            reward = 0
 
         return reward
 
