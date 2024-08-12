@@ -11,6 +11,12 @@ from callbacks.FlowChangeCallback import FlowChangeCallback
 from env3d.config.env_config import env_params
 
 from era5.era5_gym import FlowFieldEnv3d
+from era5.forecast import Forecast
+import git
+
+repo = git.Repo(search_parent_directories=True)
+branch = repo.head.ref.name
+hash = repo.git.rev_parse(repo.head, short=True)
 
 policy_kwargs = dict(net_arch=[200,200,200, 200])
 
@@ -29,19 +35,18 @@ config = {
                 'buffer_size': int(1e6),
                 'target_update_interval': 10000,
                 'stats_window_size': 1000,
-                'device': "cpu",
+                'device': "cuda",
             },
     "env_parameters": env_params,
     "env_name": "DQN-km",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+    "git": branch + " - " + hash,
     "NOTES": "" #change this to lower case
 }
 
-env = FlowFieldEnv3d()
-env.reset()
-
 n_procs = 100
-env = make_vec_env(lambda: FlowFieldEnv3d(), n_envs=n_procs)
+forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
+env = make_vec_env(lambda: FlowFieldEnv3d(forecast=forecast), n_envs=n_procs)
 
 model = DQN(env=env, verbose=1,**config['hyperparameters'])
 #model = PPO(env=env, policy = "MultiInputPolicy", verbose=1)

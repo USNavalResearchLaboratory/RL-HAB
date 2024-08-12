@@ -26,6 +26,12 @@ from callbacks.FlowChangeCallback import FlowChangeCallback
 
 from env3d.config.env_config import env_params
 
+import git
+
+repo = git.Repo(search_parent_directories=True)
+branch = repo.head.ref.name
+hash = repo.git.rev_parse(repo.head, short=True)
+
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_name = "3dflow-DQN"
@@ -74,6 +80,8 @@ def objective(trial):
         },
         "env_parameters": env_params,
         "env_name": "3dflow-km",
+        "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+        "git": branch + " - " + hash,
         "NOTES": "Optuna tuning run"
     }
 

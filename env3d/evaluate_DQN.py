@@ -1,8 +1,21 @@
 import sys
 import os
 import numpy as np
+from utils.gitpath import get_active_branch_name
 sys.path.append(os.path.abspath('src'))
 
+branch = get_active_branch_name()
+print(branch)
+
+import subprocess
+print(subprocess.check_output(["git", "describe", "--always"]).strip().decode())
+
+import git
+repo = git.Repo(search_parent_directories=True)
+hash = repo.git.rev_parse(repo.head, short=True)
+
+print(repo, repo.head.ref.name, hash)
+sdfsd
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
 #from FlowEnv3D_SK_relative import FlowFieldEnv3d
@@ -13,6 +26,7 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from env3d.config.env_config import env_params
+from era5.forecast import Forecast
 
 ### EVALUATION ### ----------------------------------------------------------------------
 
@@ -42,10 +56,13 @@ seed = None
 model_name = "RL_models_era5/tough-cloud-1/DQN-ERA5_30000000_steps"
 seed = None
 
+model_name = "RL_models_era5/royal-water-2/DQN-ERA5_15000000_steps"
+seed = None
+
 print("Loading model")
 
-
-env = FlowFieldEnv3d(render_mode="human")
+forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
+env = FlowFieldEnv3d(forecast=forecast, render_mode="human")
 model = DQN.load(model_name, env=env, )
 
 #print(model.o)

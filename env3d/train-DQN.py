@@ -7,6 +7,7 @@ from stable_baselines3.common.env_util import make_vec_env
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
+from era5.forecast import Forecast
 
 #from FlowEnv3D_SK_relative import FlowFieldEnv3d
 #from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
@@ -15,6 +16,12 @@ from era5.era5_gym import FlowFieldEnv3d
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from env3d.config.env_config import env_params
+
+import git
+
+repo = git.Repo(search_parent_directories=True)
+branch = repo.head.ref.name
+hash = repo.git.rev_parse(repo.head, short=True)
 
 # Directory Initialization
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -53,6 +60,7 @@ config = {
     "env_parameters": env_params,
     "env_name": "DQN-ERA5-TEST",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
+    "git": branch + " - " + hash,
     "NOTES": "" #change this to lower case
 }
 
@@ -69,8 +77,9 @@ run = wandb.init(
 
 n_procs = 200
 SAVE_FREQ = int(5e6/n_procs)
+forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
+env = make_vec_env(lambda: FlowFieldEnv3d(forecast=forecast), n_envs=n_procs)
 
-env = make_vec_env(lambda: FlowFieldEnv3d(), n_envs=n_procs)
 
 # Define the checkpoint callback to save the model every 1000 steps
 checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_era5/{run.name}",

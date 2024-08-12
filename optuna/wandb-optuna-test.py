@@ -32,6 +32,7 @@ from sklearn.model_selection import train_test_split
 import wandb
 
 
+
 def objective(trial):
 
     data = fetch_olivetti_faces()

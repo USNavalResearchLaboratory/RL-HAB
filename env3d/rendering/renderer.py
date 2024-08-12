@@ -25,6 +25,8 @@ class MatplotlibRenderer():
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
 
+        self.goal = {"x": 0, "y": 0} #relative
+
         #try:
         if self.coordinate_system == "geographic":
             #Zone 12 for Albuquerque. Will need to change this for other areas
@@ -34,9 +36,6 @@ class MatplotlibRenderer():
             self.start_coord = config_earth.simulation['start_coord']
             x, y = self.p(longitude=self.start_coord["lon"], latitude=self.start_coord["lat"])
 
-            self.goal = {"x": x, "y": y}
-
-
             self.radius = radius   # m
             self.radius_inner = radius * .5   # m
             self.radius_outer = radius * 1.5  # m
@@ -44,7 +43,6 @@ class MatplotlibRenderer():
             self.init_plot_geographic()
 
         if self.coordinate_system == "cartesian":
-            self.goal = {"x": 0, "y": 0}  # Dummy numbers to start
 
             self.radius = radius   # m
             self.radius_inner = radius * .5   # m
@@ -120,7 +118,7 @@ class MatplotlibRenderer():
         if plane == 'xy':
             x = center_x + circle_x
             y = center_y + circle_y
-            z = np.full_like(x, 15000)
+            z = np.full_like(x, env_params['alt_min'])
 
         ax.plot(x, y, z, color)
 

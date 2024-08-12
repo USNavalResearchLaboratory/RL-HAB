@@ -5,8 +5,8 @@ env_params = {
         'dt': config_earth.simulation['dt'],  # seconds
         'radius': 50_000,  # km
 
-        'alt_min': 15_000, # m
-        'alt_max': 28_000, # m
+        'alt_min': 14_000, # m
+        'alt_max': 27_000, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
@@ -18,7 +18,7 @@ env_params = {
         'episode_length': 600,  # dt steps (minutes)
         'random_flow_episode_length': 1,  # how many episodes to regenerate random flow
         'decay_flow': False,
-        'render_count': 10,
+        'render_count': 5,
         'render_skip': 2,
         'render_mode': 'human',
         'seed': np.random.randint(0, 2 ** 32),
@@ -29,5 +29,5 @@ env_params = {
 
         #These need to be mandatory pressure levels
         'pres_min': 20,              # ~27 km
-        'pres_max': 200              # ~14 km
+        'pres_max': 150              # ~14 km
 }

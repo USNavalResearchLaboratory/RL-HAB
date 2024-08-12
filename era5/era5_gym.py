@@ -20,10 +20,12 @@ from era5.forecast import Forecast
 from era5 import config_earth
 from era5 import ERA5
 
+np.set_printoptions(suppress=True, precision=3)
+
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
-    def __init__(self, seed=None, render_mode=None):
+    def __init__(self, forecast, seed=None, render_mode=None ):
         super(FlowFieldEnv3d, self).__init__()
 
         self.radius = env_params['radius'] # station keeping radius
@@ -57,7 +59,7 @@ class FlowFieldEnv3d(gym.Env):
 
         # Need to reset the forecast here?
         # WRITE A FORECAST RANDOMIZER LEVEL
-        self.forecast = Forecast(self.rel_dist, env_params['pres_min'], env_params['pres_max'])
+        self.forecast = forecast
 
         min_vel = 0
         max_vel = 50
@@ -107,7 +109,7 @@ class FlowFieldEnv3d(gym.Env):
 
         self.SimulatorState = SimulatorState(self.Balloon)
 
-        #Do an artificial move to get some initial vleocity, disntance, and bearing values, then reset back to initial coordinates
+        #Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
         self.Balloon.update(lat = self.coord['lat'],lon = self.coord['lon'],x=0,y=0, distance = 0)
 
@@ -249,7 +251,7 @@ class FlowFieldEnv3d(gym.Env):
 
         #no reward for going outside of altitude control bounds
         else:
-            reward = 0
+            reward = -1
 
         return reward
 
@@ -375,20 +377,23 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
+    forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
+    env = FlowFieldEnv3d(forecast=forecast, render_mode="human")
+
     while True:
         start_time = time.time()
 
-        env = FlowFieldEnv3d(render_mode="human")
+        env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
         env.reset()
         total_reward = 0
         for step in range( env_params["episode_length"]):
-            # Use this for random action
-            # action = env.action_space.sample()
-            # obs, reward, done, _, info = env.step(action)
+
+            print(env.SimulatorState.timestamp)
+            print(env.Balloon)
 
             # Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)
-            # print(obs)
+
 
             # print(step, reward)
             total_reward += reward
