@@ -119,6 +119,7 @@ class FlowFieldEnv3d(gym.Env):
         #Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
         self.Balloon.update(lat = self.coord['lat'],lon = self.coord['lon'],x=0,y=0, distance = 0)
+        self.calculate_relative_wind_column()
 
         if self.render_mode == "human":
             self.renderer.reset(self.goal, self.Balloon, self.SimulatorState )
