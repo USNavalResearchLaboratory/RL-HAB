@@ -19,12 +19,18 @@ from era5.forecast import Forecast
 
 from era5 import config_earth
 from era5 import ERA5
+import sys
+
+from line_profiler import profile
+
 
 np.set_printoptions(suppress=True, precision=3)
 
 class FlowFieldEnv3d(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
+
+    @profile
     def __init__(self, forecast, seed=None, render_mode=None ):
         super(FlowFieldEnv3d, self).__init__()
 
@@ -86,6 +92,7 @@ class FlowFieldEnv3d(gym.Env):
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
+    @profile
     def reset(self, seed=None, options=None):
 
 
@@ -118,6 +125,34 @@ class FlowFieldEnv3d(gym.Env):
 
         return self._get_obs(), self._get_info()
 
+
+    @profile
+    def getCoord_ERA5(self,coord,dt):
+        return self.gfs.getNewCoord(coord, dt)
+
+    @profile
+    def getCoord_XR(self,coord,dt):
+        #vertical_column = self.forecast.ds.sel(latitude=self.Balloon.lat, longitude=self.Balloon.lat,
+        #                                       time=self.SimulatorState.timestamp, method='nearest')
+
+        vertical_column = self.forecast.ds.isel(latitude=5, longitude=5,
+                                               time=5)
+
+        alt_column = vertical_column['z'].values[::-1] / constants.GRAVITY
+        u_column = vertical_column['u'].values[::-1]
+        v_column = vertical_column['v'].values[::-1]
+
+        u = np.interp(self.Balloon.altitude, alt_column, u_column)
+        v = np.interp(self.Balloon.altitude, alt_column, v_column)
+
+        print(u,v)
+
+    @profile
+    def getCoord_forecast(self):
+        return self.forecast.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
+
+
+    @profile
     def move_agent(self, action):
 
         #Update Agent Movement  (NEED TO CHANGE TO HERE
@@ -126,15 +161,20 @@ class FlowFieldEnv3d(gym.Env):
 
 
         #simulate a coord for ERA5:
+        '''
         coord = {
             "lat": self.Balloon.lat,  # (deg) Latitude
             "lon": self.Balloon.lon,  # (deg) Longitude
             "alt": self.Balloon.altitude,  # (m) Elevation
             "timestamp": self.SimulatorState.timestamp,  # Timestamp
         }
+        '''
 
-        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.gfs.getNewCoord(coord,self.dt)
+        #self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.getCoord_ERA5(coord,self.dt)
 
+        #self.getCoord_XR(coord, self.dt)
+
+        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, self.Balloon.x, self.Balloon.y = self.getCoord_forecast()
 
         #Take care of Actions
         if action == command.UP:  # up
@@ -146,9 +186,7 @@ class FlowFieldEnv3d(gym.Env):
 
 
 
-        self.Balloon.update(x=self.Balloon.x + self.Balloon.x_vel * self.dt,
-                            y=self.Balloon.y + self.Balloon.y_vel * self.dt,
-                            altitude=self.Balloon.altitude + self.Balloon.z_vel * self.dt,
+        self.Balloon.update(altitude=self.Balloon.altitude + self.Balloon.z_vel * self.dt,
 
                             last_action = action
                             )
@@ -217,6 +255,7 @@ class FlowFieldEnv3d(gym.Env):
 
         return reward
 
+    @profile
     def reward_euclidian(self):
         '''
         Linear Euclidian reward within target region, google cliff function for outside of radius
@@ -251,10 +290,11 @@ class FlowFieldEnv3d(gym.Env):
 
         #no reward for going outside of altitude control bounds
         else:
-            reward = -1
+            reward = 0
 
         return reward
 
+    @profile
     def step(self, action):
         reward = self.move_agent(action)
         reward += self.reward_euclidian()
@@ -269,6 +309,7 @@ class FlowFieldEnv3d(gym.Env):
 
         return observation, reward, done, False, info
 
+    @profile
     def calculate_relative_angle(self, x, y, goal_x, goal_y, heading_x, heading_y):
         """
         Calculates the relative angle of motion of the blimp in relation to the goal based off of true bearing FROM POSITION TO GOAL
@@ -300,6 +341,7 @@ class FlowFieldEnv3d(gym.Env):
 
         return rel_bearing
 
+    @profile
     def calculate_relative_wind_column(self):
         """
         Builds off of the same calculation as calculate_relative_angle() to calculate the relative
@@ -311,11 +353,17 @@ class FlowFieldEnv3d(gym.Env):
         """
 
         #First need to get altitude coordinate from forecast
-        vertical_column = self.forecast.ds.sel(latitude=self.Balloon.lat, longitude=self.Balloon.lat, time= self.SimulatorState.timestamp, method='nearest')
+        #vertical_column = self.forecast.ds.sel(latitude=self.Balloon.lat, longitude=self.Balloon.lat, time= self.SimulatorState.timestamp, method='nearest')
 
-        alt_column = vertical_column['z'].values[::-1] / constants.GRAVITY
-        u_column = vertical_column['u'].values[::-1]
-        v_column = vertical_column['v'].values[::-1]
+        #alt_column = vertical_column['z'].values[::-1] / constants.GRAVITY
+        #u_column = vertical_column['u'].values[::-1]
+        #v_column = vertical_column['v'].values[::-1]
+
+        alt_column,u_column,v_column = self.forecast.np_lookup(self.Balloon.lat, self.Balloon.lon, self.SimulatorState.timestamp)
+
+        alt_column = alt_column[::-1]
+        u_column = u_column[::-1]
+        v_column = v_column[::-1]
 
         flow_field_rel_angle = []
         flow_field_magnitude = []
@@ -331,6 +379,7 @@ class FlowFieldEnv3d(gym.Env):
         #Relative Flow Field Map
         self.Balloon.rel_wind_column = np.stack((alt_column, flow_field_rel_angle, flow_field_magnitude), axis=-1)
 
+    @profile
     def _get_obs(self):
         observation = {
             'altitude': np.array([self.Balloon.altitude]),
@@ -341,6 +390,7 @@ class FlowFieldEnv3d(gym.Env):
 
         return observation
 
+    @profile
     def _get_info(self):
         return {
             "distance": self.Balloon.distance,
@@ -384,12 +434,14 @@ def main():
         start_time = time.time()
 
         env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
-        env.reset()
+        obs, info = env.reset()
         total_reward = 0
         for step in range( env_params["episode_length"]):
 
+            print()
             print(env.SimulatorState.timestamp)
             print(env.Balloon)
+            print(obs)
 
             # Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)
@@ -397,10 +449,13 @@ def main():
 
             # print(step, reward)
             total_reward += reward
+
+
             if done:
                 break
             env.render()
-            # time.sleep(2)
+            #sys.exit()
+            #time.sleep(2)
         # print(obs)
         # print(env.FlowField3D.flow_field[:,0,0,0])
         print("Total reward:", total_reward, info, env_params['seed'])

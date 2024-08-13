@@ -15,6 +15,7 @@ import os
 from scipy import interpolate
 from pytz import timezone
 from datetime import datetime, timedelta
+from line_profiler import profile
 
 from era5 import config_earth #integrate with EARTHSHAB
 
@@ -279,6 +280,7 @@ class ERA5:
 
         return [u, v]
 
+    @profile
     def wind_alt_Interpolate2(self, alt_m, diff_time, lat_idx, lon_idx):
         """
         Performs two different types of a 2 step linear interpolation to determine horizontal wind velocity.  First the altitude is interpolated between the two nearest
@@ -439,6 +441,7 @@ class ERA5:
 
         return (interp_dir_deg, interp_speed)
 
+    @profile
     def getNewCoord(self, coord, dt):
         """
         Determines the new coordinates of the balloon based on the effects of U and V wind components.
