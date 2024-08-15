@@ -13,6 +13,8 @@ from env3d.balloon import BalloonState, SimulatorState
 from env3d.balloon import AltitudeControlCommand as command
 from era5.forecast import Forecast, Forecast_Subset
 from line_profiler import profile
+from era5.ForecastClassifier import ForecastClassifier
+from termcolor import colored
 
 np.set_printoptions(suppress=True, precision=3)
 
@@ -25,6 +27,7 @@ class FlowFieldEnv3d(gym.Env):
         super(FlowFieldEnv3d, self).__init__()
 
         self.FORECAST_PRIMARY = FORECAST_PRIMARY
+        self.ForecastClassifier = ForecastClassifier()
         self.dt = env_params['dt']
         self.render_mode = render_mode
 
@@ -84,8 +87,15 @@ class FlowFieldEnv3d(gym.Env):
     def reset(self, seed=None, options=None):
 
         #Randomize new coordinate and forecast subset
-        self.forecast_subset.randomize_coord()
-        self.forecast_subset.subset_forecast()
+        score = 0
+        while score< 0.25:
+            self.forecast_subset.randomize_coord()
+            self.forecast_subset.subset_forecast()
+
+            scores, score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+
+            #if score < 0.25:
+            #    print(colored("WARNING: Bad forecast score of " + str(score) + ". Re-randomizing" , "yellow"))
 
         #Reset custom metrics
         self.within_target = False
@@ -147,7 +157,7 @@ class FlowFieldEnv3d(gym.Env):
     def move_agent(self, action):
         """
         Altitude is currently capped to not be able to go out of bounds.
-        
+
         """
         #self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.getCoord_ERA5(coord,self.dt)
         #self.getCoord_XR(coord, self.dt)
@@ -283,7 +293,7 @@ class FlowFieldEnv3d(gym.Env):
     @profile
     def step(self, action):
         reward = self.move_agent(action)
-        reward += self.reward_euclidian()
+        reward += self.reward_piecewise()
 
         observation = self._get_obs()
         info = self._get_info()

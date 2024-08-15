@@ -61,7 +61,7 @@ config = {
     "env_name": "DQN-ERA5-TEST",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
     "git": branch + " - " + hash,
-    "NOTES": "" #change this to lower case
+    "NOTES": "piece wise learning"
 }
 
 run = wandb.init(
@@ -77,10 +77,6 @@ run = wandb.init(
 
 n_procs = 100
 SAVE_FREQ = int(5e6/n_procs)
-
-pres_min = env_params['pres_min']
-pres_max = env_params['pres_max']
-rel_dist = env_params['rel_dist']
 
 filename = "July-2024-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)

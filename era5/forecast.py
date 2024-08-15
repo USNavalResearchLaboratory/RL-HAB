@@ -141,6 +141,9 @@ class Forecast_Subset:
         self.forecast_np = self.forecast_np.to_numpy()
         self.pressure_levels = self.ds.level.values
 
+        #self.ds.close()
+
+
     @profile
     def xr_lookup(self,lat, lon, timestamp):
 
@@ -188,7 +191,7 @@ class Forecast_Subset:
         bearing = np.arctan2(v,u)
         speed = np.power((np.power(u,2)+np.power(v,2)),.5)
 
-        return [bearing, speed]
+        return bearing, speed
 
     def interpolate_wind(self, alt, z,u,v):
         '''
@@ -241,4 +244,6 @@ if __name__ == '__main__':
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
     forecast_subset.subset_forecast()
+
+    print(forecast_subset.ds)
 
