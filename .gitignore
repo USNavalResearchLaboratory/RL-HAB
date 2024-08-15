@@ -4,6 +4,7 @@
 RL_models*
 logs*
 wandb
+forecasts
 
 *.sqlite3
 

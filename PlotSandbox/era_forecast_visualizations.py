@@ -17,17 +17,17 @@ from matplotlib.cm import ScalarMappable
 
 
 #load Forecast
-ds = xr.open_dataset("forecasts/" + config_earth.netcdf_era5['filename'])
+ds = xr.open_dataset("forecasts/" + "July-2024-SEA.nc")
 
 #Reverse order of latitude, since era5 comes reversed for some reason?
 ds = ds.reindex(latitude=list(reversed(ds.latitude)))
 
 
 #ERA5 data variables structure that we download is (time, level, latitude, longitude)
-time_index = 1
+time_index = 0
 
 
-u = ds['u'][time_index,:,:,:].data
+u = ds['u'][time_index,:,:,:].values
 v = ds['v'][time_index,:,:,:].values
 z = ds['z'][time_index,:,:,:].values
 
@@ -147,8 +147,8 @@ plt.figure()
 ####
 #Visualizing INdividual Wind Map
 
-u_wind = ds['u'].sel(time = ds['time'][0], level=1 )
-v_wind = ds['v'].sel(time = ds['time'][0], level=1 )
+u_wind = ds['u'].sel(time = ds['time'][0], level=30 )
+v_wind = ds['v'].sel(time = ds['time'][0], level=30 )
 
 #sdfsdfs
 u_wind.plot()

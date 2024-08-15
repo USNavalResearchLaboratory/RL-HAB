@@ -75,10 +75,16 @@ run = wandb.init(
 
 #Training Parameters
 
-n_procs = 200
+n_procs = 100
 SAVE_FREQ = int(5e6/n_procs)
-forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
-env = make_vec_env(lambda: FlowFieldEnv3d(forecast=forecast), n_envs=n_procs)
+
+pres_min = env_params['pres_min']
+pres_max = env_params['pres_max']
+rel_dist = env_params['rel_dist']
+
+filename = "July-2024-SEA.nc"
+FORECAST_PRIMARY = Forecast(filename)
+env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
 
 
 # Define the checkpoint callback to save the model every 1000 steps

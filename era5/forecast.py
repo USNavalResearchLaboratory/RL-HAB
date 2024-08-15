@@ -8,41 +8,86 @@ from utils import constants, convert_range
 from utils.convert_range import convert_range
 from utils import CoordinateTransformations as transform
 from line_profiler import profile
+from datetime import datetime, timedelta
 
 class Forecast:
     #Load from config file for now.  Maybe change this later
-    def __init__(self, rel_dist, pres_min, pres_max):
+    def __init__(self, filename):
 
-        self.rel_dist = env_params['rel_dist'] # m relative distance from central coordiante
+        self.load_forecast(filename)
 
-        # ERA5 stuff
-        self.start_coord = config_earth.simulation['start_coord']
-
-        self.load_forecast(rel_dist, pres_min, pres_max)
+        #self.randomize_coord()
 
     def quarter(self,x):
         return round(x*4)/4
 
-    def load_forecast(self, rel_dist, pres_min, pres_max):
+    def load_forecast(self, filename):
+        print("Loading Forecast...")
+        self.ds_original = xr.open_dataset("forecasts/" + filename)
 
-        #load Forecast
-        #Manual Upload for now?
-        self.ds = xr.open_dataset("forecasts/" + config_earth.netcdf_era5['filename'])
+        # Reverse order of latitude, since era5 comes reversed for some reason?
+        self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
+
+        self.LAT_MIN = self.ds_original.latitude.values[0]
+        self.LAT_MAX = self.ds_original.latitude.values[-1]
+        self.LAT_DIM = len(self.ds_original.latitude.values)
+
+        self.LON_MIN = self.ds_original.longitude.values[0]
+        self.LON_MAX = self.ds_original.longitude.values[-1]
+        self.LON_DIM = len(self.ds_original.longitude.values)
+
+        self.LEVEL_MIN = self.ds_original.level.values[0]
+        self.LEVEL_MAX = self.ds_original.level.values[-1]
+        self.LEVEL_DIM = len(self.ds_original.level.values)
+
+        #Assuming Forecasts are downloaded in 1 hour resolution for now?
+        self.TIME_MIN = self.ds_original.time.values[0]
+        self.TIME_MAX = self.ds_original.time.values[-1]
+        self.TIME_DIM = len(self.ds_original.time.values)
+
+        print(f"LAT RANGE: ({self.LAT_DIM }) {self.LAT_MIN}, {self.LAT_MAX}")
+        print(f"LON RANGE: ({self.LON_DIM}) {self.LON_MIN}, {self.LON_MAX}")
+        print(f"PRES RANGE: ({self.LEVEL_DIM}) {self.LEVEL_MIN}, {self.LEVEL_MAX}")
+        print(f"TIME RANGE: ({self.TIME_DIM}) {self.TIME_MIN}, {self.TIME_MAX}")
+
+        print(self.LAT_MIN, self.LAT_MAX)
+
+        print("Forecast Loaded")
+
+        #return lat, lon, time
+
+class Forecast_Subset:
+    # Load from config file for now.  Maybe change this later
+    def __init__(self, Forecast):
+        self.Forecast = Forecast
+
+    def quarter(self,x):
+        return round(x*4)/4
+
+    def randomize_coord(self):
+        lat = np.random.uniform(low=self.Forecast.LAT_MIN+2, high=self.Forecast.LAT_MAX-2)
+        lon = np.random.uniform(low=self.Forecast.LON_MIN + 2, high=self.Forecast.LON_MAX - 2)
+        #Convert time to unix for randomizing.
+        # Subtract 24 hours from the end for simulating.
+        time = np.random.uniform(low=self.get_unixtime(self.Forecast.TIME_MIN), high=self.get_unixtime(self.Forecast.TIME_MAX-np.timedelta64(23, "h")))
+        # Convert time back to dt64
+        time = np.datetime64(int(time),'s')
+
+        #Round time to nearest hour and quarter
+        self.start_time = np.array(time, dtype='datetime64[h]')
+        self.lat_central = self.quarter(lat)
+        self.lon_central = self.quarter(lon)
 
 
-        #Reverse order of latitude, since era5 comes reversed for some reason?
-        self.ds = self.ds.reindex(latitude=list(reversed(self.ds.latitude)))
-
-        self.start_coord = config_earth.simulation['start_coord']
+    def subset_forecast(self, rel_dist, pres_min, pres_max):
 
 
         #1.  Calculate Lat/Lon Coordinates for subsetting the data to The relative distance area
+        lat_min, _ = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, 0, -rel_dist)
+        _, lon_min = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, -rel_dist, 0)
 
-        lat_min, _ = transform.meters_to_latlon_spherical(self.start_coord["lat"], self.start_coord["lon"], 0, -rel_dist)
-        _, lon_min = transform.meters_to_latlon_spherical(self.start_coord["lat"], self.start_coord["lon"], -rel_dist, 0)
-
-        lat_max, _ = transform.meters_to_latlon_spherical(self.start_coord["lat"], self.start_coord["lon"], 0, rel_dist)
-        _ , lon_max = transform.meters_to_latlon_spherical(self.start_coord["lat"], self.start_coord["lon"], rel_dist, 0)
+        lat_max, _ = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, 0, rel_dist)
+        _ , lon_max = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, rel_dist, 0)
 
         #Round to nearest .25 degree resolution since that's the res of ERA5 forecasts
         self.lat_min = self.quarter(lat_min)
@@ -52,8 +97,11 @@ class Forecast:
         self.lon_max = self.quarter(lon_max)
 
         #2. Subset the forecast to a smaller array #This may not be necessary for simulating, but good for forecast visualization)
-
-        self.ds = self.ds.sel(latitude=slice(self.lat_min, self.lat_max), longitude=slice(self.lon_min, self.lon_max), level=slice(pres_min,pres_max))
+        #No time for now?
+        self.ds = self.Forecast.ds_original.sel(latitude=slice(self.lat_min, self.lat_max),
+                              longitude=slice(self.lon_min, self.lon_max),
+                              level=slice(pres_min,pres_max),
+                              time=slice(self.start_time, self.start_time + np.timedelta64(24, "h"))) #1 day of time for now
 
 
         # 3. Determine new min and max values from the subsetted forecast
@@ -77,12 +125,6 @@ class Forecast:
         # Convert the subset forecast Dataset to a numpy array for faster processing
         self.forecast_np = self.ds.to_array()
         self.forecast_np = self.forecast_np.to_numpy()
-
-
-        #print(self.forecast_np.shape)
-
-        #print(self.forecast_np[1,:,:,:,:])
-
         self.pressure_levels = self.ds.level.values
 
     @profile
@@ -96,6 +138,7 @@ class Forecast:
 
     def get_unixtime(self, dt64):
         return dt64.astype('datetime64[s]').astype('int')
+
 
     @profile
     def np_lookup(self,lat, lon, time):
@@ -145,8 +188,8 @@ class Forecast:
         x_vel, y_vel = self.interpolate_wind(Balloon.altitude, z_col, u_col, v_col )
 
         #Get current relative X,Y Position
-        relative_x, relative_y = transform.latlon_to_meters_spherical(config_earth.simulation['start_coord']["lat"],
-                                                                config_earth.simulation['start_coord']["lon"],
+        relative_x, relative_y = transform.latlon_to_meters_spherical(self.lat_central,
+                                                                self.lon_central,
                                                                 Balloon.lat, Balloon.lon)
 
 
@@ -155,8 +198,8 @@ class Forecast:
         y_new =  relative_y + y_vel * dt
 
         # Convert New Relative Position back to Lat/Lon
-        lat_new, lon_new = transform.meters_to_latlon_spherical(config_earth.simulation['start_coord']["lat"],
-                                                                config_earth.simulation['start_coord']["lon"],
+        lat_new, lon_new = transform.meters_to_latlon_spherical(self.lat_central,
+                                                                self.lon_central,
                                                                 x_new, y_new)
 
 
@@ -168,26 +211,11 @@ if __name__ == '__main__':
     pres_max = env_params['pres_max']
     rel_dist = env_params['rel_dist']
 
-    gfs = ERA5.ERA5(config_earth.simulation['start_coord'])
-    forecast = Forecast(rel_dist, pres_min, pres_max)
+    filename = "SHAB14V_ERA5_20220822_20220823.nc"
+    FORECAST_PRIMARY = Forecast(filename)
 
+    forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
+    forecast_subset.randomize_coord()
+    print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
+    forecast_subset.subset_forecast(rel_dist, pres_min, pres_max)
 
-
-    #Test matching variables:
-    lat_idx = 5
-    lon_idx = 5
-    level_idx = 10
-    time_idx = 10
-
-    lat = 35.22
-    lon = -106.42
-    time = config_earth.simulation["start_time"]
-
-    print(lat, lon, time)
-
-    vertical_column = forecast.xr_lookup(lat, lon, time)
-    vertical_column2 = forecast.np_lookup(lat, lon, time)
-
-
-
-    #print(forecast.ds)

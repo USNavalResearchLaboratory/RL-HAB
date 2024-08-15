@@ -1,21 +1,13 @@
 import sys
 import os
 import numpy as np
-from utils.gitpath import get_active_branch_name
+#from utils.gitpath import get_active_branch_name
 sys.path.append(os.path.abspath('src'))
-
-branch = get_active_branch_name()
-print(branch)
-
-import subprocess
-print(subprocess.check_output(["git", "describe", "--always"]).strip().decode())
 
 import git
 repo = git.Repo(search_parent_directories=True)
 hash = repo.git.rev_parse(repo.head, short=True)
 
-print(repo, repo.head.ref.name, hash)
-sdfsd
 
 """Choose which type of model to evaulate on, the static flow field or randomly generated every episode"""
 #from FlowEnv3D_SK_relative import FlowFieldEnv3d
@@ -35,34 +27,20 @@ from era5.forecast import Forecast
 # to compare the system on which the model was trained vs the current one
 # model = DQN.load("dqn_lunar", env=env, print_system_info=True)
 
-model_name = "RL_models_3D/iconic-sponge-111/3dflow-DQN_80000000_steps"
-seed = 3272669519
 
-model_name = "RL_models_3D/easy-pond-113/3dflow-DQN_76000000_steps"
-seed = None
 
-model_name = "RL_models_3D/breezy-morning-125/3dflow-DQN_60000000_steps"
-seed = None
-
-model_name = "RL_models_km/honest-yogurt-2/DQN-km_56000000_steps"
-seed = None
-
-model_name = "RL_models/devout-dew-41/3dflow-DQN_75000000_steps"
-seed = None
-
-model_name = "RL_models/bright-pyramid-103/3dflow-DQN_95000000_steps"
-seed = None
-
-model_name = "RL_models_era5/tough-cloud-1/DQN-ERA5_30000000_steps"
-seed = None
-
-model_name = "RL_models_era5/royal-water-2/DQN-ERA5_15000000_steps"
+model_name = "RL_models_era5/usual-sea-10/DQN-ERA5_100000000_steps"
 seed = None
 
 print("Loading model")
 
-forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
-env = FlowFieldEnv3d(forecast=forecast, render_mode="human")
+pres_min = env_params['pres_min']
+pres_max = env_params['pres_max']
+rel_dist = env_params['rel_dist']
+
+filename = "July-2024-SEA.nc"
+FORECAST_PRIMARY = Forecast(filename)
+env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 model = DQN.load(model_name, env=env, )
 
 #print(model.o)

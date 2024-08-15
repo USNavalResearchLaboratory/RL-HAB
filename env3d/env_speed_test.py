@@ -44,14 +44,16 @@ config = {
     "NOTES": "" #change this to lower case
 }
 
-n_procs = 100
-forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
-env = make_vec_env(lambda: FlowFieldEnv3d(forecast=forecast), n_envs=n_procs)
+n_procs = 20
+
+filename = "July-2024-SEA.nc"
+FORECAST_PRIMARY = Forecast(filename)
+env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
+
+env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
 
 model = DQN(env=env, verbose=1,**config['hyperparameters'])
 #model = PPO(env=env, policy = "MultiInputPolicy", verbose=1)
-
-model.learn(total_timesteps=int(10e5),log_interval=100, progress_bar=True, reset_num_timesteps=False)
 
 model.learn(
     total_timesteps=config["total_timesteps"],

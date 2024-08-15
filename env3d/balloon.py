@@ -76,11 +76,11 @@ class SimulatorState(object):
     A Simulator Class for keeping track of overall simulator state variables
 
     '''
-    def __init__(self,Balloon):
+    def __init__(self,Balloon, timestamp):
 
         self.Balloon = Balloon
 
-        self.timestamp = config_earth.simulation['start_time']
+        self.timestamp = timestamp
         self.dt = config_earth.simulation['dt']
         self.total_steps = 0
 

@@ -20,33 +20,29 @@ class MatplotlibRenderer():
         self.render_skip = env_params['render_skip']
         self.render_mode = render_mode
 
-        self.render_timestamp = config_earth.simulation['start_time']
+        self.render_timestamp = self.Forecast_visualizer.forecast.start_time
 
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
 
         self.goal = {"x": 0, "y": 0} #relative
 
+        self.radius = radius  # m
+        self.radius_inner = radius * .5  # m
+        self.radius_outer = radius * 1.5  # m
+
         #try:
         if self.coordinate_system == "geographic":
             #Zone 12 for Albuquerque. Will need to change this for other areas
-            self.p = Proj(proj='utm', zone=12, ellps='WGS84', preserve_units=False)
+            #self.p = Proj(proj='utm', zone=12, ellps='WGS84', preserve_units=False)
 
             #Also Central Coord for now?
-            self.start_coord = config_earth.simulation['start_coord']
-            x, y = self.p(longitude=self.start_coord["lon"], latitude=self.start_coord["lat"])
-
-            self.radius = radius   # m
-            self.radius_inner = radius * .5   # m
-            self.radius_outer = radius * 1.5  # m
+            #self.start_coord = config_earth.simulation['start_coord']
+            #x, y = self.p(longitude=self.start_coord["lon"], latitude=self.start_coord["lat"])
 
             self.init_plot_geographic()
 
         if self.coordinate_system == "cartesian":
-
-            self.radius = radius   # m
-            self.radius_inner = radius * .5   # m
-            self.radius_outer = radius * 1.5  # m
 
             self.init_plot()
         #except:
@@ -63,8 +59,9 @@ class MatplotlibRenderer():
         self.ax.set_ylabel('Y_proj (m)')
         self.ax.set_zlabel('Altitude (km)')
 
-        self.ax.set_xlim(-150*1000, 150*1000)
-        self.ax.set_ylim(-150*1000, 150*1000)
+
+        self.ax.set_xlim(-env_params['rel_dist'], env_params['rel_dist'])
+        self.ax.set_ylim(-env_params['rel_dist'], env_params['rel_dist'])
         self.ax.set_zlim(env_params['alt_min'], env_params['alt_max'])
 
         self.path_plot, = self.ax.plot([], [], [], color='black')
@@ -104,6 +101,8 @@ class MatplotlibRenderer():
 
         self.render_step = 1
         self.hour_count = 0
+
+        self.render_timestamp = self.Forecast_visualizer.forecast.start_time
 
 
     def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):

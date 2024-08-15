@@ -15,7 +15,7 @@ from env3d.config.env_config import env_params
 from era5.forecast_visualizer import ForecastVisualizer
 from env3d.balloon import BalloonState, SimulatorState
 from env3d.balloon import AltitudeControlCommand as command
-from era5.forecast import Forecast
+from era5.forecast import Forecast, Forecast_Subset
 
 from era5 import config_earth
 from era5 import ERA5
@@ -31,22 +31,31 @@ class FlowFieldEnv3d(gym.Env):
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
     @profile
-    def __init__(self, forecast, seed=None, render_mode=None ):
+    def __init__(self, FORECAST_PRIMARY, seed=None, render_mode=None ):
         super(FlowFieldEnv3d, self).__init__()
+
+        self.FORECAST_PRIMARY = FORECAST_PRIMARY
 
         self.radius = env_params['radius'] # station keeping radius
         self.radius_inner = self.radius *.5
         self.radius_outer = self.radius * 1.5
 
         self.rel_dist = env_params['rel_dist']
+        self.pres_min = env_params['pres_min']
+        self.pres_max = env_params['pres_max']
+
+        # Dummy forecast
+        self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
+        self.forecast_subset.randomize_coord()
+        self.forecast_subset.subset_forecast(self.rel_dist, self.pres_min, self.pres_max)
 
 
         # Import configuration file variables
-        self.coord = config_earth.simulation['start_coord']
-        self.start_time = config_earth.simulation['start_time']
+        #self.coord = config_earth.simulation['start_coord']
+        #self.start_time = config_earth.simulation['start_time']
         self.dt = config_earth.simulation['dt']
 
-        self.gfs = ERA5.ERA5(self.coord)
+        #self.gfs = ERA5.ERA5(self.coord)
 
         self.render_mode = render_mode
 
@@ -54,8 +63,8 @@ class FlowFieldEnv3d(gym.Env):
         self.res = 1
 
         if self.render_mode=="human":
-            self.Forecast_visualizer = ForecastVisualizer()
-            self.Forecast_visualizer.generate_flow_array(self.start_time)  # change this for time?
+            self.Forecast_visualizer = ForecastVisualizer(self.forecast_subset)
+            self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
 
             self.renderer = MatplotlibRenderer(
                                                Forecast_visualizer=self.Forecast_visualizer,
@@ -63,13 +72,10 @@ class FlowFieldEnv3d(gym.Env):
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
 
-        # Need to reset the forecast here?
-        # WRITE A FORECAST RANDOMIZER LEVEL
-        self.forecast = forecast
 
         min_vel = 0
         max_vel = 50
-        num_levels = len(self.forecast.pressure_levels)
+        num_levels = len(self.forecast_subset.pressure_levels)
 
         # These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
         self.observation_space = spaces.Dict({
@@ -95,6 +101,10 @@ class FlowFieldEnv3d(gym.Env):
     @profile
     def reset(self, seed=None, options=None):
 
+        #Randomize new coordinate and forecast
+        self.forecast_subset.randomize_coord()
+        self.forecast_subset.subset_forecast(self.rel_dist, self.pres_min, self.pres_max)
+
 
         self.within_target = False
         self.twr = 0 # time within radius
@@ -106,23 +116,24 @@ class FlowFieldEnv3d(gym.Env):
                       "y": 0,
                      "z": 0}
 
-        self.Balloon = BalloonState(lat = self.coord['lat'],
-                                    lon = self.coord['lon'],
+        self.Balloon = BalloonState(lat = self.forecast_subset.lat_central,
+                                    lon = self.forecast_subset.lon_central,
 
                                     x = 0,
                                     y = 0,
                                     altitude = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
                                     )
 
-        self.SimulatorState = SimulatorState(self.Balloon)
+        self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset.start_time)
 
         #Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
-        self.Balloon.update(lat = self.coord['lat'],lon = self.coord['lon'],x=0,y=0, distance = 0)
+        self.Balloon.update(lat = self.forecast_subset.lat_central,lon = self.forecast_subset.lon_central,x=0,y=0, distance = 0)
         self.calculate_relative_wind_column()
 
         if self.render_mode == "human":
             self.renderer.reset(self.goal, self.Balloon, self.SimulatorState )
+            self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
 
         return self._get_obs(), self._get_info()
 
@@ -136,7 +147,7 @@ class FlowFieldEnv3d(gym.Env):
         #vertical_column = self.forecast.ds.sel(latitude=self.Balloon.lat, longitude=self.Balloon.lat,
         #                                       time=self.SimulatorState.timestamp, method='nearest')
 
-        vertical_column = self.forecast.ds.isel(latitude=5, longitude=5,
+        vertical_column = self.forecast_subset.ds.isel(latitude=5, longitude=5,
                                                time=5)
 
         alt_column = vertical_column['z'].values[::-1] / constants.GRAVITY
@@ -150,7 +161,7 @@ class FlowFieldEnv3d(gym.Env):
 
     @profile
     def getCoord_forecast(self):
-        return self.forecast.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
+        return self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
 
 
     @profile
@@ -268,6 +279,7 @@ class FlowFieldEnv3d(gym.Env):
         distance_to_target = self.Balloon.distance
         c_cliff = 0.4
         tau = 100
+        self.within_target = False #by default
 
         if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
 
@@ -293,6 +305,8 @@ class FlowFieldEnv3d(gym.Env):
         else:
             reward = 0
 
+        #print(self.within_target, "Reward", reward)
+
         return reward
 
     @profile
@@ -307,6 +321,8 @@ class FlowFieldEnv3d(gym.Env):
 
         done = self.SimulatorState.step(self.Balloon)
 
+        #if done:
+        #    print(observation, reward, done, False, info)
 
         return observation, reward, done, False, info
 
@@ -360,7 +376,7 @@ class FlowFieldEnv3d(gym.Env):
         #u_column = vertical_column['u'].values[::-1]
         #v_column = vertical_column['v'].values[::-1]
 
-        alt_column,u_column,v_column = self.forecast.np_lookup(self.Balloon.lat, self.Balloon.lon, self.SimulatorState.timestamp)
+        alt_column,u_column,v_column = self.forecast_subset.np_lookup(self.Balloon.lat, self.Balloon.lon, self.SimulatorState.timestamp)
 
         alt_column = alt_column[::-1]
         u_column = u_column[::-1]
@@ -428,21 +444,27 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
-    forecast = Forecast(env_params['rel_dist'], env_params['pres_min'], env_params['pres_max'])
-    env = FlowFieldEnv3d(forecast=forecast, render_mode="human")
+    pres_min = env_params['pres_min']
+    pres_max = env_params['pres_max']
+    rel_dist = env_params['rel_dist']
+    filename = "July-2024-SEA.nc"
+    FORECAST_PRIMARY = Forecast(filename)
+
+
+    env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 
     while True:
         start_time = time.time()
 
-        env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
+        #env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
         obs, info = env.reset()
         total_reward = 0
-        for step in range( env_params["episode_length"]):
+        for step in range( env_params["episode_length"]+10):
 
-            print()
-            print(env.SimulatorState.timestamp)
-            print(env.Balloon)
-            print(obs)
+            #print()
+            #print(env.SimulatorState.timestamp)
+            #print(env.Balloon)
+            #print(obs)
 
             # Use this for keyboard input
             obs, reward, done, truncated, info = env.step(last_action)
