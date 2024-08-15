@@ -5,37 +5,24 @@ from metpy.calc import pressure_to_height_std
 from metpy.units import units
 from utils.Custom3DQuiver import Custom3DQuiver
 from matplotlib.projections import register_projection
-
+from termcolor import colored
 from env3d.config.env_config import env_params
-from era5 import config_earth
-
-from era5 import ERA5
 import imageio
 from era5.forecast import Forecast, Forecast_Subset
 
 
 class ForecastVisualizer:
+    """
+    Visualizes a forecast.  a Forecast needs to be converted to a Forecast_Subset before visualizing to determine ranges
+    and convert to a numpy array for faster processing.
+    """
     def __init__(self, forecast):
-
-        self.forecast = forecast
-        self.pressure_levels = self.forecast.ds["level"].values
-        '''
-        self.ds = forecast.ds
-
-        self.pressure_levels = self.ds["level"].values
-
-        # ERA5 stuff
-        coord = config_earth.simulation['start_coord']
-        self.gfs = ERA5.ERA5(coord)
-
-        self.start_time = config_earth.simulation['start_time']
-        self.alts2 = self.ds.sel(latitude=coord['lat'], longitude=coord['lon'], time = self.start_time, method='nearest')['z'].values*.001
-
-        # Assign the new altitude coordinate
-        self.ds = self.ds.assign_coords(altitude=('level', self.alts2))
-        '''
+        if not isinstance(forecast, Forecast_Subset):
+            raise Exception (colored("Provided forecast type is not <class 'era5.forecast.Forecast_Subset'> and instead " + str(type(forecast)),"red"))
 
 
+        self.forecast_subset = forecast
+        self.pressure_levels = self.forecast_subset.ds["level"].values
         register_projection(Custom3DQuiver)
 
     def map_pres2alt(self):
@@ -55,18 +42,18 @@ class ForecastVisualizer:
     def generate_flow_array(self, timestamp):
 
         #For plotting altitude levels
-        self.alts2 = self.forecast.ds.sel(latitude=self.forecast.lat_central, longitude=self.forecast.lon_central,
-                                          time=timestamp, method='nearest')['z'].values * .001
+        self.alts2 = self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central, longitude=self.forecast_subset.lon_central,
+                                                 time=timestamp, method='nearest')['z'].values * .001
         # Assign the new altitude coordinate
-        self.forecast.ds = self.forecast.ds.assign_coords(altitude=('level', self.alts2))
+        self.forecast_subset.ds = self.forecast_subset.ds.assign_coords(altitude=('level', self.alts2))
 
         self.timestamp = timestamp
-        time_index = list(self.forecast.ds.time.values).index(self.forecast.ds.sel(time=self.timestamp, method='nearest').time)
+        time_index = list(self.forecast_subset.ds.time.values).index(self.forecast_subset.ds.sel(time=self.timestamp, method='nearest').time)
 
         # ERA5 data variables structure that we download is (time, level, latitude, longitude)
-        self.u = self.forecast.ds['u'][time_index, :, :, :].data
-        self.v = self.forecast.ds['v'][time_index, :, :, :].values
-        self.z = self.forecast.ds['z'][time_index, :, :, :].values
+        self.u = self.forecast_subset.ds['u'][time_index, :, :, :].data
+        self.v = self.forecast_subset.ds['v'][time_index, :, :, :].values
+        self.z = self.forecast_subset.ds['z'][time_index, :, :, :].values
 
         # need to reshape array to level, Longitude(X), latitude(Y) for plotting.
         self.u = np.swapaxes(self.u, 1, 2)
@@ -74,7 +61,7 @@ class ForecastVisualizer:
         self.z = np.swapaxes(self.z, 1, 2)
         self.w = np.zeros_like(self.u)
 
-        self.levels = self.forecast.ds['altitude']
+        self.levels = self.forecast_subset.ds['altitude']
 
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
 
@@ -124,36 +111,29 @@ class ForecastVisualizer:
         ax.set_zticks(self.alts2)
         ax.set_zticklabels(self.pressure_levels)
 
-        ax.set_xticks(np.linspace(x_min, x_max, 6), np.linspace(self.forecast.ds.longitude[0].values, self.forecast.ds.longitude[-1].values, 6, dtype=float))
-        ax.set_yticks(np.linspace(y_min, y_max, 6), np.linspace(self.forecast.ds.latitude[0].values, self.forecast.ds.latitude[-1].values, 6, dtype=float))
+        ax.set_xticks(np.linspace(x_min, x_max, 6), np.linspace(self.forecast_subset.ds.longitude[0].values, self.forecast_subset.ds.longitude[-1].values, 6, dtype=float))
+        ax.set_yticks(np.linspace(y_min, y_max, 6), np.linspace(self.forecast_subset.ds.latitude[0].values, self.forecast_subset.ds.latitude[-1].values, 6, dtype=float))
 
         plt.title(self.timestamp)
 
 
 if __name__ == '__main__':
-
-    #register_projection(Custom3DQuiver)
-
-    pres_min = env_params['pres_min']
-    pres_max = env_params['pres_max']
-    rel_dist = env_params['rel_dist']
-
     filename = "SHAB14V_ERA5_20220822_20220823.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
-    forecast_subset.subset_forecast(rel_dist, pres_min, pres_max)
+    forecast_subset.subset_forecast()
 
     # Analyze Data
     forecast_visualizer = ForecastVisualizer(forecast_subset)
     skip = 2
 
-    print(forecast_visualizer.forecast.ds.time.values)
+    print(forecast_visualizer.forecast_subset.ds.time.values)
 
     i = 0
-    for timestamp in forecast_visualizer.forecast.ds.time.values:
+    for timestamp in forecast_visualizer.forecast_subset.ds.time.values:
         #forecast.randomize_coord()
         #forecast.subset_forecast(rel_dist, pres_min, pres_max)
 
@@ -169,8 +149,8 @@ if __name__ == '__main__':
 
         print("Saving Figure " + str(timestamp))
         forecast_visualizer.visualize_3d_planar_flow(ax1, skip)
-        plt.savefig(str(i) +'.png')
-        #plt.show()
+        #plt.savefig(str(i) +'.png')
+        plt.show()
         plt.close()
         i +=1
 
@@ -178,7 +158,7 @@ if __name__ == '__main__':
 
     #Generate gif of flowfield
     with imageio.get_writer('wind3.gif', mode='I') as writer:
-        for i in range(len(forecast_visualizer.forecast.ds.time.values)):
+        for i in range(len(forecast_visualizer.forecast_subset.ds.time.values)):
             image = imageio.imread(str(i) +'.png')
             writer.append_data(image)
 

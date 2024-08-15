@@ -7,7 +7,7 @@ from scipy.interpolate import griddata
 import xarray as xr
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 #import ERA5
-from utils.convert_range import convert_range
+from utils.common import convert_range
 
 class FlowField3D:
     def __init__(self, x_dim, y_dim, z_dim, num_levels, min_vel, max_vel, res, seed):

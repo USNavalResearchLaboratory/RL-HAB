@@ -8,7 +8,7 @@ import math
 
 from env3d.generate3dflow import FlowField3D, PointMass
 from env3d.rendering.renderer import MatplotlibRenderer
-from utils.convert_range import convert_range
+from utils.common import convert_range
 from env3d.config.env_config import env_params
 
 

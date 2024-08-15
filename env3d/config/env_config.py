@@ -1,8 +1,7 @@
 import numpy as np
-from era5 import config_earth
 
 env_params = {
-        'dt': config_earth.simulation['dt'],  # seconds
+        'dt': 60,  # seconds
         'radius': 50_000,  # km
 
         'alt_min': 14_000, # m

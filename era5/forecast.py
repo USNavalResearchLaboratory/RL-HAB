@@ -1,28 +1,25 @@
-from era5 import config_earth
-from era5 import ERA5
 import xarray as xr
 import numpy as np
-from utils import CoordinateTransformations as transform
 from env3d.config.env_config import env_params
-from utils import constants, convert_range
-from utils.convert_range import convert_range
+from utils import constants
+from utils.common import convert_range, quarter
 from utils import CoordinateTransformations as transform
 from line_profiler import profile
-from datetime import datetime, timedelta
+
 
 class Forecast:
-    #Load from config file for now.  Maybe change this later
-    def __init__(self, filename):
+    """
+    Loads a Full ERA5 forecast into memory.
 
+    The downloaded forecast should be Multiple days long, in the pressure region (20-200), and cover
+    several thousand square kilometers of area.
+
+    Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
+    """
+    def __init__(self, filename):
         self.load_forecast(filename)
 
-        #self.randomize_coord()
-
-    def quarter(self,x):
-        return round(x*4)/4
-
     def load_forecast(self, filename):
-        print("Loading Forecast...")
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
         # Reverse order of latitude, since era5 comes reversed for some reason?
@@ -50,21 +47,24 @@ class Forecast:
         print(f"PRES RANGE: ({self.LEVEL_DIM}) {self.LEVEL_MIN}, {self.LEVEL_MAX}")
         print(f"TIME RANGE: ({self.TIME_DIM}) {self.TIME_MIN}, {self.TIME_MAX}")
 
-        print(self.LAT_MIN, self.LAT_MAX)
-
-        print("Forecast Loaded")
-
-        #return lat, lon, time
-
 class Forecast_Subset:
+    """
+    Generates a Forecast Subset from a master Forecast. This significantly speeds up processing time when randomizing areas
+    to run episodes on
+    """
     # Load from config file for now.  Maybe change this later
     def __init__(self, Forecast):
         self.Forecast = Forecast
 
-    def quarter(self,x):
-        return round(x*4)/4
-
     def randomize_coord(self):
+        """
+        Generates a random coordinate to centralize the Forecast Subset, and stores the coordinate for look up by other classes.
+
+        Altitude Bounds are the same as the PRIMARY FORECAST
+        Horizontal Bounds are within 2 degrees of the min/max LAT/LON from the PRIMARY FORECAST
+        Time Bounds are between the start time and up to 24 hours before the final timestamp of the PRIMARY FORECAST
+
+        """
         lat = np.random.uniform(low=self.Forecast.LAT_MIN+2, high=self.Forecast.LAT_MAX-2)
         lon = np.random.uniform(low=self.Forecast.LON_MIN + 2, high=self.Forecast.LON_MAX - 2)
         #Convert time to unix for randomizing.
@@ -75,11 +75,25 @@ class Forecast_Subset:
 
         #Round time to nearest hour and quarter
         self.start_time = np.array(time, dtype='datetime64[h]')
-        self.lat_central = self.quarter(lat)
-        self.lon_central = self.quarter(lon)
+        self.lat_central = quarter(lat)
+        self.lon_central = quarter(lon)
 
 
-    def subset_forecast(self, rel_dist, pres_min, pres_max):
+    def subset_forecast(self):
+        """
+        Subsets the Forecast to the central coordinate. This assume a random coordinate or user input coordinate has already been assigned.
+
+        Horizontal Bounds are determined by the relative distance (converted to lat/lon degrees)
+        Altitude is the same
+        Time is 24 hours
+
+        Converts the DataSet to a numpy array for faster processing
+
+        """
+
+        rel_dist = env_params['rel_dist']
+        pres_min = env_params['pres_min']
+        pres_max = env_params['pres_max']
 
 
         #1.  Calculate Lat/Lon Coordinates for subsetting the data to The relative distance area
@@ -90,11 +104,11 @@ class Forecast_Subset:
         _ , lon_max = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, rel_dist, 0)
 
         #Round to nearest .25 degree resolution since that's the res of ERA5 forecasts
-        self.lat_min = self.quarter(lat_min)
-        self.lon_min = self.quarter(lon_min)
+        self.lat_min = quarter(lat_min)
+        self.lon_min = quarter(lon_min)
 
-        self.lat_max = self.quarter(lat_max)
-        self.lon_max = self.quarter(lon_max)
+        self.lat_max = quarter(lat_max)
+        self.lon_max = quarter(lon_max)
 
         #2. Subset the forecast to a smaller array #This may not be necessary for simulating, but good for forecast visualization)
         #No time for now?
@@ -129,20 +143,28 @@ class Forecast_Subset:
 
     @profile
     def xr_lookup(self,lat, lon, timestamp):
+
         # How to look up indicies for xarray
         #time_idx = list(self.ds.time.values).index(self.ds.sel(time=timestamp, method='nearest').time)
         #lat_idx = list(self.ds.latitude.values).index(self.ds.sel(latitude=lat, method='nearest').latitude)
         #lon_idx = list(self.ds.longitude.values).index(self.ds.sel(longitude=lon, method='nearest').longitude)
 
-        return self.ds.sel(latitude=lat, longitude=lon,  time=timestamp, method = "nearest")['z'].values
+        z = self.ds.sel(latitude=lat, longitude=lon, time=timestamp, method="nearest")['z'].values / constants.GRAVITY
+        u = self.ds.sel(latitude=lat, longitude=lon, time=timestamp, method="nearest")['u'].values
+        v = self.ds.sel(latitude=lat, longitude=lon, time=timestamp, method="nearest")['v'].values
+
+        return (z,u,v)
 
     def get_unixtime(self, dt64):
+        """Converts numpy datetime64 to epoch time in seconds"""
         return dt64.astype('datetime64[s]').astype('int')
 
 
     @profile
     def np_lookup(self,lat, lon, time):
-        lat_idx = int(convert_range(lat, self.lat_min,self.lat_max, 0, self.lat_dim))
+        """A function to match xarray.sel() functionality but with numpy.  This function is over 100x faster than xarray."""
+
+        lat_idx = int(convert_range(lat, self.lat_min, self.lat_max, 0, self.lat_dim))
         lon_idx = int(convert_range(lon, self.lon_min, self.lon_max, 0, self.lon_dim))
         time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time), self.get_unixtime(self.end_time), 0, self.time_dim))
 
@@ -158,7 +180,9 @@ class Forecast_Subset:
         return (z,u,v)
 
     def windVectorToBearing(self, u, v):
-        """Helper function to conver u-v wind components to bearing and speed.
+        """Helper function to convert u-v wind components to bearing and speed.
+
+        Not being used right now.
 
         """
         bearing = np.arctan2(v,u)
@@ -167,19 +191,22 @@ class Forecast_Subset:
         return [bearing, speed]
 
     def interpolate_wind(self, alt, z,u,v):
-        #Ignoring time for right now
+        '''
+        Interpolates the u and v wind components given a 3D coordinate (lat,lon,alt)
+        Currently only interpolating in the Z direction.  No smoothing for time or horizontal changes.
+        '''
 
         #need to change to ascending order for interpolating with numpy
         u_wind = np.interp(alt, z[::-1], u[::-1])
         v_wind = np.interp(alt, z[::-1], v[::-1])
 
-        #bearing, speed = self.windVectorToBearing(u_wind, v_wind)
-
-        #Do I need to do the axis crossover check now if not interpolating 2 times?
-
         return u_wind, v_wind
 
     def getNewCoord(self, Balloon, SimulationState, dt):
+        """
+        Determines new coordinate based on the flow at the current position and integrates forward int time via dt
+
+        """
         #Balloon lat and lon coordinates should dictate relative X and Y coordinates.  I think....
 
 
@@ -207,15 +234,11 @@ class Forecast_Subset:
 
 
 if __name__ == '__main__':
-    pres_min = env_params['pres_min']
-    pres_max = env_params['pres_max']
-    rel_dist = env_params['rel_dist']
-
-    filename = "SHAB14V_ERA5_20220822_20220823.nc"
+    filename = "July-2024-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
-    forecast_subset.subset_forecast(rel_dist, pres_min, pres_max)
+    forecast_subset.subset_forecast()
 

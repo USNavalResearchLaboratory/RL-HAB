@@ -24,7 +24,7 @@ uncertainty in flow fields.  Additionally, wind diversity and opposing wind prob
 Also see Google's Balloon Learning Environment: https://balloon-learning-environment.readthedocs.io/en/latest/
 
 
-![alt text](img/station-keeping.png)
+![alt text](img/station-keeping.png) ![alt text](wind3.gif)
 
 ## Installation
 
