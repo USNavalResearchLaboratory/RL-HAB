@@ -34,7 +34,7 @@ hash = repo.git.rev_parse(repo.head, short=True)
 
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = "3dflow-DQN"
+    model_name = "DQN-ERA5"
     models_dir = f"RL_models_3D/{model_name}"
 
     if not os.path.exists(models_dir):
@@ -87,7 +87,7 @@ def objective(trial):
 
     run = wandb.init(
         #anonymous="allow",
-        project="old-test",
+        project= "DQN_ERA5",
         config=config,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         # monitor_gym=True,  # auto-upload the videos of agents playing the game

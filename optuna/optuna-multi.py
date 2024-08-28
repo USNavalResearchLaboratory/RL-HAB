@@ -22,14 +22,14 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 
 # Import the Dynamics Profiles
-#from env3d.FlowEnv3D_SK_relative import FlowFieldEnv3d
-from env3d.FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
+from era5.era5_gym import FlowFieldEnv3d
 
 #import custom callbacks
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from callbacks.TrialEvalCallback import TrialEvalCallback
 from env3d.config.env_config import env_params
+from era5.forecast import Forecast
 
 import git
 
@@ -39,7 +39,7 @@ hash = repo.git.rev_parse(repo.head, short=True)
 
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = "3dflow-DQN"
+    model_name = "DQN_ERA5"
     models_dir = f"{optuna_config.model_path}/{model_name}"
 
     if not os.path.exists(models_dir):
@@ -61,7 +61,7 @@ def objective(trial):
     buffer_size = trial.suggest_categorical('buffer_size', [int(5e5), int(1e6), int(2.5e6)]) #new one
 
     # Define a search space for network architecture
-    num_layers = trial.suggest_int('num_layers', 2, 6)
+    num_layers = trial.suggest_int('num_layers', 2, 8)
     layer_sizes = [trial.suggest_int(f'layer_size_{i}', 32, 600) for i in range(num_layers)]
     net_arch = layer_sizes
 
@@ -102,8 +102,11 @@ def objective(trial):
 
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    env = make_vec_env(lambda: FlowFieldEnv3d(**env_params), n_envs=optuna_config.n_envs)
-    eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d(**env_params))])
+    filename = "July-2024-SEA.nc"
+    FORECAST_PRIMARY = Forecast(filename)
+    env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=optuna_config.n_envs)
+
+    eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY))])
     eval_env = VecMonitor(eval_env)
 
     checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"{optuna_config.model_path}/{run.name}",

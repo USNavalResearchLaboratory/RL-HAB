@@ -41,19 +41,36 @@ class ForecastVisualizer:
 
     def generate_flow_array(self, timestamp):
 
+        #print("z_dummy1", self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central,
+        #                            longitude=self.forecast_subset.lon_central,
+        #                            time=timestamp, method='nearest')['z'].data)
+
         #For plotting altitude levels
         self.alts2 = self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central, longitude=self.forecast_subset.lon_central,
                                                  time=timestamp, method='nearest')['z'].values * .001
         # Assign the new altitude coordinate
         self.forecast_subset.ds = self.forecast_subset.ds.assign_coords(altitude=('level', self.alts2))
 
+        #print(self.forecast_subset.ds)
+
+
         self.timestamp = timestamp
         time_index = list(self.forecast_subset.ds.time.values).index(self.forecast_subset.ds.sel(time=self.timestamp, method='nearest').time)
 
+        #print("time_index",time_index)
+
+        #print(self.forecast_subset.ds.shape)
+
         # ERA5 data variables structure that we download is (time, level, latitude, longitude)
-        self.u = self.forecast_subset.ds['u'][time_index, :, :, :].data
+        self.u = self.forecast_subset.ds['u'][time_index, :, :, :].data #should this be values
         self.v = self.forecast_subset.ds['v'][time_index, :, :, :].values
         self.z = self.forecast_subset.ds['z'][time_index, :, :, :].values
+
+        #print("u_dummy", self.u)
+
+        #print(self.forecast_subset.ds['u'].shape)
+
+        #print(self.u.shape, self.v.shape,self.z.shape )
 
         # need to reshape array to level, Longitude(X), latitude(Y) for plotting.
         self.u = np.swapaxes(self.u, 1, 2)
@@ -65,11 +82,14 @@ class ForecastVisualizer:
 
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
 
+        #print("SHAPE", self.flow_field.shape)
+
 
     def visualize_3d_planar_flow(self, ax, skip=1):
         '''
         Plot the Flow Field
         '''
+
         for z in range(self.flow_field.shape[0]):
             # UPDATE added indexing 'ij' which fixed a hidden bug in visualization when flows are not all the same magnitude.
             X, Y = np.meshgrid(np.arange(self.flow_field.shape[1]), np.arange(self.flow_field.shape[2]), indexing='ij')
@@ -79,16 +99,27 @@ class ForecastVisualizer:
 
             Z = np.full_like(X, self.levels[z])
 
+            #print("z shape" , Z.shape)
+
             # Calculate directions for color mapping
             directions = np.arctan2(V, U)
+            speed = np.sqrt(V**2 + U**2)
+
+            # For Speed
+            #norm = plt.Normalize(np.min(speed), np.max(speed))
+            #colors = cm.hsv(norm(speed))
+
+            # For Direction
             norm = plt.Normalize(-np.pi, np.pi)
-            colors = cm.hsv(norm(directions))
+            colors = cm.hsv(norm(directions)) #for Directions
             res = 1
 
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
                     ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
-                              length = .1, arrow_length_ratio=1.5, color=colors[i, j], arrow_head_angle=75)
+                              #length = .05, arrow_length_ratio=3.5, color=colors[i, j], arrow_head_angle=84.9)
+                              #length = .1, arrow_length_ratio = 1.5, color = colors[i, j], arrow_head_angle = 75)
+                              length = 1, arrow_length_ratio = .5, color = colors[i, j], arrow_head_angle = 75, normalize = True)
 
                     #ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                     #          length=.25, arrow_length_ratio=1.5, color=colors[i, j])
@@ -97,12 +128,22 @@ class ForecastVisualizer:
         ax.set_ylabel('Latitude (degrees)')
         ax.set_zlabel('Pressure Level (mb)')
 
-
+        #'''
+        #Color Direction
         colormap = plt.colormaps.get_cmap('hsv')
         # colors = colormap(scaled_z)
         sm = plt.cm.ScalarMappable(cmap=colormap)
         sm.set_clim(vmin=-3.14, vmax=3.14)
-        #plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
+        plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
+        #'''
+
+        '''
+        #Color Speed
+        mappable = cm.ScalarMappable(cmap=cm.hsv, norm=norm)
+        mappable.set_array(speed)
+        cbar = plt.colorbar(mappable, ax=ax, pad=0.1)
+        cbar.set_label('Wind Speed')
+        '''
 
         x_min, x_max = plt.xlim()
         y_min, y_max = plt.ylim()
@@ -111,6 +152,9 @@ class ForecastVisualizer:
         ax.set_zticks(self.alts2)
         ax.set_zticklabels(self.pressure_levels)
 
+        #print("z_ticks",self.alts2 )
+        #print("z_tick labels", self.pressure_levels )
+
         ax.set_xticks(np.linspace(x_min, x_max, 6), np.linspace(self.forecast_subset.ds.longitude[0].values, self.forecast_subset.ds.longitude[-1].values, 6, dtype=float))
         ax.set_yticks(np.linspace(y_min, y_max, 6), np.linspace(self.forecast_subset.ds.latitude[0].values, self.forecast_subset.ds.latitude[-1].values, 6, dtype=float))
 
@@ -118,19 +162,27 @@ class ForecastVisualizer:
 
 
 if __name__ == '__main__':
-    filename = "SHAB14V_ERA5_20220822_20220823.nc"
+    #filename = "SHAB14V_ERA5_20220822_20220823.nc"
+    filename = "SynthCast4.nc"
     FORECAST_PRIMARY = Forecast(filename)
+
+    print(FORECAST_PRIMARY.ds_original)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
     forecast_subset.subset_forecast()
 
+    forecast_subset.ds = forecast_subset.ds.isel(level = slice(51,52))
+
+    print(forecast_subset.ds)
+
+    #sdfsd
+
     # Analyze Data
     forecast_visualizer = ForecastVisualizer(forecast_subset)
-    skip = 2
+    skip = 1
 
-    print(forecast_visualizer.forecast_subset.ds.time.values)
 
     i = 0
     for timestamp in forecast_visualizer.forecast_subset.ds.time.values:

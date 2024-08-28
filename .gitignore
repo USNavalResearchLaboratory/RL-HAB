@@ -5,6 +5,7 @@ RL_models*
 logs*
 wandb
 forecasts
+BEST_MODELS
 
 *.sqlite3
 

@@ -44,7 +44,7 @@ config = {
     "NOTES": "" #change this to lower case
 }
 
-n_procs = 20
+n_procs = 1
 
 filename = "July-2024-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)

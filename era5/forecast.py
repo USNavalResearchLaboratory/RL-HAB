@@ -22,8 +22,17 @@ class Forecast:
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
+        print("z_dummy0", self.ds_original.isel(latitude=0,
+                                                      longitude=0,
+                                                      time=0)['z'].data)
+
         # Reverse order of latitude, since era5 comes reversed for some reason?
+        print()
+        print(self.ds_original)
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
+        #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
+        print(self.ds_original)
+        #sdfsdf
 
         self.LAT_MIN = self.ds_original.latitude.values[0]
         self.LAT_MAX = self.ds_original.latitude.values[-1]
@@ -117,6 +126,7 @@ class Forecast_Subset:
                               level=slice(pres_min,pres_max),
                               time=slice(self.start_time, self.start_time + np.timedelta64(24, "h"))) #1 day of time for now
 
+        #print(self.ds)
 
         # 3. Determine new min and max values from the subsetted forecast
 

@@ -45,6 +45,7 @@ class FlowFieldEnv3d(gym.Env):
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
         self.forecast_subset.randomize_coord()
         self.forecast_subset.subset_forecast()
+        self.forecast_scores = [5, 5, 5, 5] #dummy score to trigger randomizing
 
 
         if self.render_mode=="human":
@@ -83,19 +84,39 @@ class FlowFieldEnv3d(gym.Env):
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
 
+    def count_greater_than_zero(self, arr):
+        return np.sum(np.array(arr) > 0)
+
     @profile
     def reset(self, seed=None, options=None):
 
         #Randomize new coordinate and forecast subset
-        score = 0
-        while score< 0.25:
+        #self.forecast_score = 0
+        #while self.forecast_score< 0.25:
+        #self.forecast_subset.randomize_coord()
+        #self.forecast_subset.subset_forecast()
+
+        self.forecast_scores = [5, 5, 5, 5]  # dummy score to trigger randomizing
+        self.forecast_score = 0  # dummy score to trigger randomizing
+
+        #while self.count_greater_than_zero(self.forecast_scores) != 0:
+        while self.forecast_score < 0.05:
+
             self.forecast_subset.randomize_coord()
             self.forecast_subset.subset_forecast()
 
-            scores, score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+            self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+        #print(self.forecast_scores)
+        #if score < 0.25:
+        #   print(colored("WARNING: Bad forecast score of " + str(score) + ". Re-randomizing" , "yellow"))
+        #if self.count_greater_than_zero(self.forecast_scores) != 0:
+        #    print(colored("WARNING: Bad forecast super score of " + str(self.count_greater_than_zero(self.forecast_scores)) + ". Re-randomizing" , "yellow"))
 
-            #if score < 0.25:
-            #    print(colored("WARNING: Bad forecast score of " + str(score) + ". Re-randomizing" , "yellow"))
+
+        #self.dummy_lat = self.forecast_subset.lat_central
+        #self.dummy_lon = self.forecast_subset.lon_central
+        #self.dummy_time = self.forecast_subset.start_time
+        #print(self.dummy_time, self.dummy_lat, self.dummy_lon, self.forecast_scores)
 
         #Reset custom metrics
         self.within_target = False
@@ -293,7 +314,7 @@ class FlowFieldEnv3d(gym.Env):
     @profile
     def step(self, action):
         reward = self.move_agent(action)
-        reward += self.reward_piecewise()
+        reward += self.reward_euclidian()
 
         observation = self._get_obs()
         info = self._get_info()

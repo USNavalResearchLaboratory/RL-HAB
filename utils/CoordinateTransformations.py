@@ -83,6 +83,16 @@ def mercator_to_latlon(origin_lat, origin_lon, x_m, y_m):
 
 if __name__ == '__main__':
 
+    origin_lat = 12.75
+    origin_lon = 121.5
+    x_m = 150000
+    y_m = 150000
+
+    print(meters_to_latlon_spherical(origin_lat, origin_lon, x_m, y_m))
+
+
+
+    '''
     # Example usage
     origin_lat, origin_lon = 36, -105
     target_lat = 36  # Adding 1 degree to latitude
@@ -126,4 +136,4 @@ if __name__ == '__main__':
     target_lon_inv, target_lat_inv = mercator_to_latlon(origin_lat, origin_lon, x_m, y_m)
     print(f"Target Coordinates: lat = {target_lat_inv:.2f}, lon = {target_lon_inv:.2f}")
 
-
+    '''
