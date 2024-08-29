@@ -163,17 +163,21 @@ class ForecastVisualizer:
 
 if __name__ == '__main__':
     #filename = "SHAB14V_ERA5_20220822_20220823.nc"
-    filename = "SynthCast4.nc"
+    filename = "SYNTH-Jan-2023-SEA.nc"
+    #filename = "Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
+
+    env_params["rel_dist"] = 50_000_000 #does this override work?
 
     print(FORECAST_PRIMARY.ds_original)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-    forecast_subset.randomize_coord()
-    print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
+    forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
+                                 0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
+                                 "2023-01-01T00:00:00.000000000")
     forecast_subset.subset_forecast()
 
-    forecast_subset.ds = forecast_subset.ds.isel(level = slice(51,52))
+    forecast_subset.ds = forecast_subset.ds.isel(level = slice(1,5))
 
     print(forecast_subset.ds)
 
@@ -181,7 +185,7 @@ if __name__ == '__main__':
 
     # Analyze Data
     forecast_visualizer = ForecastVisualizer(forecast_subset)
-    skip = 1
+    skip = 2
 
 
     i = 0

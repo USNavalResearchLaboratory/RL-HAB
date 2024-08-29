@@ -22,13 +22,8 @@ class Forecast:
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
-        print("z_dummy0", self.ds_original.isel(latitude=0,
-                                                      longitude=0,
-                                                      time=0)['z'].data)
-
         # Reverse order of latitude, since era5 comes reversed for some reason?
-        print()
-        print(self.ds_original)
+
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
         #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
         print(self.ds_original)
@@ -64,6 +59,12 @@ class Forecast_Subset:
     # Load from config file for now.  Maybe change this later
     def __init__(self, Forecast):
         self.Forecast = Forecast
+
+    def assign_coord(self, lat, lon, timestamp):
+        # Round time to nearest hour and quarter
+        self.start_time = np.array(timestamp, dtype='datetime64[h]')
+        self.lat_central = quarter(lat)
+        self.lon_central = quarter(lon)
 
     def randomize_coord(self):
         """
@@ -103,7 +104,6 @@ class Forecast_Subset:
         rel_dist = env_params['rel_dist']
         pres_min = env_params['pres_min']
         pres_max = env_params['pres_max']
-
 
         #1.  Calculate Lat/Lon Coordinates for subsetting the data to The relative distance area
         lat_min, _ = transform.meters_to_latlon_spherical(self.lat_central, self.lon_central, 0, -rel_dist)
