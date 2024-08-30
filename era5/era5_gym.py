@@ -45,7 +45,7 @@ class FlowFieldEnv3d(gym.Env):
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
         self.forecast_subset.randomize_coord()
         self.forecast_subset.subset_forecast()
-        self.forecast_scores = [5, 5, 5, 5] #dummy score to trigger randomizing
+        self.forecast_scores = [5, 5, 5, 5] # dummy score to trigger randomizing
 
 
         if self.render_mode=="human":
@@ -112,12 +112,6 @@ class FlowFieldEnv3d(gym.Env):
         #if self.count_greater_than_zero(self.forecast_scores) != 0:
         #    print(colored("WARNING: Bad forecast super score of " + str(self.count_greater_than_zero(self.forecast_scores)) + ". Re-randomizing" , "yellow"))
 
-
-        #self.dummy_lat = self.forecast_subset.lat_central
-        #self.dummy_lon = self.forecast_subset.lon_central
-        #self.dummy_time = self.forecast_subset.start_time
-        #print(self.dummy_time, self.dummy_lat, self.dummy_lon, self.forecast_scores)
-
         #Reset custom metrics
         self.within_target = False
         self.twr = 0 # time within radius
@@ -132,10 +126,10 @@ class FlowFieldEnv3d(gym.Env):
                                     y = 0,
                                     altitude = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
                                     )
-        #Reset simulator state (timestamp to forecast subset start time,  counts back to 0)
+        # Reset simulator state (timestamp to forecast subset start time,  counts back to 0)
         self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset.start_time)
 
-        #Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
+        # Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
         self.Balloon.update(lat = self.forecast_subset.lat_central,lon = self.forecast_subset.lon_central,x=0,y=0, distance = 0)
         self.calculate_relative_wind_column()
@@ -172,7 +166,6 @@ class FlowFieldEnv3d(gym.Env):
     def getCoord_forecast(self):
         return self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
     """
-
 
     @profile
     def move_agent(self, action):
@@ -415,6 +408,9 @@ class FlowFieldEnv3d(gym.Env):
             "twr": self.twr,
             "twr_inner": self.twr_inner,
             "twr_outer": self.twr_outer,
+            "forecast_score": self.forecast_score,
+            "forecast_scores": self.forecast_scores,
+            "render_mode": self.render_mode
         }
 
     def render(self, mode='human'):

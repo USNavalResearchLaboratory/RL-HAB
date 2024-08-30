@@ -41,36 +41,19 @@ class ForecastVisualizer:
 
     def generate_flow_array(self, timestamp):
 
-        #print("z_dummy1", self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central,
-        #                            longitude=self.forecast_subset.lon_central,
-        #                            time=timestamp, method='nearest')['z'].data)
-
         #For plotting altitude levels
         self.alts2 = self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central, longitude=self.forecast_subset.lon_central,
                                                  time=timestamp, method='nearest')['z'].values * .001
         # Assign the new altitude coordinate
         self.forecast_subset.ds = self.forecast_subset.ds.assign_coords(altitude=('level', self.alts2))
 
-        #print(self.forecast_subset.ds)
-
-
         self.timestamp = timestamp
         time_index = list(self.forecast_subset.ds.time.values).index(self.forecast_subset.ds.sel(time=self.timestamp, method='nearest').time)
-
-        #print("time_index",time_index)
-
-        #print(self.forecast_subset.ds.shape)
 
         # ERA5 data variables structure that we download is (time, level, latitude, longitude)
         self.u = self.forecast_subset.ds['u'][time_index, :, :, :].data #should this be values
         self.v = self.forecast_subset.ds['v'][time_index, :, :, :].values
         self.z = self.forecast_subset.ds['z'][time_index, :, :, :].values
-
-        #print("u_dummy", self.u)
-
-        #print(self.forecast_subset.ds['u'].shape)
-
-        #print(self.u.shape, self.v.shape,self.z.shape )
 
         # need to reshape array to level, Longitude(X), latitude(Y) for plotting.
         self.u = np.swapaxes(self.u, 1, 2)
@@ -81,8 +64,6 @@ class ForecastVisualizer:
         self.levels = self.forecast_subset.ds['altitude']
 
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
-
-        #print("SHAPE", self.flow_field.shape)
 
 
     def visualize_3d_planar_flow(self, ax, skip=1):
@@ -98,8 +79,6 @@ class ForecastVisualizer:
             W = self.flow_field[z, :, :, 2]  # Flow is only in the X-Y plane
 
             Z = np.full_like(X, self.levels[z])
-
-            #print("z shape" , Z.shape)
 
             # Calculate directions for color mapping
             directions = np.arctan2(V, U)
@@ -151,10 +130,6 @@ class ForecastVisualizer:
         # Setting custom tick labels without changing the plot bounds
         ax.set_zticks(self.alts2)
         ax.set_zticklabels(self.pressure_levels)
-
-        #print("z_ticks",self.alts2 )
-        #print("z_tick labels", self.pressure_levels )
-
         ax.set_xticks(np.linspace(x_min, x_max, 6), np.linspace(self.forecast_subset.ds.longitude[0].values, self.forecast_subset.ds.longitude[-1].values, 6, dtype=float))
         ax.set_yticks(np.linspace(y_min, y_max, 6), np.linspace(self.forecast_subset.ds.latitude[0].values, self.forecast_subset.ds.latitude[-1].values, 6, dtype=float))
 
@@ -163,21 +138,24 @@ class ForecastVisualizer:
 
 if __name__ == '__main__':
     #filename = "SHAB14V_ERA5_20220822_20220823.nc"
-    filename = "SYNTH-Jan-2023-SEA.nc"
-    #filename = "Jan-2023-SEA.nc"
+    #filename = "SYNTH-Jan-2023-SEA.nc"
+    filename = "Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
-    env_params["rel_dist"] = 50_000_000 #does this override work?
+    env_params["rel_dist"] = 300_000 #does this override work?
 
     print(FORECAST_PRIMARY.ds_original)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-    forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
-                                 0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
-                                 "2023-01-01T00:00:00.000000000")
+    #forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
+    #                             0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
+    #                             "2023-01-01T00:00:00.000000000")
+    forecast_subset.randomize_coord()
     forecast_subset.subset_forecast()
 
-    forecast_subset.ds = forecast_subset.ds.isel(level = slice(1,5))
+    #forecast_subset.ds = forecast_subset.ds.isel(level = slice(1,2))
+
+    print(forecast_subset.ds['z'].values/9.81)
 
     print(forecast_subset.ds)
 
@@ -205,15 +183,15 @@ if __name__ == '__main__':
 
         print("Saving Figure " + str(timestamp))
         forecast_visualizer.visualize_3d_planar_flow(ax1, skip)
-        #plt.savefig(str(i) +'.png')
-        plt.show()
+        plt.savefig(str(i) +'.png')
+        #plt.show()
         plt.close()
         i +=1
 
     #plt.show()
 
     #Generate gif of flowfield
-    with imageio.get_writer('wind3.gif', mode='I') as writer:
+    with imageio.get_writer('wind7.gif', mode='I', loop = 0) as writer:
         for i in range(len(forecast_visualizer.forecast_subset.ds.time.values)):
             image = imageio.imread(str(i) +'.png')
             writer.append_data(image)

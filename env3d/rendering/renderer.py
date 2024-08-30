@@ -1,13 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from termcolor import colored
-from pyproj import Proj
-from utils import CoordinateTransformations as transform
-
 from era5 import config_earth
 from env3d.config.env_config import env_params
-from env3d.balloon import BalloonState, SimulatorState
-
 
 class MatplotlibRenderer():
     def __init__(self, Forecast_visualizer, render_mode,
