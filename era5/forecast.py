@@ -5,6 +5,8 @@ from utils import constants
 from utils.common import convert_range, quarter
 from utils import CoordinateTransformations as transform
 from line_profiler import profile
+from termcolor import colored
+import sys
 
 
 class Forecast:
@@ -22,12 +24,39 @@ class Forecast:
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
+        # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
+        if 't' in self.ds_original.data_vars:
+            self.ds_original = self.ds_original.drop_vars('t')
+
         # Reverse order of latitude, since era5 comes reversed for some reason?
 
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
         #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
-        print(self.ds_original)
-        #sdfsdf
+
+
+        ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS FOR NOW
+                '''
+        #initial time variables
+        self.TIME_MIN = self.ds_original.time.values[0]
+        self.TIME_MAX = self.ds_original.time.values[-1]
+        self.TIME_DIM = len(self.ds_original.time.values)
+
+        print(colored("HACKY SOLUTION FOR SYNTH WINDS CURRENTLY ACTIVE","cyan"))
+        print(self.TIME_MIN)
+        synth_simulated_time = []
+        hour_interval = 3
+        for i in range(0, self.TIME_DIM ):
+            synth_simulated_time.append(self.TIME_MIN + np.timedelta64(i * hour_interval, "h"))
+
+        # print(synth_simulated_time)
+        print(len(synth_simulated_time))
+        self.ds_original['time'] = synth_simulated_time
+        self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
+
+
+
+
+
 
         self.LAT_MIN = self.ds_original.latitude.values[0]
         self.LAT_MAX = self.ds_original.latitude.values[-1]
@@ -41,10 +70,11 @@ class Forecast:
         self.LEVEL_MAX = self.ds_original.level.values[-1]
         self.LEVEL_DIM = len(self.ds_original.level.values)
 
-        #Assuming Forecasts are downloaded in 1 hour resolution for now?
         self.TIME_MIN = self.ds_original.time.values[0]
         self.TIME_MAX = self.ds_original.time.values[-1]
         self.TIME_DIM = len(self.ds_original.time.values)
+
+
 
         print(f"LAT RANGE: ({self.LAT_DIM }) {self.LAT_MIN}, {self.LAT_MAX}")
         print(f"LON RANGE: ({self.LON_DIM}) {self.LON_MIN}, {self.LON_MAX}")
@@ -79,7 +109,7 @@ class Forecast_Subset:
         lon = np.random.uniform(low=self.Forecast.LON_MIN + 2, high=self.Forecast.LON_MAX - 2)
         #Convert time to unix for randomizing.
         # Subtract 24 hours from the end for simulating.
-        time = np.random.uniform(low=self.get_unixtime(self.Forecast.TIME_MIN), high=self.get_unixtime(self.Forecast.TIME_MAX-np.timedelta64(23, "h")))
+        time = np.random.uniform(low=self.get_unixtime(self.Forecast.TIME_MIN), high=self.get_unixtime(self.Forecast.TIME_MAX-np.timedelta64(24, "h")))
         # Convert time back to dt64
         time = np.datetime64(int(time),'s')
 
@@ -88,8 +118,10 @@ class Forecast_Subset:
         self.lat_central = quarter(lat)
         self.lon_central = quarter(lon)
 
+        self.fourecast_error_count = 0
 
-    def subset_forecast(self):
+
+    def subset_forecast(self, days = 1):
         """
         Subsets the Forecast to the central coordinate. This assume a random coordinate or user input coordinate has already been assigned.
 
@@ -124,9 +156,8 @@ class Forecast_Subset:
         self.ds = self.Forecast.ds_original.sel(latitude=slice(self.lat_min, self.lat_max),
                               longitude=slice(self.lon_min, self.lon_max),
                               level=slice(pres_min,pres_max),
-                              time=slice(self.start_time, self.start_time + np.timedelta64(24, "h"))) #1 day of time for now
+                              time=slice(self.start_time, self.start_time + np.timedelta64(days, "D"))) #1 day of time for now
 
-        #print(self.ds)
 
         # 3. Determine new min and max values from the subsetted forecast
 
@@ -145,6 +176,8 @@ class Forecast_Subset:
         self.lon_dim = len(self.ds.longitude)
         self.level_dim = len(self.ds.level)
         self.time_dim = len(self.ds.time)
+
+
 
         # Convert the subset forecast Dataset to a numpy array for faster processing
         self.forecast_np = self.ds.to_array()
@@ -175,20 +208,43 @@ class Forecast_Subset:
 
     @profile
     def np_lookup(self,lat, lon, time):
-        """A function to match xarray.sel() functionality but with numpy.  This function is over 100x faster than xarray."""
+        #time = np.datetime64("2023-01-03T03:00:00.000000000")
+        #lat = 3.0
+        #lon = 128.0
 
+        """A function to match xarray.sel() functionality but with numpy.  This function is over 100x faster than xarray."""
+        #try:
         lat_idx = int(convert_range(lat, self.lat_min, self.lat_max, 0, self.lat_dim))
         lon_idx = int(convert_range(lon, self.lon_min, self.lon_max, 0, self.lon_dim))
-        time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time), self.get_unixtime(self.end_time), 0, self.time_dim))
+        time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time),
+                                     self.get_unixtime(self.end_time), 0, self.time_dim))
 
         # Clip idx's to out of bounds.  Should I add a warning here?
-        lat_idx = np.clip(lat_idx, 0, self.lat_dim-1)
+        lat_idx = np.clip(lat_idx, 0, self.lat_dim - 1)
         lon_idx = np.clip(lon_idx, 0, self.lon_dim - 1)
         time_idx = np.clip(time_idx, 0, self.time_dim - 1)
 
+        '''
+        except:
+
+            print(self.start_time, self.lat_central, self.lon_central)
+            print(lat, self.lat_min, self.lat_max, 0, self.lat_dim)
+            print(type(lat))
+            print(colored(str(self.fourecast_error_count) + " Error Occurred. Manually Overriding Forecast Lookup.", "red"))
+
+            #Hacky solution for now
+            lat_idx = int(convert_range(self.lat_central, self.lat_min, self.lat_max, 0, self.lat_dim))
+            lon_idx = int(convert_range(self.lon_central, self.lon_min, self.lon_max, 0, self.lon_dim))
+            time_idx = -1 #int(convert_range(self.get_unixtime(np.datetime64(self.start_time)), self.get_unixtime(self.start_time),
+                                         #self.get_unixtime(self.end_time), 0, self.time_dim))
+
+            self.fourecast_error_count += 1
+        '''
+
+
         z = self.forecast_np[0, time_idx, :, lat_idx, lon_idx] / constants.GRAVITY
-        u = self.forecast_np[2, time_idx, :, lat_idx, lon_idx]
-        v = self.forecast_np[3, time_idx, :, lat_idx, lon_idx]
+        u = self.forecast_np[1, time_idx, :, lat_idx, lon_idx]
+        v = self.forecast_np[2, time_idx, :, lat_idx, lon_idx]
 
         return (z,u,v)
 
@@ -222,6 +278,17 @@ class Forecast_Subset:
         """
         #Balloon lat and lon coordinates should dictate relative X and Y coordinates.  I think....
 
+        #'''
+        if np.isnan(Balloon.lat):
+            print(SimulationState.timestamp)
+            print("total steps", SimulationState.total_steps)
+            print(Balloon)
+            print(SimulationState.trajectory)
+            print(SimulationState.time_history)
+            sys.exit()
+        #'''
+
+
 
         #get Wind at current lat/lon
         z_col, u_col, v_col = self.np_lookup(Balloon.lat, Balloon.lon, SimulationState.timestamp)
@@ -247,7 +314,8 @@ class Forecast_Subset:
 
 
 if __name__ == '__main__':
-    filename = "July-2024-SEA.nc"
+    #filename = "July-2024-SEA.nc"
+    filename = "SYNTH-Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)

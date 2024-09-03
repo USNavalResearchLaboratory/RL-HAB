@@ -25,13 +25,13 @@ hash = repo.git.rev_parse(repo.head, short=True)
 
 # Directory Initialization
 run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_name = "DQN-ERA5"
-models_dir = "RL_models_era5/" + model_name
+model_name = "DQN-synth"
+models_dir = "RL_models_synth/" + model_name
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-logdir = "logs_era5"
+logdir = "logs_synth"
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
@@ -41,32 +41,32 @@ if not os.path.exists(logdir):
 policy_kwargs = dict(net_arch=[500, 500, 500, 500, 500])
 
 config = {
-    "total_timesteps": int(100e6),
+    "total_timesteps": int(200e6),
     'hyperparameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': 3.5e-5,
-                'exploration_fraction': 0.3,
-                'exploration_initial_eps': 0.7,
-                'exploration_final_eps': 0.15,
-                'batch_size': 512,
+                'learning_rate': .00001,
+                'exploration_fraction': 0.15,
+                'exploration_initial_eps': 0.8,
+                'exploration_final_eps': 0.01,
+                'batch_size': 8152,
                 'train_freq': 2,
-                'gamma': .95,
-                'buffer_size': int(2.5e6),
+                'gamma': .97,
+                'buffer_size': int(.5e6),
                 'target_update_interval': 10000,
                 'stats_window_size': 1000,
                 'device': "cuda",
             },
     "env_parameters": env_params,
-    "env_name": "DQN-ERA5-TEST",
+    "env_name": "DQN-SYNTH-WINDS-TEST",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
     "git": branch + " - " + hash,
-    "NOTES": "piece wise learning"
+    "NOTES": "piece wise learning with synth winds"
 }
 
 run = wandb.init(
     #anonymous="allow",
-    project="DQN-ERA5-TEST",
+    project="DQN-synth-TEST",
     config=config,
     sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
     # monitor_gym=True,  # auto-upload the videos of agents playing the game
@@ -78,13 +78,13 @@ run = wandb.init(
 n_procs = 100
 SAVE_FREQ = int(5e6/n_procs)
 
-filename = "July-2024-SEA.nc"
+filename = "SYNTH-Jan-2023-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)
 env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
 
 
 # Define the checkpoint callback to save the model every 1000 steps
-checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_era5/{run.name}",
+checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"RL_models_synth/{run.name}",
                                           name_prefix=model_name)
 
 model = DQN(env=env,
@@ -111,7 +111,7 @@ model.learn(
     log_interval=100,
     callback=[WandbCallback(
         gradient_save_freq=1000,
-        model_save_path=f"RL_models_km/{run.name}",
+        model_save_path=f"RL_models_synth/{run.name}",
         verbose=1), checkpoint_callback,
         TWRCallback(moving_avg_length=1000, radius='twr'),
         TWRCallback(moving_avg_length=1000, radius='twr_inner'),

@@ -3,6 +3,8 @@ from era5 import config_earth
 import pandas as pd
 import enum
 from env3d.config.env_config import env_params
+import numpy as np
+import math
 
 class BalloonState(object):
     '''Balloon State object for for updating and referencing during a simulation
@@ -29,7 +31,8 @@ class BalloonState(object):
     '''
 
 
-    def __init__(self, x=None, y=None, altitude=None, x_vel=0, y_vel=0, z_vel=0, distance=None, lat=None, lon=None, rel_bearing=None, pressure=None):
+    def __init__(self, x=0, y=0, altitude=0, x_vel=0, y_vel=0, z_vel=0, distance=0, lat=0, lon=0, rel_bearing=0, pressure=None):
+        #Trying to initialize to 0 to correct occasional error sith synth winds.
         self.x = x
         self.y = y
         self.altitude = altitude
@@ -44,14 +47,14 @@ class BalloonState(object):
         self.distance= distance
         self.rel_bearing = rel_bearing
 
-        self.atm_pressure = None  #Figure this out later
+        self.atm_pressure = 0  #Figure this out later
 
-        self.last_action= None
+        self.last_action= 0
 
         self.rel_wind_column= None
 
         #For later
-        power= None
+        power= 0
 
     def __str__(self):
         return (f"BalloonState(x={self.x}, y={self.y}, altitude={self.altitude},\n "
@@ -97,6 +100,15 @@ class SimulatorState(object):
         :return:
         '''
 
+        '''
+        if np.isnan(Balloon.lat):
+            print(self.timestamp)
+            print(self.total_steps)
+            print(Balloon)
+            print(self.trajectory)
+            print(self.time_history)
+        '''
+
         self.timestamp = self.timestamp + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
         self.trajectory.append((Balloon.x , Balloon.y, Balloon.altitude))
@@ -108,6 +120,8 @@ class SimulatorState(object):
             done = False
 
         self.total_steps +=1
+
+
 
         return done
 

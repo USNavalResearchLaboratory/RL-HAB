@@ -23,8 +23,10 @@ class FlowFieldEnv3d(gym.Env):
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
     @profile
-    def __init__(self, FORECAST_PRIMARY, seed=None, render_mode=None ):
+    def __init__(self, FORECAST_PRIMARY, days = 1, seed=None, render_mode=None ):
         super(FlowFieldEnv3d, self).__init__()
+
+        self.days = days
 
         self.FORECAST_PRIMARY = FORECAST_PRIMARY
         self.ForecastClassifier = ForecastClassifier()
@@ -44,7 +46,7 @@ class FlowFieldEnv3d(gym.Env):
         # Initial randomized forecast subset from the master forecast to pass to rendering
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
         self.forecast_subset.randomize_coord()
-        self.forecast_subset.subset_forecast()
+        self.forecast_subset.subset_forecast(days=self.days)
         self.forecast_scores = [5, 5, 5, 5] # dummy score to trigger randomizing
 
 
@@ -103,7 +105,7 @@ class FlowFieldEnv3d(gym.Env):
         while self.forecast_score < 0.05:
 
             self.forecast_subset.randomize_coord()
-            self.forecast_subset.subset_forecast()
+            self.forecast_subset.subset_forecast(days=self.days)
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
         #print(self.forecast_scores)
@@ -129,14 +131,29 @@ class FlowFieldEnv3d(gym.Env):
         # Reset simulator state (timestamp to forecast subset start time,  counts back to 0)
         self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset.start_time)
 
+        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
+            print("BALLOON RESET 1")
+            print(self.Balloon)
+
         # Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
+
+        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
+            print("BALLOON RESET 2")
+            print(self.Balloon)
+
         self.Balloon.update(lat = self.forecast_subset.lat_central,lon = self.forecast_subset.lon_central,x=0,y=0, distance = 0)
-        self.calculate_relative_wind_column()
+        self.calculate_relative_wind_column() #?????????????????
 
         if self.render_mode == "human":
             self.renderer.reset(self.goal, self.Balloon, self.SimulatorState)
             self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
+
+        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
+            print("BALLOON RESET 3")
+            print(self.Balloon)
+
+
 
         return self._get_obs(), self._get_info()
 
@@ -262,6 +279,11 @@ class FlowFieldEnv3d(gym.Env):
         else:
             reward = 0
 
+        if np.isnan(reward):
+            print(distance_to_target)
+            print("REWARD IS NAN")
+
+
         return reward
 
     @profile
@@ -307,7 +329,7 @@ class FlowFieldEnv3d(gym.Env):
     @profile
     def step(self, action):
         reward = self.move_agent(action)
-        reward += self.reward_euclidian()
+        reward += self.reward_piecewise()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -440,7 +462,8 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
-    filename = "July-2024-SEA.nc"
+    #filename = "July-2024-SEA.nc"
+    filename = "SYNTH-Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
     env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")

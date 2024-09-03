@@ -7,7 +7,7 @@ from era5.forecast import Forecast
 
 ### EVALUATION ### ----------------------------------------------------------------------
 
-model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_100000000_steps"
+model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
 seed = None
 
 print("Loading model")
@@ -84,5 +84,5 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'TWR_Outer_Score': twr_outer_score,
                    'Total_Reward': reward_score})
 
-df.to_csv("piecewise-100m-random-seed-0-1k.csv")
+df.to_csv("piecewise-300m-random-10k-sectors-4.csv")
 print(df)

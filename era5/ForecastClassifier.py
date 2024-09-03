@@ -55,6 +55,8 @@ class ForecastClassifier:
 
         intervals = 4
 
+        n_sectors = 4
+
         for i in range (0,intervals):
 
             z, u, v = forecast_subset.np_lookup(forecast_subset.lat_central, forecast_subset.lon_central,
@@ -65,7 +67,7 @@ class ForecastClassifier:
             bearing = np.degrees(bearing)
 
             levels = forecast_subset.ds.level.values
-            opposing_wind_directions, opposing_wind_levels = self.determine_opposing_winds(bearing, levels, 8)
+            opposing_wind_directions, opposing_wind_levels = self.determine_opposing_winds(bearing, levels, n_sectors)
 
             scores.append(len(opposing_wind_levels))
 

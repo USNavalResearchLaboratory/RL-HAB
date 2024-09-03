@@ -96,9 +96,9 @@ class ForecastVisualizer:
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
                     ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
-                              #length = .05, arrow_length_ratio=3.5, color=colors[i, j], arrow_head_angle=84.9)
+                              length = .05, arrow_length_ratio=3.5, color=colors[i, j], arrow_head_angle=84.9)
                               #length = .1, arrow_length_ratio = 1.5, color = colors[i, j], arrow_head_angle = 75)
-                              length = 1, arrow_length_ratio = .5, color = colors[i, j], arrow_head_angle = 75, normalize = True)
+                              #length = 1, arrow_length_ratio = .5, color = colors[i, j], arrow_head_angle = 75, normalize = False)
 
                     #ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                     #          length=.25, arrow_length_ratio=1.5, color=colors[i, j])
@@ -138,20 +138,20 @@ class ForecastVisualizer:
 
 if __name__ == '__main__':
     #filename = "SHAB14V_ERA5_20220822_20220823.nc"
-    #filename = "SYNTH-Jan-2023-SEA.nc"
-    filename = "Jan-2023-SEA.nc"
+    filename = "SYNTH-Jan-2023-SEA.nc"
+    #filename = "Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
-    env_params["rel_dist"] = 300_000 #does this override work?
+    env_params["rel_dist"] = 10_000_000 #does this override work?
 
     print(FORECAST_PRIMARY.ds_original)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-    #forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
-    #                             0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
-    #                             "2023-01-01T00:00:00.000000000")
-    forecast_subset.randomize_coord()
-    forecast_subset.subset_forecast()
+    forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
+                                 0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
+                                 "2023-01-01T00:00:00.000000000")
+    #forecast_subset.randomize_coord()
+    forecast_subset.subset_forecast(days=1)
 
     #forecast_subset.ds = forecast_subset.ds.isel(level = slice(1,2))
 
@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
     # Analyze Data
     forecast_visualizer = ForecastVisualizer(forecast_subset)
-    skip = 2
+    skip = 10
 
 
     i = 0
@@ -183,15 +183,15 @@ if __name__ == '__main__':
 
         print("Saving Figure " + str(timestamp))
         forecast_visualizer.visualize_3d_planar_flow(ax1, skip)
-        plt.savefig(str(i) +'.png')
-        #plt.show()
+        #plt.savefig(str(i) +'.png')
+        plt.show()
         plt.close()
         i +=1
 
     #plt.show()
 
     #Generate gif of flowfield
-    with imageio.get_writer('wind7.gif', mode='I', loop = 0) as writer:
+    with imageio.get_writer('Synth-wind.gif', mode='I', duration=500, loop = 0) as writer:
         for i in range(len(forecast_visualizer.forecast_subset.ds.time.values)):
             image = imageio.imread(str(i) +'.png')
             writer.append_data(image)
