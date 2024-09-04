@@ -24,6 +24,8 @@ class Forecast:
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
+        print(self.ds_original)
+
         # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
         if 't' in self.ds_original.data_vars:
             self.ds_original = self.ds_original.drop_vars('t')
@@ -36,6 +38,8 @@ class Forecast:
 
         ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS FOR NOW
                 '''
+
+        #'''
         #initial time variables
         self.TIME_MIN = self.ds_original.time.values[0]
         self.TIME_MAX = self.ds_original.time.values[-1]
@@ -52,6 +56,7 @@ class Forecast:
         print(len(synth_simulated_time))
         self.ds_original['time'] = synth_simulated_time
         self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
+        #'''
 
 
 
@@ -170,21 +175,16 @@ class Forecast_Subset:
         self.start_time = self.ds.time.values[0]
         self.end_time = self.ds.time.values[-1]
 
-
         #Now Calculate new Dimensions
         self.lat_dim = len(self.ds.latitude)
         self.lon_dim = len(self.ds.longitude)
         self.level_dim = len(self.ds.level)
         self.time_dim = len(self.ds.time)
 
-
-
         # Convert the subset forecast Dataset to a numpy array for faster processing
         self.forecast_np = self.ds.to_array()
         self.forecast_np = self.forecast_np.to_numpy()
         self.pressure_levels = self.ds.level.values
-
-        #self.ds.close()
 
 
     @profile
@@ -208,12 +208,9 @@ class Forecast_Subset:
 
     @profile
     def np_lookup(self,lat, lon, time):
-        #time = np.datetime64("2023-01-03T03:00:00.000000000")
-        #lat = 3.0
-        #lon = 128.0
 
         """A function to match xarray.sel() functionality but with numpy.  This function is over 100x faster than xarray."""
-        #try:
+
         lat_idx = int(convert_range(lat, self.lat_min, self.lat_max, 0, self.lat_dim))
         lon_idx = int(convert_range(lon, self.lon_min, self.lon_max, 0, self.lon_dim))
         time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time),
@@ -223,23 +220,6 @@ class Forecast_Subset:
         lat_idx = np.clip(lat_idx, 0, self.lat_dim - 1)
         lon_idx = np.clip(lon_idx, 0, self.lon_dim - 1)
         time_idx = np.clip(time_idx, 0, self.time_dim - 1)
-
-        '''
-        except:
-
-            print(self.start_time, self.lat_central, self.lon_central)
-            print(lat, self.lat_min, self.lat_max, 0, self.lat_dim)
-            print(type(lat))
-            print(colored(str(self.fourecast_error_count) + " Error Occurred. Manually Overriding Forecast Lookup.", "red"))
-
-            #Hacky solution for now
-            lat_idx = int(convert_range(self.lat_central, self.lat_min, self.lat_max, 0, self.lat_dim))
-            lon_idx = int(convert_range(self.lon_central, self.lon_min, self.lon_max, 0, self.lon_dim))
-            time_idx = -1 #int(convert_range(self.get_unixtime(np.datetime64(self.start_time)), self.get_unixtime(self.start_time),
-                                         #self.get_unixtime(self.end_time), 0, self.time_dim))
-
-            self.fourecast_error_count += 1
-        '''
 
 
         z = self.forecast_np[0, time_idx, :, lat_idx, lon_idx] / constants.GRAVITY
@@ -276,19 +256,6 @@ class Forecast_Subset:
         Determines new coordinate based on the flow at the current position and integrates forward int time via dt
 
         """
-        #Balloon lat and lon coordinates should dictate relative X and Y coordinates.  I think....
-
-        #'''
-        if np.isnan(Balloon.lat):
-            print(SimulationState.timestamp)
-            print("total steps", SimulationState.total_steps)
-            print(Balloon)
-            print(SimulationState.trajectory)
-            print(SimulationState.time_history)
-            sys.exit()
-        #'''
-
-
 
         #get Wind at current lat/lon
         z_col, u_col, v_col = self.np_lookup(Balloon.lat, Balloon.lon, SimulationState.timestamp)
@@ -299,7 +266,6 @@ class Forecast_Subset:
                                                                 self.lon_central,
                                                                 Balloon.lat, Balloon.lon)
 
-
         #Apply the velocity to relative Position
         x_new = relative_x + x_vel * dt
         y_new =  relative_y + y_vel * dt
@@ -308,7 +274,6 @@ class Forecast_Subset:
         lat_new, lon_new = transform.meters_to_latlon_spherical(self.lat_central,
                                                                 self.lon_central,
                                                                 x_new, y_new)
-
 
         return [lat_new, lon_new, x_vel, y_vel, x_new, y_new ]
 

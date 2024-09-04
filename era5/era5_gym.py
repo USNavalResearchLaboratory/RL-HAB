@@ -15,6 +15,7 @@ from era5.forecast import Forecast, Forecast_Subset
 from line_profiler import profile
 from era5.ForecastClassifier import ForecastClassifier
 from termcolor import colored
+import sys
 
 np.set_printoptions(suppress=True, precision=3)
 
@@ -77,6 +78,7 @@ class FlowFieldEnv3d(gym.Env):
                 dtype=np.float64)
         })
 
+
     def seed(self, seed=None):
         """
         Need to assign numpy random number generator in cases multiple envelopes are selected.
@@ -128,19 +130,12 @@ class FlowFieldEnv3d(gym.Env):
                                     y = 0,
                                     altitude = int(random.uniform(env_params['alt_min'],env_params['alt_max']))
                                     )
+
         # Reset simulator state (timestamp to forecast subset start time,  counts back to 0)
         self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset.start_time)
 
-        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
-            print("BALLOON RESET 1")
-            print(self.Balloon)
-
         # Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
-
-        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
-            print("BALLOON RESET 2")
-            print(self.Balloon)
 
         self.Balloon.update(lat = self.forecast_subset.lat_central,lon = self.forecast_subset.lon_central,x=0,y=0, distance = 0)
         self.calculate_relative_wind_column() #?????????????????
@@ -148,12 +143,6 @@ class FlowFieldEnv3d(gym.Env):
         if self.render_mode == "human":
             self.renderer.reset(self.goal, self.Balloon, self.SimulatorState)
             self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
-
-        if np.isnan(self.Balloon.lat) or np.isnan(self.Balloon.lon):
-            print("BALLOON RESET 3")
-            print(self.Balloon)
-
-
 
         return self._get_obs(), self._get_info()
 
@@ -200,6 +189,7 @@ class FlowFieldEnv3d(gym.Env):
         self.Balloon.rel_bearing = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y,
                                                                  self.goal["x"], self.goal["y"],
                                                                  self.Balloon.x_vel, self.Balloon.y_vel)
+
         self.Balloon.rel_wind_column = self.calculate_relative_wind_column()
 
         # Apply altitude change given action
@@ -278,11 +268,6 @@ class FlowFieldEnv3d(gym.Env):
 
         else:
             reward = 0
-
-        if np.isnan(reward):
-            print(distance_to_target)
-            print("REWARD IS NAN")
-
 
         return reward
 
@@ -462,23 +447,27 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
+    #np.set_printoptions(threshold=sys.maxsize)
     #filename = "July-2024-SEA.nc"
     filename = "SYNTH-Jan-2023-SEA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
-    env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
+    env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None)
 
     while True:
         start_time = time.time()
 
         #env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
         obs, info = env.reset()
+        print()
+        #print("original obs", obs)
+        print(env.forecast_subset.ds)
+        print(colored(np.isnan(env.forecast_subset.forecast_np).any(),"yellow"))
+        print(colored(np.argwhere(np.isnan(env.forecast_subset.forecast_np)),"white"))
         total_reward = 0
         for step in range( env_params["episode_length"]+10):
 
             #print()
-            #print(env.SimulatorState.timestamp)
-            #print(env.Balloon)
             #print(obs)
 
             # Use this for keyboard input
@@ -487,7 +476,7 @@ def main():
 
             if done:
                 break
-            env.render()
+            #env.render()
             #sys.exit()
             #time.sleep(2)
         # print(obs)

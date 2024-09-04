@@ -30,8 +30,8 @@ class BalloonState(object):
         atm_pressure: The atmospheric pressure around the balloon at the current altitude
     '''
 
-
-    def __init__(self, x=0, y=0, altitude=0, x_vel=0, y_vel=0, z_vel=0, distance=0, lat=0, lon=0, rel_bearing=0, pressure=None):
+    def __init__(self, x=None, y=None, altitude=None, x_vel=None, y_vel=None, z_vel=None,
+                 distance=None, lat=None, lon=None, rel_bearing=None, pressure=None):
         #Trying to initialize to 0 to correct occasional error sith synth winds.
         self.x = x
         self.y = y
@@ -41,8 +41,8 @@ class BalloonState(object):
         self.y_vel = y_vel
         self.z_vel = z_vel
 
-        self.lat= lat
-        self.lon= lon
+        self.lat = lat
+        self.lon = lon
 
         self.distance= distance
         self.rel_bearing = rel_bearing
@@ -51,7 +51,7 @@ class BalloonState(object):
 
         self.last_action= 0
 
-        self.rel_wind_column= None
+        self.rel_wind_column= None #this might be the isssue
 
         #For later
         power= 0
@@ -100,15 +100,6 @@ class SimulatorState(object):
         :return:
         '''
 
-        '''
-        if np.isnan(Balloon.lat):
-            print(self.timestamp)
-            print(self.total_steps)
-            print(Balloon)
-            print(self.trajectory)
-            print(self.time_history)
-        '''
-
         self.timestamp = self.timestamp + pd.Timedelta(hours=(1 / 3600 * self.dt))
 
         self.trajectory.append((Balloon.x , Balloon.y, Balloon.altitude))
@@ -119,9 +110,7 @@ class SimulatorState(object):
         else:
             done = False
 
-        self.total_steps +=1
-
-
+        self.total_steps += 1
 
         return done
 

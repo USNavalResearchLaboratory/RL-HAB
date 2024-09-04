@@ -49,7 +49,7 @@ n_procs = 1
 #filename = "July-2024-SEA.nc"
 filename = "SYNTH-Jan-2023-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)
-env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
+#env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 
 env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
 

@@ -4,8 +4,8 @@ env_params = {
         'dt': 60,  # seconds
         'radius': 50_000,  # km
 
-        'alt_min': 14_000, # m
-        'alt_max': 27_000, # m
+        'alt_min': 15_000, # m
+        'alt_max': 26_250, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
@@ -27,6 +27,6 @@ env_params = {
         'rel_dist': 150_000,          # m
 
         #These need to be mandatory pressure levels
-        'pres_min': 20,              # ~27 km
-        'pres_max': 150              # ~14 km
+        'pres_min': 15,              # 20 for ERA5
+        'pres_max': 150              # 150 for ERA5
 }

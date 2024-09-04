@@ -42,7 +42,7 @@ twr_outer_score = []
 reward_score = []
 forecast_score = []
 
-NUM_EPS = 1000
+NUM_EPS = 10000
 
 for i in range (0,NUM_EPS):
     obs = vec_env.reset()
@@ -84,5 +84,5 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'TWR_Outer_Score': twr_outer_score,
                    'Total_Reward': reward_score})
 
-df.to_csv("piecewise-300m-random-10k-sectors-4.csv")
+df.to_csv("piecewise-300m-random-1k-sectors-4.csv")
 print(df)

@@ -5,7 +5,7 @@ import seaborn as sns
 
 
 
-df = pd.read_csv('piecewise-20m-random-total_score-non-zero-10k.csv')
+df = pd.read_csv('piecewise-300m-random-1k-sectors-4.csv')
 
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18,5))
 fig.suptitle('TWR Score for Piecewise')

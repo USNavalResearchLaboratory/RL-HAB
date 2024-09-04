@@ -29,7 +29,7 @@ from era5.forecast import Forecast
 
 
 
-model_name = "RL_models_era5/usual-sea-10/DQN-ERA5_100000000_steps"
+model_name = "RL_models_synth/ruby-tree-3/DQN-synth_75000000_steps"
 seed = None
 
 print("Loading model")
@@ -38,7 +38,8 @@ pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
 rel_dist = env_params['rel_dist']
 
-filename = "July-2024-SEA.nc"
+#filename = "July-2024-SEA.nc"
+filename = "SYNTH-Jan-2023-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)
 env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 model = DQN.load(model_name, env=env, )
