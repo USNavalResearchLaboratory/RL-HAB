@@ -104,12 +104,25 @@ class FlowFieldEnv3d(gym.Env):
         self.forecast_score = 0  # dummy score to trigger randomizing
 
         #while self.count_greater_than_zero(self.forecast_scores) != 0:
-        while self.forecast_score < 0.05:
+
+        # For not including bad forecasts (score of 0):
+        #'''
+        while self.forecast_score < 0.5:
 
             self.forecast_subset.randomize_coord()
             self.forecast_subset.subset_forecast(days=self.days)
+        
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+        #'''
+
+        #For including bad forecasts (score of 0):
+        '''
+        self.forecast_subset.randomize_coord()
+        self.forecast_subset.subset_forecast(days=self.days)
+        self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+        '''
+
         #print(self.forecast_scores)
         #if score < 0.25:
         #   print(colored("WARNING: Bad forecast score of " + str(score) + ". Re-randomizing" , "yellow"))

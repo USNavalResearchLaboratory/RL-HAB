@@ -39,7 +39,7 @@ hash = repo.git.rev_parse(repo.head, short=True)
 
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = "DQN_ERA5"
+    model_name = "DQN_SYNTH"
     models_dir = f"{optuna_config.model_path}/{model_name}"
 
     if not os.path.exists(models_dir):
@@ -124,7 +124,8 @@ def objective(trial):
 
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    filename = "July-2024-SEA.nc"
+    #filename = "July-2024-SEA.nc"
+    filename = "SYNTH-Aug-2023-USA.nc"
     FORECAST_PRIMARY = Forecast(filename)
     env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=optuna_config.n_envs)
 

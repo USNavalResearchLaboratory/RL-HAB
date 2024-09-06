@@ -7,7 +7,9 @@ from era5.forecast import Forecast
 
 ### EVALUATION ### ----------------------------------------------------------------------
 
-model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
+#model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
+#model_name = "RL_models_synth/ruby-tree-3/DQN-synth_75000000_steps"
+model_name = "BEST_MODELS/vogons-SYNTH-piecewise/sleek-shadow-3/DQN_synth_104998950_steps"
 seed = None
 
 print("Loading model")
@@ -16,7 +18,11 @@ pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
 rel_dist = env_params['rel_dist']
 
-filename = "July-2024-SEA.nc"
+#filename = "July-2024-SEA.nc"
+#filename = "SYNTH-Jan-2023-SEA.nc"
+filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+filename = "../../../../mnt/d/FORECASTS/SYNTH-Aug-2023-USA.nc"
+
 FORECAST_PRIMARY = Forecast(filename)
 env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None) #Can also change render mode to "human for rendering"
 model = DQN.load(model_name, env=env, )
@@ -42,7 +48,7 @@ twr_outer_score = []
 reward_score = []
 forecast_score = []
 
-NUM_EPS = 10000
+NUM_EPS = 2000
 
 for i in range (0,NUM_EPS):
     obs = vec_env.reset()
@@ -84,5 +90,5 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'TWR_Outer_Score': twr_outer_score,
                    'Total_Reward': reward_score})
 
-df.to_csv("piecewise-300m-random-1k-sectors-4.csv")
+df.to_csv("SYNTH-USA-piecewise-150m-2k_evals-sectors_8-pt4.csv")
 print(df)

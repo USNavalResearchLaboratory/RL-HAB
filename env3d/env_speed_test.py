@@ -47,7 +47,8 @@ config = {
 n_procs = 1
 
 #filename = "July-2024-SEA.nc"
-filename = "SYNTH-Jan-2023-SEA.nc"
+#filename = "SYNTH-Jan-2023-SEA.nc"
+filename = "SYNTH-Aug-2023-USA.nc"
 FORECAST_PRIMARY = Forecast(filename)
 #env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 

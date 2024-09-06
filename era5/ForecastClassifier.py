@@ -55,7 +55,7 @@ class ForecastClassifier:
 
         intervals = 4
 
-        n_sectors = 4
+        n_sectors = 8
 
         for i in range (0,intervals):
 
@@ -82,7 +82,13 @@ class ForecastClassifier:
 
 
 if __name__ == '__main__':
-    filename = "July-2024-SEA.nc"
+    #filename = "July-2024-SEA.nc"
+    #filename = "Jan-2023-SEA.nc"
+    #filename = "SYNTH-Jan-2023-SEA.nc"
+
+    filename = "SYNTH-Aug-2023-USA.nc"
+
+
     FORECAST_PRIMARY = Forecast(filename)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)

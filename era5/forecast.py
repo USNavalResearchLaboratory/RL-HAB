@@ -24,7 +24,7 @@ class Forecast:
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
-        print(self.ds_original)
+
 
         # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
         if 't' in self.ds_original.data_vars:
@@ -56,6 +56,14 @@ class Forecast:
         print(len(synth_simulated_time))
         self.ds_original['time'] = synth_simulated_time
         self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
+
+        print(colored("EVEN MORE HACKY SOLUTION FOR USA SynthWinds", "magenta"))
+
+        self.ds_original = self.ds_original.isel(level=slice(7, None))
+
+        print(self.ds_original)
+
+
         #'''
 
 
@@ -280,7 +288,8 @@ class Forecast_Subset:
 
 if __name__ == '__main__':
     #filename = "July-2024-SEA.nc"
-    filename = "SYNTH-Jan-2023-SEA.nc"
+    #filename = "SYNTH-Jan-2023-SEA.nc"
+    filename = "SYNTH-Aug-2023-USA.nc"
     FORECAST_PRIMARY = Forecast(filename)
 
     forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
