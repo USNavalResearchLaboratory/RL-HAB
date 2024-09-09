@@ -20,8 +20,10 @@ rel_dist = env_params['rel_dist']
 
 #filename = "July-2024-SEA.nc"
 #filename = "SYNTH-Jan-2023-SEA.nc"
-filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+#filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
 filename = "../../../../mnt/d/FORECASTS/SYNTH-Aug-2023-USA.nc"
+filename = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
+filename = "../../../../mnt/d/FORECASTS/SYNTH-Oct-2023-USA.nc"
 
 FORECAST_PRIMARY = Forecast(filename)
 env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None) #Can also change render mode to "human for rendering"

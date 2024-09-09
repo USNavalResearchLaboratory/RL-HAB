@@ -17,7 +17,7 @@ from matplotlib.cm import ScalarMappable
 
 
 #load Forecast
-ds = xr.open_dataset("forecasts/" + "July-2024-SEA.nc")
+ds = xr.open_dataset("/mnt/d/FORECASTS/ERA-Jan-2023-SEA.nc")
 
 #Reverse order of latitude, since era5 comes reversed for some reason?
 ds = ds.reindex(latitude=list(reversed(ds.latitude)))
@@ -147,13 +147,16 @@ plt.figure()
 ####
 #Visualizing INdividual Wind Map
 
-u_wind = ds['u'].sel(time = ds['time'][0], level=30 )
-v_wind = ds['v'].sel(time = ds['time'][0], level=30 )
+u_wind = ds['u'].sel(time = ds['time'][0], level=20 )
+v_wind = ds['v'].sel(time = ds['time'][0], level=20 )
+geopotential = ds['z'].sel(time = ds['time'][0], level=150 )/9.81
 
 #sdfsdfs
 u_wind.plot()
 plt.figure()
 v_wind.plot()
+plt.figure()
+geopotential.plot()
 
 #######################################
 

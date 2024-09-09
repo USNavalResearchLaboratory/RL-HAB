@@ -7,7 +7,7 @@ from matplotlib.colors import ListedColormap
 verbose = False
 cutoff_forecast_score = 0.0
 #filename = "SYNTH-piecewise-75m-6k_evals-sectors_8.csv"
-filename = "SYNTH-USA-piecewise-150m-sectors_8-sleek-shadow-3.csv"
+filename = "SYNTH-USA-mild-thunder-150m-10k_evals-sectors_8-nofilter.csv"
 
 
 # Load data from CSV
@@ -82,8 +82,8 @@ plt.colorbar(label='Frequency of Forecast Column')
 plt.xlabel('Forecast Score')
 plt.ylabel('TWR Score')
 plt.title(f'Heatmap (Frequency) - ({filename})')
-plt.show()
-plt.close()
+#plt.show()
+#plt.close()
 
 # Percentage Heatmap
 plt.figure(figsize=(10, 8))

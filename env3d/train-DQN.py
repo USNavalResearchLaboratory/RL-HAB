@@ -38,22 +38,22 @@ if not os.path.exists(logdir):
 
 # Custom Network Architecture to override DQN default of 64 64
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-policy_kwargs = dict(net_arch=[500, 500, 500, 500, 500])
+policy_kwargs = dict(net_arch=[386,269,333,187,509,471,429,98])
 
 config = {
-    "total_timesteps": int(200e6),
+    "total_timesteps": int(150e6),
     'hyperparameters': {
                 'policy': "MultiInputPolicy",
                 'policy_kwargs':policy_kwargs,
-                'learning_rate': .00001,
-                'exploration_fraction': 0.15,
-                'exploration_initial_eps': 0.8,
-                'exploration_final_eps': 0.01,
-                'batch_size': 8152,
-                'train_freq': 2,
-                'gamma': .97,
-                'buffer_size': int(.5e6),
-                'target_update_interval': 10000,
+                'learning_rate': .000028,
+                'exploration_fraction': 0.65,
+                'exploration_initial_eps': 0.78,
+                'exploration_final_eps': 0.05,
+                'batch_size': 4096,
+                'train_freq': 1,
+                'gamma': .98,
+                'buffer_size': int(2.5e6),
+                'target_update_interval': 38774,
                 'stats_window_size': 1000,
                 'device': "cuda",
             },
@@ -61,7 +61,7 @@ config = {
     "env_name": "DQN-SYNTH-WINDS-TEST",
     "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
     "git": branch + " - " + hash,
-    "NOTES": "piece wise learning with synth winds"
+    "NOTES": "piece wise learning with synth winds SEA Jan 2023 25km cutoff"
 }
 
 run = wandb.init(
@@ -78,7 +78,8 @@ run = wandb.init(
 n_procs = 100
 SAVE_FREQ = int(5e6/n_procs)
 
-filename = "SYNTH-Jan-2023-SEA.nc"
+#filename = "SYNTH-Jan-2023-SEA.nc"
+filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
 FORECAST_PRIMARY = Forecast(filename)
 env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
 

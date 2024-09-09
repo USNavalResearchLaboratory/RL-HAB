@@ -57,11 +57,21 @@ class Forecast:
         self.ds_original['time'] = synth_simulated_time
         self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
 
-        print(colored("EVEN MORE HACKY SOLUTION FOR USA SynthWinds", "magenta"))
+        print(colored("USA HACK", "magenta"))
+        #self.ds_original = self.ds_original.isel(level=slice(None, None))
 
-        self.ds_original = self.ds_original.isel(level=slice(7, None))
+        #print(colored("EVEN MORE HACKY SOLUTION FOR SEA SynthWinds cut of at 25k", "magenta"))
+        #self.ds_original = self.ds_original.isel(level=slice(7, None))
 
-        print(self.ds_original)
+        #new Hack for Synth SEA to ideally avoid
+
+        #self.ds_original = self.ds_original.sel(level=slice(24.54, None))
+        #print(self.ds_original)
+
+        #print(self.ds_original.isel(latitude = 0,longitude=0,level=0,time=0).z.values/9.81)
+
+
+        #print(self.ds_original)
 
 
         #'''
