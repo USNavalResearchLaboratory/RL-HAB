@@ -14,7 +14,7 @@ class MatplotlibRenderer():
         self.render_skip = env_params['render_skip']
         self.render_mode = render_mode
 
-        self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time
+        self.render_timestamp = self.Forecast_visualizer.forecast_subset_era5.start_time
 
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
@@ -96,7 +96,7 @@ class MatplotlibRenderer():
         self.render_step = 1
         self.hour_count = 0
 
-        self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time
+        self.render_timestamp = self.Forecast_visualizer.forecast_subset_era5.start_time
 
 
     def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):
