@@ -18,13 +18,15 @@ class Forecast:
 
     Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
     """
-    def __init__(self, filename):
+    def __init__(self, filename, forecast_type = None):
+
+        self.forecast_type = forecast_type
+
         self.load_forecast(filename)
+
 
     def load_forecast(self, filename):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
-
-
 
         # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
         if 't' in self.ds_original.data_vars:
@@ -36,7 +38,36 @@ class Forecast:
         #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
 
 
-        ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS FOR NOW
+
+        #Hardcode to July for now
+        if self.forecast_type == "ERA5":
+            print("made it to era5")
+            july_mask = self.ds_original.time.dt.month == 1
+            hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
+            # Combine both masks
+            combined_mask = july_mask & hour_mask
+
+            self.ds_original = self.ds_original.sel(time=combined_mask)
+
+            da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
+            #Migh need to change this nearest look up later
+            idx = np.argmin(np.abs(da_slice.z.values/9.81 - env_params["alt_max"]))
+            print("idx", idx)
+            max_pres_level = da_slice['level'][idx].level.values
+            self.ds_original = self.ds_original.sel(level=slice(max_pres_level, None))
+            print('Max_pres level', max_pres_level)
+
+
+
+        if self.forecast_type == "SYNTH":
+            print("made it to synth")
+            da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
+            max_pres_level = da_slice['level'][np.isclose(da_slice.z.values/9.81, env_params["alt_max"], atol=1e-5)].level.values[0]
+            self.ds_original = self.ds_original.sel(level=slice(max_pres_level, None))
+            print('Max_pres level', max_pres_level )
+
+
+        ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS + ERA5 FOR NOW
                 '''
 
         #'''
@@ -57,8 +88,11 @@ class Forecast:
         self.ds_original['time'] = synth_simulated_time
         self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
 
-        print(colored("USA HACK", "magenta"))
+        #print(colored("USA HACK", "magenta"))
         #self.ds_original = self.ds_original.isel(level=slice(None, None))
+
+        #nan_check = self.ds_original.map(lambda x: np.isnan(x).any())
+
 
         #print(colored("EVEN MORE HACKY SOLUTION FOR SEA SynthWinds cut of at 25k", "magenta"))
         #self.ds_original = self.ds_original.isel(level=slice(7, None))
@@ -75,6 +109,9 @@ class Forecast:
 
 
         #'''
+
+
+
 
 
 
@@ -234,10 +271,11 @@ class Forecast_Subset:
         time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time),
                                      self.get_unixtime(self.end_time), 0, self.time_dim))
 
+        # Cast again see if that fixes the problem
         # Clip idx's to out of bounds.  Should I add a warning here?
-        lat_idx = np.clip(lat_idx, 0, self.lat_dim - 1)
-        lon_idx = np.clip(lon_idx, 0, self.lon_dim - 1)
-        time_idx = np.clip(time_idx, 0, self.time_dim - 1)
+        lat_idx = int(np.clip(lat_idx, 0, self.lat_dim - 1))
+        lon_idx = int(np.clip(lon_idx, 0, self.lon_dim - 1))
+        time_idx = int(np.clip(time_idx, 0, self.time_dim - 1))
 
 
         z = self.forecast_np[0, time_idx, :, lat_idx, lon_idx] / constants.GRAVITY

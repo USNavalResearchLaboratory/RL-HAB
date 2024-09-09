@@ -1,6 +1,6 @@
-project_name = "aeolus-synth-piecewise"
-model_path="RL_models_synth"
-log_path = "logs_synth"
+project_name = "aeolus-era5_obs_synth_movement"
+model_path="RL_models_era5_obs_synth_movement"
+log_path = "logs_era5_obs_synth_movement"
 
 device = "cuda"
 

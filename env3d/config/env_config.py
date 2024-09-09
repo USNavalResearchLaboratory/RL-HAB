@@ -5,7 +5,7 @@ env_params = {
         'radius': 50_000,  # km
 
         'alt_min': 15_000, # m
-        'alt_max': 26_250, # m
+        'alt_max': 25_500, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
@@ -28,5 +28,11 @@ env_params = {
 
         #These need to be mandatory pressure levels
         'pres_min': 15,              # 20 for ERA5
-        'pres_max': 150              # 150 for ERA5
+        'pres_max': 150,              # 150 for ERA5
+
+# Probability Distributions for ascent and descent (in m/s)
+        'ascent_rate_mean': 1.8,
+        'ascent_rate_std_dev': 0.14,
+        'descent_rate_mean': 2.8,
+        'descent_rate_std_dev': 0.3
 }

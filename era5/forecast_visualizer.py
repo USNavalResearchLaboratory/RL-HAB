@@ -22,7 +22,8 @@ class ForecastVisualizer:
 
 
         self.forecast_subset = forecast
-        self.pressure_levels = self.forecast_subset.ds["level"].values
+        self.pressure_levels = self.forecast_subset.ds["level"].values.tolist()
+        self.pressure_levels = [round(x, 1) for x in self.pressure_levels]
         register_projection(Custom3DQuiver)
 
     def map_pres2alt(self):
@@ -113,7 +114,7 @@ class ForecastVisualizer:
         # colors = colormap(scaled_z)
         sm = plt.cm.ScalarMappable(cmap=colormap)
         sm.set_clim(vmin=-3.14, vmax=3.14)
-        plt.colorbar(sm, ax=ax, shrink=.8, pad=.025)
+        plt.colorbar(sm, ax=ax, shrink=.6, pad=.125)
         #'''
 
         '''

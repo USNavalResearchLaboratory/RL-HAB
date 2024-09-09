@@ -5,7 +5,7 @@ import random
 import time
 from pynput import keyboard
 import math
-from env3d.rendering.renderer import MatplotlibRenderer
+from env3d.rendering.renderertriple import MatplotlibRendererTriple
 from utils.common import convert_range
 from env3d.config.env_config import env_params
 from era5.forecast_visualizer import ForecastVisualizer
@@ -19,17 +19,20 @@ import sys
 
 np.set_printoptions(suppress=True, precision=3)
 
-class FlowFieldEnv3d(gym.Env):
+class FlowFieldEnv3d_SYNTH(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
     @profile
-    def __init__(self, FORECAST_PRIMARY, days = 1, seed=None, render_mode=None ):
-        super(FlowFieldEnv3d, self).__init__()
+    def __init__(self, FORECAST_ERA5, FORECAST_SYNTH, days = 1, seed=None, render_mode=None ):
+        super(FlowFieldEnv3d_SYNTH, self).__init__()
 
         self.days = days
 
-        self.FORECAST_PRIMARY = FORECAST_PRIMARY
+        self.FORECAST_SYNTH = FORECAST_SYNTH
+        self.FORECAST_ERA5 = FORECAST_ERA5
+
+
         self.ForecastClassifier = ForecastClassifier()
         self.dt = env_params['dt']
         self.render_mode = render_mode
@@ -45,18 +48,32 @@ class FlowFieldEnv3d(gym.Env):
                      "y": 0}
 
         # Initial randomized forecast subset from the master forecast to pass to rendering
-        self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-        self.forecast_subset.randomize_coord()
-        self.forecast_subset.subset_forecast(days=self.days)
+        self.forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+        self.forecast_subset_era5.randomize_coord()
+        self.forecast_subset_era5.subset_forecast(days=self.days)
+
+
+        #Then assign coord to synth winds
+        self.forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
+        self.forecast_subset_synth.assign_coord(lat = self.forecast_subset_era5.lat_central,
+                                                lon = self.forecast_subset_era5.lon_central,
+                                                timestamp= self.forecast_subset_era5.start_time)
+        self.forecast_subset_synth.subset_forecast(days=self.days)
+
+
         self.forecast_scores = [5, 5, 5, 5] # dummy score to trigger randomizing
 
 
         if self.render_mode=="human":
-            self.Forecast_visualizer = ForecastVisualizer(self.forecast_subset)
-            self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
+            self.Forecast_visualizer = ForecastVisualizer(self.forecast_subset_era5)
+            self.Forecast_visualizer.generate_flow_array(self.forecast_subset_era5.start_time)  # change this for time?
 
-            self.renderer = MatplotlibRenderer(
-                                               Forecast_visualizer=self.Forecast_visualizer,
+            self.Forecast_visualizer_synth = ForecastVisualizer(self.forecast_subset_synth)
+            self.Forecast_visualizer_synth.generate_flow_array(self.forecast_subset_synth.start_time)  # change this for time?
+
+            self.renderer = MatplotlibRendererTriple(
+                                               Forecast_visualizer_ERA5=self.Forecast_visualizer,
+                                               Forecast_visualizer_SYNTH=self.Forecast_visualizer_synth,
                                                render_mode=self.render_mode, radius=self.radius,  coordinate_system = "geographic")
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
@@ -64,7 +81,7 @@ class FlowFieldEnv3d(gym.Env):
 
         min_vel = 0  # m/s
         max_vel = 50 # m/s
-        num_levels = len(self.forecast_subset.pressure_levels) # determined from pressure levels
+        num_levels = len(self.forecast_subset_era5.pressure_levels) # determined from pressure levels
 
         # These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
         self.observation_space = spaces.Dict({
@@ -109,11 +126,17 @@ class FlowFieldEnv3d(gym.Env):
         #'''
         while self.forecast_score < 0.5:
 
-            self.forecast_subset.randomize_coord()
-            self.forecast_subset.subset_forecast(days=self.days)
+            self.forecast_subset_era5.randomize_coord()
+            self.forecast_subset_era5.subset_forecast(days=self.days)
+
+            # Then assign coord to synth winds
+            self.forecast_subset_synth.assign_coord(lat=self.forecast_subset_era5.lat_central,
+                                                    lon=self.forecast_subset_era5.lon_central,
+                                                    timestamp=self.forecast_subset_era5.start_time)
+            self.forecast_subset_synth.subset_forecast(days=self.days)
         
 
-            self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
+            self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset_era5)
         #'''
 
         #For including bad forecasts (score of 0):
@@ -136,8 +159,8 @@ class FlowFieldEnv3d(gym.Env):
         self.twr_outer = 0  # time within radius
 
         #Reset Balloon State to forecast subset central point.
-        self.Balloon = BalloonState(lat = self.forecast_subset.lat_central,
-                                    lon = self.forecast_subset.lon_central,
+        self.Balloon = BalloonState(lat = self.forecast_subset_era5.lat_central,
+                                    lon = self.forecast_subset_era5.lon_central,
 
                                     x = 0,
                                     y = 0,
@@ -145,17 +168,17 @@ class FlowFieldEnv3d(gym.Env):
                                     )
 
         # Reset simulator state (timestamp to forecast subset start time,  counts back to 0)
-        self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset.start_time)
+        self.SimulatorState = SimulatorState(self.Balloon, self.forecast_subset_era5.start_time)
 
         # Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
 
-        self.Balloon.update(lat = self.forecast_subset.lat_central,lon = self.forecast_subset.lon_central,x=0,y=0, distance = 0)
+        self.Balloon.update(lat = self.forecast_subset_era5.lat_central, lon = self.forecast_subset_era5.lon_central, x=0, y=0, distance = 0)
         self.calculate_relative_wind_column() #?????????????????
 
         if self.render_mode == "human":
             self.renderer.reset(self.goal, self.Balloon, self.SimulatorState)
-            self.Forecast_visualizer.generate_flow_array(self.forecast_subset.start_time)  # change this for time?
+            self.Forecast_visualizer.generate_flow_array(self.forecast_subset_era5.start_time)  # change this for time?
 
         return self._get_obs(), self._get_info()
 
@@ -196,7 +219,8 @@ class FlowFieldEnv3d(gym.Env):
         #self.getCoord_XR(coord, self.dt)
 
         # Look up flow at current 3D position before altitude change. Update Position and Flow State
-        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, self.Balloon.x, self.Balloon.y = self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
+        #LOOK UP MOVEMENT IN SYNTH instead of ERA5
+        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, self.Balloon.x, self.Balloon.y = self.forecast_subset_synth.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
 
         self.Balloon.distance = np.sqrt((self.Balloon.x - self.goal["x"]) ** 2 + (self.Balloon.y - self.goal["y"]) ** 2)
         self.Balloon.rel_bearing = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y,
@@ -393,7 +417,7 @@ class FlowFieldEnv3d(gym.Env):
         #u_column = vertical_column['u'].values[::-1]
         #v_column = vertical_column['v'].values[::-1]
 
-        alt_column,u_column,v_column = self.forecast_subset.np_lookup(self.Balloon.lat, self.Balloon.lon, self.SimulatorState.timestamp)
+        alt_column,u_column,v_column = self.forecast_subset_era5.np_lookup(self.Balloon.lat, self.Balloon.lon, self.SimulatorState.timestamp)
 
         alt_column = alt_column[::-1]
         u_column = u_column[::-1]
@@ -466,15 +490,18 @@ listener.start()
 def main():
     #np.set_printoptions(threshold=sys.maxsize)
     #filename = "July-2024-SEA.nc"
-    filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-    FORECAST_PRIMARY = Forecast(filename, forecast_type="SYNTH")
+    #filename = "SYNTH-Jan-2023-SEA.nc"
+    filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+    FORECAST_ERA5 = Forecast(filename, forecast_type = "ERA5")
 
-    env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None)
+    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+    FORECAST_SYNTH = Forecast(filename2, forecast_type = "SYNTH")
+
+    env = FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH,  render_mode="human")
 
     while True:
         start_time = time.time()
 
-        #env = FlowFieldEnv3d(forecast = forecast, render_mode="human")
         obs, info = env.reset()
         total_reward = 0
         for step in range( env_params["episode_length"]+10):
@@ -488,7 +515,7 @@ def main():
 
             if done:
                 break
-            #env.render()
+            env.render()
             #sys.exit()
             #time.sleep(2)
         # print(obs)

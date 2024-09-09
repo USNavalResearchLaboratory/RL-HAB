@@ -10,7 +10,8 @@ from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from env3d.config.env_config import env_params
 
-from era5.era5_gym import FlowFieldEnv3d
+#from era5.era5_gym import FlowFieldEnv3d
+from era5.era5_gym_SYNTH import FlowFieldEnv3d_SYNTH
 from era5.forecast import Forecast
 import git
 
@@ -48,11 +49,20 @@ n_procs = 1
 
 #filename = "July-2024-SEA.nc"
 #filename = "SYNTH-Jan-2023-SEA.nc"
-filename = "SYNTH-Aug-2023-USA.nc"
-FORECAST_PRIMARY = Forecast(filename)
+#filename = "SYNTH-Aug-2023-USA.nc"
+#FORECAST_PRIMARY = Forecast(filename)
+
+
+filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+FORECAST_ERA5 = Forecast(filename, forecast_type = "ERA5")
+
+filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+FORECAST_SYNTH = Forecast(filename2, forecast_type = "SYNTH")
+
+
 #env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 
-env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=n_procs)
+env = make_vec_env(lambda: FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH), n_envs=n_procs)
 
 model = DQN(env=env, verbose=1,**config['hyperparameters'])
 #model = PPO(env=env, policy = "MultiInputPolicy", verbose=1)

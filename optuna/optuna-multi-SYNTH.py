@@ -22,7 +22,8 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 
 # Import the Dynamics Profiles
-from era5.era5_gym import FlowFieldEnv3d
+#from era5.era5_gym import FlowFieldEnv3d
+from era5.era5_gym_SYNTH import FlowFieldEnv3d_SYNTH
 
 #import custom callbacks
 from callbacks.TWRCallback import TWRCallback
@@ -123,12 +124,18 @@ def objective(trial):
 
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    #filename = "July-2024-SEA.nc"
-    filename = "SYNTH-Aug-2023-USA.nc"
-    FORECAST_PRIMARY = Forecast(filename)
-    env = make_vec_env(lambda: FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY), n_envs=optuna_config.n_envs)
+    filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+    FORECAST_ERA5 = Forecast(filename, forecast_type="ERA5")
 
-    eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY))])
+    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+    FORECAST_SYNTH = Forecast(filename2, forecast_type="SYNTH")
+
+    # env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
+
+    env = make_vec_env(lambda: FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH),
+                       n_envs=optuna_config.n_envs)
+
+    eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH))])
     eval_env = VecMonitor(eval_env)
 
     checkpoint_callback = CheckpointCallback(save_freq=SAVE_FREQ, save_path=f"{optuna_config.model_path}/{run.name}",

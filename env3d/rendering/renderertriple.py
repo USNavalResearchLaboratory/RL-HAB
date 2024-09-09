@@ -3,21 +3,27 @@ import numpy as np
 from era5 import config_earth
 from env3d.config.env_config import env_params
 
-class MatplotlibRenderer():
-    def __init__(self, Forecast_visualizer, render_mode,
+class MatplotlibRendererTriple():
+    def __init__(self, Forecast_visualizer_ERA5, Forecast_visualizer_SYNTH,  render_mode,
                  radius, coordinate_system = "geographic"):
 
         self.coordinate_system = coordinate_system
 
-        self.Forecast_visualizer = Forecast_visualizer
+        self.Forecast_visualizer = Forecast_visualizer_ERA5
+
+        self.Forecast_visualizer_synth = Forecast_visualizer_SYNTH
+
         self.render_count = env_params['render_count']
         self.render_skip = env_params['render_skip']
         self.render_mode = render_mode
 
         self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time
 
+        self.render_timestamp_synth = self.Forecast_visualizer_synth.forecast_subset.start_time
+
         self.dt = config_earth.simulation['dt']
         self.episode_length = env_params['episode_length']
+
 
         self.goal = {"x": 0, "y": 0} #relative
 
@@ -44,10 +50,11 @@ class MatplotlibRenderer():
 
     def init_plot_geographic(self):
         self.fig = plt.figure(figsize=(18, 10))
-        self.gs = self.fig.add_gridspec(nrows=2, ncols=2, height_ratios=[1, 4])
+        self.gs = self.fig.add_gridspec(nrows=2, ncols=3, height_ratios=[1, 4])
         self.ax3 = self.fig.add_subplot(self.gs[0, :])
         self.ax = self.fig.add_subplot(self.gs[1, 0], projection='3d')
         self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
+        self.ax4 = self.fig.add_subplot(self.gs[1, 2], projection='custom3dquiver')
 
         self.ax.set_xlabel('X_proj (m)')
         self.ax.set_ylabel('Y_proj (m)')
@@ -65,6 +72,8 @@ class MatplotlibRenderer():
         self.canvas = self.fig.canvas
 
         self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+
+        self.Forecast_visualizer_synth.visualize_3d_planar_flow(self.ax4, skip=self.render_skip)
 
         self.current_state_line, = self.ax.plot([], [], [], 'r--')
 
@@ -85,6 +94,7 @@ class MatplotlibRenderer():
             delattr(self, 'ax')
             delattr(self, 'ax2')
             delattr(self, 'ax3')
+            delattr(self, 'ax4')
             delattr(self, 'goal')
             delattr(self, 'scatter')
             delattr(self, 'canvas')
@@ -97,6 +107,7 @@ class MatplotlibRenderer():
         self.hour_count = 0
 
         self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time
+        self.render_timestamp_synth = self.Forecast_visualizer_synth.forecast_subset.start_time
 
 
     def plot_circle(self, ax, center_x,center_y, radius, plane='xy', color ='g--'):
@@ -162,6 +173,13 @@ class MatplotlibRenderer():
                 self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
                 self.Forecast_visualizer.generate_flow_array(timestamp=self.SimulatorState.timestamp)
                 self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+
+                self.ax4.clear()
+                self.ax4.remove()
+
+                self.ax4 = self.fig.add_subplot(self.gs[1, 2], projection='custom3dquiver')
+                self.Forecast_visualizer_synth.generate_flow_array(timestamp=self.SimulatorState.timestamp)
+                self.Forecast_visualizer_synth.visualize_3d_planar_flow(self.ax4, skip=self.render_skip)
 
                 self.hour_count += 1
 

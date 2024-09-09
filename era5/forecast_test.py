@@ -5,8 +5,11 @@ from datetime import datetime
 
 class TestFunctionOutputs(unittest.TestCase):
     def setUp(self):
-        filename = "July-2024-SEA.nc"
-        FORECAST_PRIMARY = Forecast(filename)
+        #filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+        #FORECAST_PRIMARY = Forecast(filename, forecast_type="SYNTH")
+
+        filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+        FORECAST_PRIMARY = Forecast(filename, forecast_type="ERA5")
 
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
         self.forecast_subset.randomize_coord()
