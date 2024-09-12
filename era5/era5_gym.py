@@ -107,11 +107,10 @@ class FlowFieldEnv3d(gym.Env):
 
         # For not including bad forecasts (score of 0):
         #'''
-        while self.forecast_score < 0.5:
+        while self.forecast_score < env_params['forecast_score_threshold']:
 
             self.forecast_subset.randomize_coord()
             self.forecast_subset.subset_forecast(days=self.days)
-        
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
         #'''
@@ -466,8 +465,8 @@ listener.start()
 def main():
     #np.set_printoptions(threshold=sys.maxsize)
     #filename = "July-2024-SEA.nc"
-    filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-    FORECAST_PRIMARY = Forecast(filename, forecast_type="SYNTH")
+    #filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+    FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
 
     env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None)
 

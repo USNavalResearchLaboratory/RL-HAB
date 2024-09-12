@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath('src'))
 import numpy as np
 from termcolor import colored
 from datetime import datetime
+import pandas as pd
 
 from stable_baselines3 import DQN, PPO, A2C
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
@@ -124,11 +125,11 @@ def objective(trial):
 
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
-    FORECAST_ERA5 = Forecast(filename, forecast_type="ERA5")
-
-    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-    FORECAST_SYNTH = Forecast(filename2, forecast_type="SYNTH")
+    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
+    # Get month associated with Synth
+    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+    # Then process ERA5 to span the same timespan as a monthly Synthwinds File
+    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
 
     # env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 

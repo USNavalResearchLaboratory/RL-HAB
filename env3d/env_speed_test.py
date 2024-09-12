@@ -14,6 +14,7 @@ from env3d.config.env_config import env_params
 from era5.era5_gym_SYNTH import FlowFieldEnv3d_SYNTH
 from era5.forecast import Forecast
 import git
+import pandas as pd
 
 repo = git.Repo(search_parent_directories=True)
 branch = repo.head.ref.name
@@ -53,11 +54,11 @@ n_procs = 1
 #FORECAST_PRIMARY = Forecast(filename)
 
 
-filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
-FORECAST_ERA5 = Forecast(filename, forecast_type = "ERA5")
-
-filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-FORECAST_SYNTH = Forecast(filename2, forecast_type = "SYNTH")
+FORECAST_SYNTH = Forecast(env_params['synth_netcdf'],  forecast_type = "Synth")
+# Get month associated with Synth
+month =  pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+#Then process ERA5 to span the same timespan as a monthly Synthwinds File
+FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month = month)
 
 
 #env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")

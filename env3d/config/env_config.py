@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 
 env_params = {
         'dt': 60,  # seconds
@@ -34,5 +35,10 @@ env_params = {
         'ascent_rate_mean': 1.8,
         'ascent_rate_std_dev': 0.14,
         'descent_rate_mean': 2.8,
-        'descent_rate_std_dev': 0.3
+        'descent_rate_std_dev': 0.3,
+
+        'era_netcdf': "../../../../mnt/d/FORECASTS/ERA5-H1-2023-USA.nc",
+        'synth_netcdf': "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-USA-UPDATED.nc",
+
+        'forecast_score_threshold': 0.85
 }

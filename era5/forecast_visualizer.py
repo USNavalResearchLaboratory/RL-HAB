@@ -10,6 +10,7 @@ from env3d.config.env_config import env_params
 import imageio
 from era5.forecast import Forecast, Forecast_Subset
 import copy
+import pandas as pd
 
 
 class ForecastVisualizer:
@@ -146,29 +147,42 @@ if __name__ == '__main__':
     #filename = "SHAB14V_ERA5_20220822_20220823.nc"
     #filename = "SYNTH-Jan-2023-SEA.nc"
     #filename = "Jan-2023-SEA.nc"
+    #filename_era5 = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
+    #filename_synth = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA-UPDATED.nc"
 
-    filename_era5 = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
+    print(env_params['era_netcdf'])
 
-    filename_synth = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA-UPDATED.nc"
 
-    FORECAST_ERA5 = Forecast(filename_era5,  forecast_type = "ERA5")
-    FORECAST_SYNTH = Forecast(filename_synth,  forecast_type = "Synth")
+    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'],  forecast_type = "SYNTH")
+
+
+    # Get month associated with Synth
+    month =  pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+
+    #Then process ERA5 to span the same timespan as a monthly Synthwinds File
+    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month = month)
 
     env_params["rel_dist"] = 10_000_000 #Manually Override relative distance to show a whole subset
 
+    timestamp = "2023-01-03T00:00:00.000000000"
 
-    timestamp = "2023-07-01T00:00:00.000000000"
 
-    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
-    forecast_subset_era5.assign_coord(0.5 * (forecast_subset_era5.Forecast.LAT_MAX + forecast_subset_era5.Forecast.LAT_MIN),
-                                 0.5 * (forecast_subset_era5.Forecast.LON_MAX + forecast_subset_era5.Forecast.LON_MIN),
-                                 timestamp)
-    #forecast_subset.randomize_coord()
-    forecast_subset_era5.subset_forecast(days=1)
 
     forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
-    forecast_subset_synth.assign_coord(forecast_subset_era5.lat_central, forecast_subset_era5.lon_central, timestamp)
+    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+
+
+    forecast_subset_synth.assign_coord(
+        0.5 * (forecast_subset_synth.Forecast.LAT_MAX + forecast_subset_synth.Forecast.LAT_MIN),
+        0.5 * (forecast_subset_synth.Forecast.LON_MAX + forecast_subset_synth.Forecast.LON_MIN),
+        timestamp)
     forecast_subset_synth.subset_forecast(days=1)
+
+
+    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+    forecast_subset_era5.assign_coord(forecast_subset_synth.lat_central, forecast_subset_synth.lon_central, timestamp)
+    # forecast_subset.randomize_coord()
+    forecast_subset_era5.subset_forecast(days=1)
 
 
     # FIND ALTITUDE FOR COMPARISON WITH SYNTH WINDS EXAMPLE USAGE

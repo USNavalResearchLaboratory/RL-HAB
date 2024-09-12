@@ -12,7 +12,7 @@ from era5.forecast_visualizer import ForecastVisualizer
 from env3d.balloon import BalloonState, SimulatorState
 from env3d.balloon import AltitudeControlCommand as command
 from era5.forecast import Forecast, Forecast_Subset
-from line_profiler import profile
+import pandas as pd
 from era5.ForecastClassifier import ForecastClassifier
 from termcolor import colored
 import sys
@@ -23,7 +23,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
-    @profile
     def __init__(self, FORECAST_ERA5, FORECAST_SYNTH, days = 1, seed=None, render_mode=None, render_style = "direction" ):
         super(FlowFieldEnv3d_SYNTH, self).__init__()
 
@@ -110,7 +109,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
     def count_greater_than_zero(self, arr):
         return np.sum(np.array(arr) > 0)
 
-    @profile
     def reset(self, seed=None, options=None):
 
         #Randomize new coordinate and forecast subset
@@ -126,7 +124,7 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         # For not including bad forecasts (score of 0):
         #'''
-        while self.forecast_score < 0.5:
+        while self.forecast_score < env_params['forecast_score_threshold']:
 
             self.forecast_subset_era5.randomize_coord()
             self.forecast_subset_era5.subset_forecast(days=self.days)
@@ -211,7 +209,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
         return self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
     """
 
-    @profile
     def move_agent(self, action):
         """
         Altitude is currently capped to not be able to go out of bounds.
@@ -314,7 +311,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         return reward
 
-    @profile
     def reward_euclidian(self):
         '''
         Linear Euclidian reward within target region, google cliff function for outside of radius
@@ -354,7 +350,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         return reward
 
-    @profile
     def step(self, action):
         reward = self.move_agent(action)
         reward += self.reward_piecewise()
@@ -369,7 +364,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         return observation, reward, done, False, info
 
-    @profile
     def calculate_relative_angle(self, x, y, goal_x, goal_y, heading_x, heading_y):
         """
         Calculates the relative angle of motion of the blimp in relation to the goal based off of true bearing FROM POSITION TO GOAL
@@ -401,7 +395,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         return rel_bearing
 
-    @profile
     def calculate_relative_wind_column(self):
         """
         Builds off of the same calculation as calculate_relative_angle() to calculate the relative
@@ -439,7 +432,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
         #Relative Flow Field Map
         return np.stack((alt_column, flow_field_rel_angle, flow_field_magnitude), axis=-1)
 
-    @profile
     def _get_obs(self):
         observation = {
             'altitude': np.array([self.Balloon.altitude]),
@@ -450,7 +442,6 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
 
         return observation
 
-    @profile
     def _get_info(self):
         return {
             "distance": self.Balloon.distance,
@@ -493,11 +484,12 @@ def main():
     #np.set_printoptions(threshold=sys.maxsize)
     #filename = "July-2024-SEA.nc"
     #filename = "SYNTH-Jan-2023-SEA.nc"
-    filename = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
-    FORECAST_ERA5 = Forecast(filename, forecast_type = "ERA5")
 
-    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
-    FORECAST_SYNTH = Forecast(filename2, forecast_type = "SYNTH")
+    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
+    # Get month associated with Synth
+    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+    # Then process ERA5 to span the same timespan as a monthly Synthwinds File
+    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
 
     env = FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH,  render_mode="human")
 

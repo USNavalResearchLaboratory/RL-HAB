@@ -18,14 +18,18 @@ class Forecast:
 
     Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
     """
-    def __init__(self, filename, forecast_type = None):
+    def __init__(self, filename, forecast_type = None, month = None):
 
         self.forecast_type = forecast_type
 
-        self.load_forecast(filename)
+        self.load_forecast(filename, month)
+
+        #check and see if the forecast type is correct
+        if forecast_type != "SYNTH" and forecast_type != "ERA5":
+            raise Exception("Invalid forecast type " + str(forecast_type))
 
 
-    def load_forecast(self, filename):
+    def load_forecast(self, filename, month = None):
         self.ds_original = xr.open_dataset("forecasts/" + filename)
 
         # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
@@ -38,34 +42,33 @@ class Forecast:
         #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
 
 
-
-        #Hardcode to July for now
+        #This is dependent on Synthwinds. Otherwise need to declare what month to look at
         if self.forecast_type == "ERA5":
-            print("made it to era5")
-            july_mask = self.ds_original.time.dt.month == 7
-            hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
-            # Combine both masks
-            combined_mask = july_mask & hour_mask
 
+            #for error printing
+            start_time = self.ds_original.time.values[0]
+            end_time = self.ds_original.time.values[0]
+
+
+            # Reformat the ERA5 forecast to only have times every 12 hours like SYnthwinds
+            #Also Only include the same month if ERA5 has more than a month
+            month_mask = self.ds_original.time.dt.month == month
+            hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
+            combined_mask = month_mask & hour_mask
             self.ds_original = self.ds_original.sel(time=combined_mask)
 
-            da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
-            #Migh need to change this nearest look up later
-            idx = np.argmin(np.abs(da_slice.z.values/9.81 - env_params["alt_max"]))
-            print("idx", idx)
-            max_pres_level = da_slice['level'][idx].level.values
-            self.ds_original = self.ds_original.sel(level=slice(max_pres_level, None))
-            print('Max_pres level', max_pres_level)
-
-
+            if self.ds_original.time.size == 0:
+                raise Exception(f"Month {month} is out of range of ERA forecast with time range of {start_time} - {end_time}")
 
         if self.forecast_type == "SYNTH":
-            print("made it to synth")
-            da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
-            max_pres_level = da_slice['level'][np.isclose(da_slice.z.values/9.81, env_params["alt_max"], atol=1e-5)].level.values[0]
-            self.ds_original = self.ds_original.sel(level=slice(max_pres_level, None))
-            print('Max_pres level', max_pres_level )
+            pass
 
+        # Cut off any pressure levels that are not in range of the altitude (only checking top bounds right now)
+        da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
+        idx = np.argmin(np.abs(da_slice.z.values / 9.81 - env_params["alt_max"]))
+        max_pres_level = da_slice['level'][idx].level.values
+        self.ds_original = self.ds_original.sel(level=slice(max_pres_level, None))
+        print('Max_pres level', max_pres_level)
 
         ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS + ERA5 FOR NOW
                 '''
