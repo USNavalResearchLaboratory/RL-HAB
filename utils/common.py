@@ -5,3 +5,4 @@ def convert_range(value, old_min, old_max, new_min, new_max):
 
 def quarter(x):
     return round(x*4)/4
+

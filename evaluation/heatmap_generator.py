@@ -7,7 +7,7 @@ from matplotlib.colors import ListedColormap
 verbose = False
 cutoff_forecast_score = 0.0
 #filename = "SYNTH-piecewise-75m-6k_evals-sectors_8.csv"
-filename = "SYNTH-USA-mild-thunder-150m-10k_evals-sectors_8-nofilter.csv"
+filename = "SYNTH-USA-Oct23-lilac-dream-115m-5k_evals-sectors_8-nofilter-UPDATED.csv"
 
 
 # Load data from CSV
@@ -68,7 +68,7 @@ if verbose:
     print(f"Row sums (total counts per TWR score bin in %): {col_sum}")
 
 # Use normal color map for percentage
-cmap_perc = plt.cm.viridis
+cmap_perc = plt.cm.magma
 
 # ************Plotting heatmaps*************
 
@@ -88,10 +88,12 @@ plt.title(f'Heatmap (Frequency) - ({filename})')
 # Percentage Heatmap
 plt.figure(figsize=(10, 8))
 plt.imshow(heatmap_normalized.T, origin='lower', cmap=cmap_perc, extent=[0, 1, 0, 1200], aspect='auto')
-plt.colorbar(label='Percentage of Forecast Column')
+plt.colorbar(label='Distribution')
+plt.clim(0,0.8)
 plt.xlabel('Forecast Score')
 plt.ylabel('TWR Score')
-plt.title(f'Heatmap (Percentage) - ({filename})')
+#plt.title(f'Heatmap (Percentage) - ({filename})')
+plt.tight_layout()
 plt.show()
 
 

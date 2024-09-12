@@ -24,13 +24,15 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
     # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
     @profile
-    def __init__(self, FORECAST_ERA5, FORECAST_SYNTH, days = 1, seed=None, render_mode=None ):
+    def __init__(self, FORECAST_ERA5, FORECAST_SYNTH, days = 1, seed=None, render_mode=None, render_style = "direction" ):
         super(FlowFieldEnv3d_SYNTH, self).__init__()
 
         self.days = days
 
         self.FORECAST_SYNTH = FORECAST_SYNTH
         self.FORECAST_ERA5 = FORECAST_ERA5
+
+        self.render_style = render_style
 
 
         self.ForecastClassifier = ForecastClassifier()
@@ -491,10 +493,10 @@ def main():
     #np.set_printoptions(threshold=sys.maxsize)
     #filename = "July-2024-SEA.nc"
     #filename = "SYNTH-Jan-2023-SEA.nc"
-    filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+    filename = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
     FORECAST_ERA5 = Forecast(filename, forecast_type = "ERA5")
 
-    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
+    filename2 = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
     FORECAST_SYNTH = Forecast(filename2, forecast_type = "SYNTH")
 
     env = FlowFieldEnv3d_SYNTH(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH,  render_mode="human")

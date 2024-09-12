@@ -5,7 +5,7 @@ env_params = {
         'radius': 50_000,  # km
 
         'alt_min': 15_000, # m
-        'alt_max': 25_500, # m
+        'alt_max': 26_250, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE

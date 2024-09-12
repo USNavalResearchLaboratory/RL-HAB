@@ -9,6 +9,7 @@ from termcolor import colored
 from env3d.config.env_config import env_params
 import imageio
 from era5.forecast import Forecast, Forecast_Subset
+import copy
 
 
 class ForecastVisualizer:
@@ -16,10 +17,11 @@ class ForecastVisualizer:
     Visualizes a forecast.  a Forecast needs to be converted to a Forecast_Subset before visualizing to determine ranges
     and convert to a numpy array for faster processing.
     """
-    def __init__(self, forecast):
+    def __init__(self, forecast, render_style = "direction"):
         if not isinstance(forecast, Forecast_Subset):
             raise Exception (colored("Provided forecast type is not <class 'era5.forecast.Forecast_Subset'> and instead " + str(type(forecast)),"red"))
 
+        self.render_style = render_style
 
         self.forecast_subset = forecast
         self.pressure_levels = self.forecast_subset.ds["level"].values.tolist()
@@ -84,15 +86,19 @@ class ForecastVisualizer:
             # Calculate directions for color mapping
             directions = np.arctan2(V, U)
             speed = np.sqrt(V**2 + U**2)
+            res = 1
 
             # For Speed
-            #norm = plt.Normalize(np.min(speed), np.max(speed))
-            #colors = cm.hsv(norm(speed))
+            if self.render_style == "speed":
+                norm = plt.Normalize(0, 50)
+                colors = cm.rainbow(norm(speed))
 
-            # For Direction
-            norm = plt.Normalize(-np.pi, np.pi)
-            colors = cm.hsv(norm(directions)) #for Directions
-            res = 1
+            elif self.render_style == "direction":
+                norm = plt.Normalize(-np.pi, np.pi)
+                colors = cm.hsv(norm(directions)) #for Directions
+
+            else:
+                raise Exception("UNdefined render_style for Forecast Visualization")
 
             for i in range(0, X.shape[0], skip):
                 for j in range(0, Y.shape[1], skip):
@@ -108,22 +114,21 @@ class ForecastVisualizer:
         ax.set_ylabel('Latitude (degrees)')
         ax.set_zlabel('Pressure Level (mb)')
 
-        #'''
-        #Color Direction
-        colormap = plt.colormaps.get_cmap('hsv')
-        # colors = colormap(scaled_z)
-        sm = plt.cm.ScalarMappable(cmap=colormap)
-        sm.set_clim(vmin=-3.14, vmax=3.14)
-        plt.colorbar(sm, ax=ax, shrink=.6, pad=.125)
-        #'''
 
-        '''
-        #Color Speed
-        mappable = cm.ScalarMappable(cmap=cm.hsv, norm=norm)
-        mappable.set_array(speed)
-        cbar = plt.colorbar(mappable, ax=ax, pad=0.1)
-        cbar.set_label('Wind Speed')
-        '''
+        if self.render_style == "direction":
+            colormap = plt.colormaps.get_cmap('hsv')
+            # colors = colormap(scaled_z)
+            sm = plt.cm.ScalarMappable(cmap=colormap)
+            sm.set_clim(vmin=-3.14, vmax=3.14)
+            plt.colorbar(sm, ax=ax, shrink=.6, pad=.125)
+
+
+        if self.render_style == "speed":
+            mappable = cm.ScalarMappable(cmap=cm.rainbow, norm=norm)
+            mappable.set_array(speed)
+            cbar = plt.colorbar(mappable, ax=ax, pad=0.1)
+            cbar.set_label('Wind Speed')
+
 
         x_min, x_max = plt.xlim()
         y_min, y_max = plt.ylim()
@@ -141,31 +146,98 @@ if __name__ == '__main__':
     #filename = "SHAB14V_ERA5_20220822_20220823.nc"
     #filename = "SYNTH-Jan-2023-SEA.nc"
     #filename = "Jan-2023-SEA.nc"
-    filename = "July-2024-SEA.nc"
-    FORECAST_PRIMARY = Forecast(filename)
 
-    env_params["rel_dist"] = 10_000_000 #does this override work?
+    filename_era5 = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
 
-    print(FORECAST_PRIMARY.ds_original)
+    filename_synth = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA-UPDATED.nc"
 
-    forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-    forecast_subset.assign_coord(0.5 * (forecast_subset.Forecast.LAT_MAX + forecast_subset.Forecast.LAT_MIN),
-                                 0.5 * (forecast_subset.Forecast.LON_MAX + forecast_subset.Forecast.LON_MIN),
-                                 "2024-07-26T12:00:00.000000000")
+    FORECAST_ERA5 = Forecast(filename_era5,  forecast_type = "ERA5")
+    FORECAST_SYNTH = Forecast(filename_synth,  forecast_type = "Synth")
+
+    env_params["rel_dist"] = 10_000_000 #Manually Override relative distance to show a whole subset
+
+
+    timestamp = "2023-07-01T00:00:00.000000000"
+
+    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+    forecast_subset_era5.assign_coord(0.5 * (forecast_subset_era5.Forecast.LAT_MAX + forecast_subset_era5.Forecast.LAT_MIN),
+                                 0.5 * (forecast_subset_era5.Forecast.LON_MAX + forecast_subset_era5.Forecast.LON_MIN),
+                                 timestamp)
     #forecast_subset.randomize_coord()
-    forecast_subset.subset_forecast(days=1)
+    forecast_subset_era5.subset_forecast(days=1)
 
-    #forecast_subset.ds = forecast_subset.ds.isel(level = slice(1,2))
+    forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
+    forecast_subset_synth.assign_coord(forecast_subset_era5.lat_central, forecast_subset_era5.lon_central, timestamp)
+    forecast_subset_synth.subset_forecast(days=1)
 
-    print(forecast_subset.ds['z'].values/9.81)
 
-    print(forecast_subset.ds)
+    # FIND ALTITUDE FOR COMPARISON WITH SYNTH WINDS EXAMPLE USAGE
+    """Find nearest pressure levels"""
+    alt_era5 = forecast_subset_era5.get_alt_from_pressure(30)
+
+    print("alt_era5", alt_era5)
+
+    # For Synthwinds, can Assume every coordinate has the same altitude column, so just take first index
+    alt_column = forecast_subset_synth.ds.isel(time=0, latitude=0, longitude=0)['z'].values/9.81
+
+    print("synth alts", alt_column)
+
+    # Find the index of the nearest z value
+    nearest_idx = np.argmin(np.abs(alt_column - alt_era5))
+
+    print("synth_idx", nearest_idx,forecast_subset_synth.ds.isel(time=0, latitude=0, level=nearest_idx, longitude=0)['z'].values/9.81)
+
+
+    skip = 2
+
+    #Now let's make a side by side GIF
+    #Leaving off 20 hpa and 150 hpa since synthwinds doesn't include those
+    for i in range(1, forecast_subset_era5.level_dim-1):
+
+        pres = forecast_subset_era5.ds.level.values[i]
+        print(pres)
+        alt_era5 = forecast_subset_era5.get_alt_from_pressure(pres)
+        # For Synthwinds, can Assume every coordinate has the same altitude column, so just take first index
+        alt_column = forecast_subset_synth.ds.isel(time=0, latitude=0, longitude=0)['z'].values / 9.81
+        # Find the index of the nearest z value
+        nearest_idx = np.argmin(np.abs(alt_column - alt_era5))
+        print(pres, alt_era5, forecast_subset_synth.ds.isel(time=0, latitude=0, level=nearest_idx, longitude=0)['z'].values/9.81)
+
+
+        #Take some slices of the forecasts for plotting
+        era_5_slice = copy.deepcopy(forecast_subset_era5)
+        era_5_slice.ds =  forecast_subset_era5.ds.isel(level=slice(i, i+1))
+        forecast_visualizer_era5 = ForecastVisualizer(era_5_slice)
+
+        synth_slice = copy.deepcopy(forecast_subset_synth)
+        synth_slice.ds = forecast_subset_synth.ds.isel(level=slice(nearest_idx, nearest_idx+1))
+        forecast_visualizer_synth = ForecastVisualizer(synth_slice)
+
+
+        #Plot Side by Side
+
+        fig = plt.figure(figsize=(18, 10))
+        gs = fig.add_gridspec(nrows=1, ncols=2)
+        ax1 = fig.add_subplot(gs[0, 0], projection='custom3dquiver')
+        ax2 = fig.add_subplot(gs[0, 1], projection='custom3dquiver')
+
+        fig.add_axes(ax1)
+        forecast_visualizer_era5.generate_flow_array(timestamp=timestamp)
+        forecast_visualizer_era5.visualize_3d_planar_flow(ax1, skip)
+
+
+        fig.add_axes(ax2)
+        forecast_visualizer_synth.generate_flow_array(timestamp=timestamp)
+        forecast_visualizer_synth.visualize_3d_planar_flow(ax2, skip)
+
+
+        plt.show()
 
     #sdfsd
 
     # Analyze Data
-    forecast_visualizer = ForecastVisualizer(forecast_subset)
-    skip = 10
+    forecast_visualizer = ForecastVisualizer(forecast_subset_era5)
+
 
 
     i = 0

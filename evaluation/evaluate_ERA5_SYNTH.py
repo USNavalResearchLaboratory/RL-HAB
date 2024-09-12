@@ -23,8 +23,8 @@ rel_dist = env_params['rel_dist']
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Aug-2023-USA.nc"
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
-synth_filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-era5_filename = "../../../../mnt/d/FORECASTS/ERA5-Q1-2023-SEA.nc"
+synth_filename = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA-UPDATED.nc"
+era5_filename = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
 
 FORECAST_ERA5 = Forecast(era5_filename)
 FORECAST_SYNTH = Forecast(synth_filename)

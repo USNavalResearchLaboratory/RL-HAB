@@ -42,7 +42,7 @@ class Forecast:
         #Hardcode to July for now
         if self.forecast_type == "ERA5":
             print("made it to era5")
-            july_mask = self.ds_original.time.dt.month == 1
+            july_mask = self.ds_original.time.dt.month == 7
             hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
             # Combine both masks
             combined_mask = july_mask & hour_mask
@@ -179,6 +179,21 @@ class Forecast_Subset:
         self.lon_central = quarter(lon)
 
         self.fourecast_error_count = 0
+
+
+    def get_alt_from_pressure(self, pressure):
+        "Get average altitude from ERA5 for a forecast subset. Average is taken since z is geopotential converted to altitude"
+        try:
+            # Use sel() to find the matching index
+            alt_array = self.ds.sel({"level": pressure}).z.values/9.81
+            avg_alt = np.mean(alt_array)
+
+
+            return avg_alt
+        except KeyError:
+            print(colored(f"Value {pressure} doesn't exist in the levels.","yellow"))
+            # Return a message if the value is not found
+            return None
 
 
     def subset_forecast(self, days = 1):
