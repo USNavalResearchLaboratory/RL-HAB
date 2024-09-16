@@ -56,6 +56,15 @@ class MatplotlibRendererTriple():
         self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
         self.ax4 = self.fig.add_subplot(self.gs[1, 2], projection='custom3dquiver')
 
+        # Adjust the space between rows (hspace = 0 for no space)
+        self.gs.update(hspace=0)
+
+        box1 = self.ax.get_position()  # Get the original position of the top plot
+        box2 = self.ax3.get_position()  # Get the original position of the bottom plot
+
+        # Adjust the position of the bottom plot to overlap the top one slightly
+        self.ax2.set_position([box2.x0, box2.y0 - 0.05, box2.width, box2.height])
+
         self.ax.set_xlabel('X_proj (m)')
         self.ax.set_ylabel('Y_proj (m)')
         self.ax.set_zlabel('Altitude (km)')

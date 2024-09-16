@@ -7,7 +7,7 @@ from matplotlib.colors import ListedColormap
 verbose = False
 cutoff_forecast_score = 0.0
 #filename = "SYNTH-piecewise-75m-6k_evals-sectors_8.csv"
-filename = "SYNTH-USA-Oct23-lilac-dream-115m-5k_evals-sectors_8-nofilter-UPDATED.csv"
+filename = "DUAL-Jul-on-Jul-USA-genial-shadow-piecewise.csv"
 
 
 # Load data from CSV

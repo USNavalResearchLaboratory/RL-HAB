@@ -164,7 +164,7 @@ if __name__ == '__main__':
 
     env_params["rel_dist"] = 10_000_000 #Manually Override relative distance to show a whole subset
 
-    timestamp = "2023-01-03T00:00:00.000000000"
+    timestamp = "2023-07-03T00:00:00.000000000"
 
 
 

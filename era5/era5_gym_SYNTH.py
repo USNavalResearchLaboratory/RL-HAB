@@ -84,6 +84,9 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
         max_vel = 50 # m/s
         num_levels = len(self.forecast_subset_era5.pressure_levels) # determined from pressure levels
 
+        print("Num_pressure_levels",num_levels)
+
+
         # These number ranges are technically wrong.  Velocity could be 0?  Altitude can currently go out of bounds.
         self.observation_space = spaces.Dict({
             'altitude': spaces.Box(low=env_params['alt_min'], high=env_params['alt_max'], shape=(1,), dtype=np.float64),
@@ -118,7 +121,7 @@ class FlowFieldEnv3d_SYNTH(gym.Env):
         #self.forecast_subset.subset_forecast()
 
         self.forecast_scores = [5, 5, 5, 5]  # dummy score to trigger randomizing
-        self.forecast_score = 0  # dummy score to trigger randomizing
+        self.forecast_score = -1  # dummy score to trigger randomizing
 
         #while self.count_greater_than_zero(self.forecast_scores) != 0:
 

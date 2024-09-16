@@ -101,7 +101,7 @@ class FlowFieldEnv3d(gym.Env):
         #self.forecast_subset.subset_forecast()
 
         self.forecast_scores = [5, 5, 5, 5]  # dummy score to trigger randomizing
-        self.forecast_score = 0  # dummy score to trigger randomizing
+        self.forecast_score = -1  # dummy score to trigger randomizing
 
         #while self.count_greater_than_zero(self.forecast_scores) != 0:
 

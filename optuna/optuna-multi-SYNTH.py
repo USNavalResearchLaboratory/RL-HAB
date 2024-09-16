@@ -111,7 +111,7 @@ def objective(trial):
         "env_name": "3dflow-km-kinematics",
         "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
         "git": branch + " - " + hash,
-        "NOTES": "Optuna tuning run"
+        "Notes": "Optuna tuning run"
     }
 
     run = wandb.init(

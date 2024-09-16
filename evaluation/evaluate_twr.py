@@ -9,7 +9,11 @@ from era5.forecast import Forecast
 
 #model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
 #model_name = "RL_models_synth/ruby-tree-3/DQN-synth_75000000_steps"
-model_name = "BEST_MODELS/vogons-SYNTH-piecewise/sleek-shadow-3/DQN_synth_104998950_steps"
+#model_name = "BEST_MODELS/vogons-SYNTH-piecewise/sleek-shadow-3/DQN_synth_104998950_steps"
+#model_name = "BEST_MODELS/aeolus-dual_USA_Jul-UPDATED/glad-lion-2/DQN_SYNTH_15000000_steps"
+
+model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
+env_params["episode_length"] = 1
 seed = None
 
 print("Loading model")
@@ -22,11 +26,12 @@ rel_dist = env_params['rel_dist']
 #filename = "SYNTH-Jan-2023-SEA.nc"
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Aug-2023-USA.nc"
-filename = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
+#filename = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA.nc"
+filename = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
 #filename = "../../../../mnt/d/FORECASTS/SYNTH-Oct-2023-USA.nc"
 
-FORECAST_PRIMARY = Forecast(filename)
-env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human") #Can also change render mode to "human for rendering"
+FORECAST_PRIMARY = Forecast(filename, forecast_type="ERA5" , month=7)
+env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=None) #Can also change render mode to "human for rendering"
 model = DQN.load(model_name, env=env, )
 
 n_procs = 1
@@ -50,7 +55,7 @@ twr_outer_score = []
 reward_score = []
 forecast_score = []
 
-NUM_EPS = 2000
+NUM_EPS = 10000
 
 for i in range (0,NUM_EPS):
     obs = vec_env.reset()
@@ -93,4 +98,5 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'Total_Reward': reward_score})
 
 df.to_csv("SYNTH-USA-piecewise-150m-2k_evals-sectors_8-pt4.csv")
+df.to_csv("Jul-ERA5-updated.csv")
 print(df)

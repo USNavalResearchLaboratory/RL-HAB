@@ -6,7 +6,7 @@ env_params = {
         'radius': 50_000,  # km
 
         'alt_min': 15_000, # m
-        'alt_max': 26_250, # m
+        'alt_max': 25_500, # m
 
         # DISCRETE
         'alt_move': 2 / 1000.,  # km/s  FOR DISCRETE
@@ -38,7 +38,7 @@ env_params = {
         'descent_rate_std_dev': 0.3,
 
         'era_netcdf': "../../../../mnt/d/FORECASTS/ERA5-H1-2023-USA.nc",
-        'synth_netcdf': "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-USA-UPDATED.nc",
+        'synth_netcdf': "../../../../mnt/d/FORECASTS/SYNTH-Apr-2023-USA-UPDATED.nc",
 
-        'forecast_score_threshold': 0.85
+        'forecast_score_threshold': 0.00
 }
