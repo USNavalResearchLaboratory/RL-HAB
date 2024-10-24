@@ -1,10 +1,11 @@
 .idea/
 
+PAPER_IMAGES/pics*
 
 RL_models*
 logs*
 wandb
-forecasts
+FORECASTS
 BEST_MODELS
 *.csv
 

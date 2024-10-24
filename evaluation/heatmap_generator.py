@@ -7,7 +7,13 @@ from matplotlib.colors import ListedColormap
 verbose = False
 cutoff_forecast_score = 0.0
 #filename = "SYNTH-piecewise-75m-6k_evals-sectors_8.csv"
-filename = "DUAL-Jul-on-Jul-USA-genial-shadow-piecewise.csv"
+#filename = "DUAL-Apr-on-Jun-USA-effortless-blaze-piecewise.csv"
+
+
+eval_dir = "evaluation/EVALUATION_DATA/"
+filename = eval_dir + "DUAL-Sep-on-Feb-USA-pretty-cosmos-piecewise.csv"
+
+heat_map_mask_threshold = 1.0
 
 
 # Load data from CSV
@@ -52,7 +58,7 @@ if verbose:
 
 # **************** Frequency Heatmap Masking *****************
 # Mask values below 1.0 (for frequency heatmap)
-heatmap_masked = np.ma.masked_less(heatmap, 1.0)
+heatmap_masked = np.ma.masked_less(heatmap, heat_map_mask_threshold)
 
 # Use the viridis colormap and set masked values (NaNs) to black
 cmap_freq = plt.cm.viridis
@@ -76,23 +82,43 @@ cmap_perc = plt.cm.magma
 x_centers = 0.5 * (xedges[:-1] + xedges[1:])
 
 # Frequency Heatmap
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(8, 7))
+
+ax2 = plt.gca()
+
+
 plt.imshow(heatmap_masked.T, origin='lower', cmap=cmap_freq, extent=[0, 1, 0, 1200], aspect='auto')
-plt.colorbar(label='Frequency of Forecast Column')
+plt.colorbar(label='Frequency of Forecast Column', extend="max")
+plt.clim(5,100.)
 plt.xlabel('Forecast Score')
-plt.ylabel('TWR Score')
+plt.ylabel('TWR50 (%)')
+
+yticks = ax2.get_yticks()
+ax2.set_yticks(yticks)  # Fix the tick locations
+ax2.set_yticklabels([f'{int(tick / 1200*100)}' for tick in yticks])
+
+
+plt.tight_layout()
 plt.title(f'Heatmap (Frequency) - ({filename})')
 #plt.show()
 #plt.close()
 
+
+
 # Percentage Heatmap
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(8, 7))
+ax = plt.gca()
 plt.imshow(heatmap_normalized.T, origin='lower', cmap=cmap_perc, extent=[0, 1, 0, 1200], aspect='auto')
 plt.colorbar(label='Distribution')
-plt.clim(0,0.8)
+plt.clim(0,1.)
 plt.xlabel('Forecast Score')
-plt.ylabel('TWR Score')
-#plt.title(f'Heatmap (Percentage) - ({filename})')
+plt.ylabel('TWR50 (%)')
+
+yticks = ax.get_yticks()
+ax.set_yticks(yticks)  # Fix the tick locations
+ax.set_yticklabels([f'{int(tick / 1200*100)}' for tick in yticks])
+
+plt.title(f'Heatmap (Percentage) - ({filename})')
 plt.tight_layout()
 plt.show()
 

@@ -1,10 +1,10 @@
-from era5.forecast import Forecast, Forecast_Subset
-from era5.ForecastClassifier import ForecastClassifier
-from env3d.config.env_config import env_params
+from env.forecast_processing.forecast import Forecast, Forecast_Subset
+from env.forecast_processing.ForecastClassifier import ForecastClassifier
+from env.config.env_config import env_params
 import pandas as pd
 
-synth_filename = "../../../../mnt/d/FORECASTS/SYNTH-Oct-2023-USA-UPDATED.nc"
-era5_filename = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
+synth_filename = "../FORECASTS/SYNTH-Oct-2023-USA-UPDATED.nc"
+era5_filename = "../FORECASTS/ERA5-H2-2023-USA.nc"
 
 
 FORECAST_SYNTH = Forecast(synth_filename, forecast_type="SYNTH")
@@ -35,10 +35,10 @@ synth_scores = []
 ERA5_scores = []
 
 
-for i in range (10_000):
+for i in range (200):
     synth_score = -1
     ERA5_score = -1
-    while synth_score < env_params['forecast_score_threshold']:
+    while ERA5_score < env_params['forecast_score_threshold']:
         forecast_subset_era5.randomize_coord()
         forecast_subset_era5.subset_forecast(days=days)
 
@@ -60,5 +60,5 @@ for i in range (10_000):
 df = pd.DataFrame({'Synth_Forecast_Score': synth_scores,
                     'ERA5_Forecast_Score': ERA5_scores})
 
-
-df.to_csv("Oct-ERA5-with-zero.csv")
+eval_dir = "evaluation/EVALUATION_DATA/"
+df.to_csv(eval_dir + "THIS IS A TEST.csv")

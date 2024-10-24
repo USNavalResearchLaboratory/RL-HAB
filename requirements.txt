@@ -22,3 +22,4 @@ pvlib
 windrose==1.9.0
 pyproj
 metpy
+line_profiler

@@ -1,4 +1,4 @@
-project_name = "aeolus-era5_obs_synth_movement"
+project_name = "RL_models_era5_obs_synth_movement"
 model_path="RL_models_era5_obs_synth_movement"
 log_path = "logs_era5_obs_synth_movement"
 

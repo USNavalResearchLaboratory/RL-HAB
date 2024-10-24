@@ -24,7 +24,7 @@ uncertainty in flow fields.  Additionally, wind diversity and opposing wind prob
 Also see Google's Balloon Learning Environment: https://balloon-learning-environment.readthedocs.io/en/latest/
 
 
-![alt text](img/station-keeping.png) ![alt text](wind3.gif)
+![alt text](img/station-keeping.png) ![alt text](img/wind-looped.gif)
 
 ## Installation
 
@@ -45,7 +45,7 @@ Also see Google's Balloon Learning Environment: https://balloon-learning-environ
     ```
     
     Tested to work on Windows 11 WSL with the following:
-    * Python Version 3.12
+    * Python Version 3.11
     * Conda Version 23.7.4
    
 3. Make a Wandb Account and set up on your local machine 
@@ -54,22 +54,26 @@ Also see Google's Balloon Learning Environment: https://balloon-learning-environ
 
 ##  Train and Evaluate RL HAB Agents
 
-![alt text](img/station-keeping-rendered.png)
+![alt text](img/simulator.gif)
 
-### Simulated Flow Field
-For now, flowfields are simulated with **generate3Dflow.py**.  The script generates a vector field with constant flows in the XY plane at 
-a user-defined number of altitude levels. The flow directions are randomized between 0, 90, 180, and 270 degrees. The magnitudes are 
-randomized from 5 to 25 m/s.  
+    **ToDo**  Discuss Forecast Processing. How to Download from ECWMF Copernicus etc
 
-**ToDo**  We need more complex flow fields to train on in the future. 
+    **ToDo**  Discuss SynthWinds,  is this a seperate Repo?
 
 ### Setup Environment
-Set enviromental parameters in **env3d.config.env_config.py**
+Set enviromental parameters in **env.config.env_config.py**
 
 ### Training an Agent
 Follow **train-DQN.py** as an example of how to train an agent.
 
-In the imports section, decide between kinematics vs discrete altitude control by importing **FlowEnv3D_SK_relative.py** or **FlowEnv3D_SK_relative_kinematics.py**
+    **ToDo**  Add options for simulating time skips with synth winds
+
+    **ToDo** Add options for different motion profiles,  kinematics, noise, etc. 
+
+    **ToDo**  Should We setup different Config files for different variations on the environment?
+
+    **ToDo**  Should We seperate the reward functions?
+
 
 The *config dictionary* within the script can be updated with various hyperparemters, training runtime, and other customizations
 
@@ -84,23 +88,43 @@ The *config dictionary* within the script can be updated with various hyperparem
 
 
 ### Evaluating an Agent
-Once training is complete, run **evaluate_DQN.py** as an example of how to evaluate a trained agent. This script also provides 
+Once training is complete, run **evaluate_\*.py** as an example of how to evaluate a trained agent. This script also provides 
 an example of rendering the path of trained agents. 
 
 Below shows an example of statistics tracked in wandb when running multiple experiments with varrying hyperparemters.
 
 ![alt text](img/wandb-example.png)
 
-### env2d (Archived)
-![alt text](img/2D-Flow.png)
-
 
 ### Hyperparameter Tuning with Optuna
     TODO: write some documentation for this
 
+There are 2 examples of how to run optuna hyperparameter tuning sessions.  
+
+```optuna_config.py``` sets up several high level variables that the other scripts use. 
+This includes the project name, and model and logs storing directories.  ```n_envs``` is how many vectorized envs to run
+see (https://stable-baselines.readthedocs.io/en/master/guide/examples.html) as an example. ```n_threads``` specifies 
+how many virtual threaded versions of the script to run (equivelent to running the same script in N terminal windows). ```n_trials``` 
+specifies how many trials to complete until the study is finished.  If running multi threaded, this will actually be ```n_trials```*```n_threads```
+
+To initialize the hyperparmeter study and an optuna database file to store any analyzed data from, first run 
+
+```initialize_study.py```
+
+Then you can either run ```optuna-multi-DUAL.py``` or ```optuna-multi-Single.py``` to 
+run one session individually,  or ```optuna-multi-*.py``` to run multiple threads at a time. 
+
+If running a multi threaded case be aware that there is a limit to computation power, start small and ramp up.  There is a point 
+where too many threads actually makes the simulation run slower and is less efficient; however this is different for every machine. 
+
+To see hyperparmeter results and plots on web, run:
+
+    optuna-dashboard sqlite:///db.sqlite3
+
+
 Some example output from hyperparameter tuning with Optuna:
 ![alt text](img/optuna-1.png)
-![alt text](img/optuna-2.png)
+
 
 ## Notes/Discussion
    * **Important notes on seeding:**

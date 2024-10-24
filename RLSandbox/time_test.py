@@ -1,13 +1,10 @@
 from line_profiler import LineProfiler
-import math
-import numpy as np
 
-
-from era5.era5_gym import FlowFieldEnv3d
-from era5.forecast import Forecast
+from env3d.RLHAB_gym_SINGLE import FlowFieldEnv3d_SINGLE
+from env3d.forecast import Forecast
 
 def test_function():
-    env = FlowFieldEnv3d()
+    env = FlowFieldEnv3d_SINGLE()
     env.FlowField3D.create_netcdf()
 
 
@@ -16,7 +13,7 @@ if __name__ == "__main__":
 
 
 
-    env = FlowFieldEnv3d()
+    env = FlowFieldEnv3d_SINGLE()
     obs = env.reset()
 
     action = 1
