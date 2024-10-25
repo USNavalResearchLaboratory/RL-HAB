@@ -27,9 +27,7 @@ forecast_subset_synth.assign_coord(lat = forecast_subset_era5.lat_central,
 forecast_subset_synth.subset_forecast(days=days)
 
 
-
-
-#Keep track of overall evaluation variables for creating heatmaps
+#Keep track of overall evaluation variables
 
 synth_scores = []
 ERA5_scores = []
@@ -39,10 +37,11 @@ for i in range (200):
     synth_score = -1
     ERA5_score = -1
     while ERA5_score < env_params['forecast_score_threshold']:
+        # Randomize ERA5 forecast coord
         forecast_subset_era5.randomize_coord()
         forecast_subset_era5.subset_forecast(days=days)
 
-        # Then assign coord to synth winds
+        # Then assign same coord to synth winds
         forecast_subset_synth.assign_coord(lat=forecast_subset_era5.lat_central,
                                                 lon=forecast_subset_era5.lon_central,
                                                 timestamp=forecast_subset_era5.start_time)

@@ -7,8 +7,6 @@ from utils import CoordinateTransformations as transform
 from line_profiler import profile
 from termcolor import colored
 import pandas as pd
-import sys
-
 
 class Forecast:
     """
@@ -33,14 +31,12 @@ class Forecast:
     def load_forecast(self, filename, month = None, hour_interval = None):
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
 
-        # Drop termperature from ERA5 forecasts because we're not simulating it in SynthWinds
+        # Drop temperature from ERA5 forecasts if it exists
         if 't' in self.ds_original.data_vars:
             self.ds_original = self.ds_original.drop_vars('t')
 
-        # Reverse order of latitude, since era5 comes reversed for some reason?
-
+        # Reverse order of latitude, since era5 comes reversed for some reason
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
-        #self.ds_original = self.ds_original.reindex(latitude=list(self.ds_original.latitude))
 
 
         #This is dependent on Synthwinds. Otherwise need to declare what month to look at

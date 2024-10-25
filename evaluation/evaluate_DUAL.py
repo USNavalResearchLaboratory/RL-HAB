@@ -1,18 +1,14 @@
+"""
+An example of Evaluating a Dual (ERA5 obs, SYNTH movement)  training.  Config files need to be the same between training and evaluating
+"""
+
 import pandas as pd
 from stable_baselines3 import DQN
 
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from env.config.env_config import env_params
 from env.forecast_processing.forecast import Forecast
-import matplotlib.pyplot as plt
 
-### EVALUATION ### ----------------------------------------------------------------------
-
-#model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
-#model_name = "RL_models_synth/ruby-tree-3/DQN-synth_75000000_steps"
-#model_name = "BEST_MODELS/vogons-SYNTH-piecewise/sleek-shadow-3/DQN_synth_104998950_steps"
-#model_name = "BEST_MODELS/aeolus-dual_USA_Jul-UPDATED/glad-lion-2/DQN_SYNTH_15000000_steps"
-#model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
 model_name = "BEST_MODELS/aeolus-dual_Apr-2/effortless-blaze-23/DQN_SYNTH_150000000_steps"
 seed = None
 
@@ -21,12 +17,6 @@ print("Loading model")
 pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
 rel_dist = env_params['rel_dist']
-
-#filename = "July-2024-SEA.nc"
-#filename = "SYNTH-Jan-2023-SEA.nc"
-#filename = "../../../../mnt/d/FORECASTS/SYNTH-Jan-2023-SEA.nc"
-#filename = "../../../../mnt/d/FORECASTS/SYNTH-Aug-2023-USA.nc"
-
 
 FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
 # Get month associated with Synth
@@ -39,29 +29,17 @@ env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_S
 
 model = DQN.load(model_name, env=env, )
 
-
 n_procs = 1
 vec_env = model.get_env()
 
-'''
-print ("Evaluating Model")
-# Evaluate the agent with deterministic actions
-mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=True)
-print(f"Deterministic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-
-# Evaluate the agent with stochastic actions
-mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deterministic=False)
-print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
-'''
-
-#Keep track of overall evaluation variables for creating heatmaps
+#Keep track of evaluation variables
 twr_score = []
 twr_inner_score = []
 twr_outer_score = []
 reward_score = []
 forecast_score = []
 
-NUM_EPS = 20
+NUM_EPS = 2_000 # how many episodes to evaluate
 
 for i in range (0,NUM_EPS):
     obs = vec_env.reset()
@@ -83,7 +61,7 @@ for i in range (0,NUM_EPS):
         if dones:
             break
 
-    #Update scores arrays
+    # Update scores arrays
     print()
     print("COUNT:", i)
     score = info[0]["forecast_score"]

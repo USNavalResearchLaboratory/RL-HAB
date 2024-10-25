@@ -1,3 +1,12 @@
+"""
+Many examples of different types of plots to generate from an ERA5 forecast.  XArray has a lot of nice built in plotting functions
+
+-3D quiver
+-3D colored quiver
+-2D colored quiver
+-2D colored contour
+"""
+
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import xarray as xr

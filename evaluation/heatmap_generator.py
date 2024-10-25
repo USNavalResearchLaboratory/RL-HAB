@@ -1,19 +1,13 @@
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 
 # Select heatmap options
 verbose = False
 cutoff_forecast_score = 0.0
-#filename = "SYNTH-piecewise-75m-6k_evals-sectors_8.csv"
-#filename = "DUAL-Apr-on-Jun-USA-effortless-blaze-piecewise.csv"
-
-
+heat_map_mask_threshold = 1.0
 eval_dir = "evaluation/EVALUATION_DATA/"
 filename = eval_dir + "DUAL-Sep-on-Feb-USA-pretty-cosmos-piecewise.csv"
-
-heat_map_mask_threshold = 1.0
 
 
 # Load data from CSV
@@ -27,13 +21,14 @@ with open(filename, 'r') as file:
             forecast_scores.append(item)
             twr_scores.append(float(row["TWR_Score"]))
 
+# Print Overall Statistics
 print(f"Average TWR: {np.mean(twr_scores)}")
 print(f"Standard Dev TWR: {np.std(twr_scores)}")
 
 print(f"Average Forecast: {np.mean(forecast_scores)}")
 print(f"Standard Dev Forecast: {np.std(forecast_scores)}")
 
-# Define the bins for the 2D histogram
+# Define the bins for the 2D histogram, this is manually set for now,  Need to change based on X: Forecast Score Discretizations, Y: TWR Score Discretizations
 bins_x = np.linspace(0, 1, 29)
 bins_y = np.linspace(0, 1200, 50)
 
@@ -65,7 +60,7 @@ cmap_freq = plt.cm.viridis
 cmap_freq.set_bad(color='black')
 
 # ***************** Percentage Heatmap Normalization ***************
-# Normalize the heatmap data by the sum of each column
+# Normalize the heatmap data by the sum of each column to come up with probability percantage
 col_sum[col_sum == 0] = 1  # Avoid division by zero
 heatmap_normalized = (heatmap.T / col_sum).T  # Normalize by dividing by column sum
 col_sum = heatmap_normalized.sum(axis=1)
@@ -86,7 +81,8 @@ plt.figure(figsize=(8, 7))
 
 ax2 = plt.gca()
 
-
+# ---- Plot Frequency HeatMap ----#
+# The frequency heatmap simple plots how many occurances of ForecastScore/TWR discretizations occurs and color codes the boxes accordingly
 plt.imshow(heatmap_masked.T, origin='lower', cmap=cmap_freq, extent=[0, 1, 0, 1200], aspect='auto')
 plt.colorbar(label='Frequency of Forecast Column', extend="max")
 plt.clim(5,100.)
@@ -100,12 +96,11 @@ ax2.set_yticklabels([f'{int(tick / 1200*100)}' for tick in yticks])
 
 plt.tight_layout()
 plt.title(f'Heatmap (Frequency) - ({filename})')
-#plt.show()
-#plt.close()
 
 
 
-# Percentage Heatmap
+# ---- Plot Percentage HeatMap ----#
+# The percentage heatmap converts boxes to percent based on overall column count.
 plt.figure(figsize=(8, 7))
 ax = plt.gca()
 plt.imshow(heatmap_normalized.T, origin='lower', cmap=cmap_perc, extent=[0, 1, 0, 1200], aspect='auto')

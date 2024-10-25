@@ -1,24 +1,18 @@
+"""
+An example of Evaluating a SINGLE (ERA5 or SYNTH  obs+movement)  training.  Config files need to be the same between training and evaluating
+"""
+
 import pandas as pd
-#from FlowEnv3D_SK_relative import FlowFieldEnv3d
 from env.RLHAB_gym_SINGLE import FlowFieldEnv3d_SINGLE
 from stable_baselines3 import DQN
 from env.config.env_config import env_params
 from env.forecast_processing.forecast import Forecast
 
-### EVALUATION ### ----------------------------------------------------------------------
-
-#model_name = "BEST_MODELS/aeolus-ERA5-piecewise-extended/polished-tree-30/DQN_ERA5_300000000_steps"
-#model_name = "RL_models_synth/ruby-tree-3/DQN-synth_75000000_steps"
-#model_name = "BEST_MODELS/vogons-SYNTH-piecewise/sleek-shadow-3/DQN_synth_104998950_steps"
-#model_name = "BEST_MODELS/aeolus-dual_USA_Jul-UPDATED/glad-lion-2/DQN_SYNTH_15000000_steps"
-
 model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
-#env_params["episode_length"] = 1
+#env_params["episode_length"] = 1  # To override episode length, for getting quick forecast score distributions
 seed = None
 
 print("Loading model")
-
-
 
 FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
 # Get month associated with Synth
@@ -26,15 +20,17 @@ month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
 # Then process ERA5 to span the same timespan as a monthly Synthwinds File
 FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
 
-FORECAST_PRIMARY = FORECAST_ERA5
+FORECAST_PRIMARY = FORECAST_ERA5 # Choose Forecast_SYNTH or FORECAST_ERA5,  or manually upload a Forecast
 
 env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
 
 model = DQN.load(model_name, env=env, )
 
 n_procs = 1
-vec_env = model.get_env()
+vec_env = model.get_env()  #SB3 require vec_env for evaluating models
 
+
+#Examples of simple evaluating with deterministic or stochastic actions
 '''
 print ("Evaluating Model")
 # Evaluate the agent with deterministic actions
@@ -46,14 +42,14 @@ mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=100, deter
 print(f"Stochastic evaluation: mean reward = {mean_reward}, std reward = {std_reward}")
 '''
 
-#Keep track of overall evaluation variables for creating heatmaps
+# Keep track of overall evaluation variables for creating heatmaps
 twr_score = []
 twr_inner_score = []
 twr_outer_score = []
 reward_score = []
 forecast_score = []
 
-NUM_EPS = 10000
+NUM_EPS = 10_000  #Number of episodes to evaulate on
 
 for i in range (0,NUM_EPS):
     obs = vec_env.reset()
@@ -75,7 +71,7 @@ for i in range (0,NUM_EPS):
         if dones:
             break
 
-    #Update scores arrays
+    # Update scores arrays
     print()
     print("COUNT:", i)
     score = info[0]["forecast_score"]

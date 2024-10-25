@@ -1,5 +1,8 @@
 """
-This script can be called to run multiple optuna trials simultaneously with multiprocessing by running  run_multiple_trials_DUAL.py
+
+Run an optuna hyperparemter study by running this script after editing config variables and running initialize_study.py
+
+This can also be run in multi-threaded mode by running run_multiple_trials_DUAL.py
 """
 
 import sys
@@ -24,7 +27,7 @@ from optuna.visualization.matplotlib import *
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
-# Import the Dynamics Profiles
+# Import the Env
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 
 #import custom callbacks
@@ -72,7 +75,7 @@ def objective(trial):
         policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
         '''
 
-    # Piecewise Reccomended Parameters
+    # Piecewise Recommended Parameters
     learning_rate = trial.suggest_float('learning_rate', 1e-5, 7e-4, log=True)
     exploration_fraction = trial.suggest_float('exploration_fraction', 0.2, 0.85)
     exploration_initial_eps = trial.suggest_float('exploration_initial_eps', 0.25, .8)
@@ -163,7 +166,6 @@ def objective(trial):
 
         run.finish()
 
-        #How can we add twr here?
         print(colored(f"Evaluating policy for {run.name}","cyan"))
         mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=50, return_episode_rewards=False)
         print(f"Mean reward for {run.name}: {mean_reward}")

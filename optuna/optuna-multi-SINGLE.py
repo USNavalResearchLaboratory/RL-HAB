@@ -1,5 +1,8 @@
 """
-This script can be called to run multiple optuna trials simultaensouly with multiprocessing by running  run_multiple_trials_SINGLE.py
+
+Run an optuna hyperparemter study by running this script after editing config variables and running initialize_study.py
+
+This can also be run in multi-threaded mode by running run_multiple_trials_SINGLE.py
 """
 
 
@@ -26,7 +29,7 @@ from optuna.visualization.matplotlib import *
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
-# Import the Dynamics Profiles
+# Import the Env
 from env.RLHAB_gym_SINGLE import FlowFieldEnv3d_SINGLE
 
 #import custom callbacks
@@ -54,7 +57,7 @@ def objective(trial):
         os.makedirs(logdir)
 
     '''
-        # Euclidian Reccomended Parameters
+        # Euclidian Recomended Parameters
         # Suggest hyperparameters using Optuna
         learning_rate = trial.suggest_float('learning_rate', 2e-5, 1e-4, log=True)
         exploration_fraction = trial.suggest_float('exploration_fraction', 0.2, 0.7)
@@ -74,7 +77,7 @@ def objective(trial):
         policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
         '''
 
-    # Piecewise Reccomended Parameters
+    # Piecewise Recomended Parameters
     learning_rate = trial.suggest_float('learning_rate', 1e-5, 7e-4, log=True)
     exploration_fraction = trial.suggest_float('exploration_fraction', 0.2, 0.85)
     exploration_initial_eps = trial.suggest_float('exploration_initial_eps', 0.25, .8)

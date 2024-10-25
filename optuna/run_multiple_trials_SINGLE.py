@@ -1,3 +1,7 @@
+"""
+Example of how to run multiple processes of optuna-multi-SINGLE.py for faster training
+"""
+
 import subprocess
 import psutil
 import time
@@ -27,4 +31,3 @@ except KeyboardInterrupt:
 
     for process in processes:
         process.wait()  # Ensure all processes are terminated
-#'''

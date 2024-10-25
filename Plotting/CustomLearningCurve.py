@@ -1,3 +1,8 @@
+"""
+Manual plotting of learning curves and TWR curves from a wandb training.  Download the wandb plots from the project and then import them here.  Alternatively,
+the plots could come from tensorboard.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick

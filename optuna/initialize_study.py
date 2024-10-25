@@ -1,3 +1,5 @@
+"""Simple script for initializing an optuna hyperparameter study.  Run this script after editing the variables in optuna_config.py"""
+
 import optuna
 import optuna_config
 

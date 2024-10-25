@@ -1,3 +1,13 @@
+"""
+Line plots of of mean twr with error bars for different models in each month.
+
+Can update the forecast cutoff_score for filtering.
+
+To run this script, evaluation has to have already been run on all 12 months individually and stored in CSVs.  See evaluation/EVALUATION_DATA as an example.
+
+"""
+
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -9,7 +19,7 @@ colors = [ "green", "orange", "red"]
 mean_twr_df = pd.DataFrame(index=months)
 std_twr_df = pd.DataFrame(index=months)
 
-cutoff_score = 0.5
+forecast_cutoff_score = 0.0
 
 eval_dir = "evaluation/EVALUATION_DATA/"
 
@@ -26,7 +36,7 @@ for e in eval_months:
         try:
             data = pd.read_csv(csv_name)
             # Filter out TWR_Score values below 0.5
-            data = data[data['Forecast_Score'] >= cutoff_score]
+            data = data[data['Forecast_Score'] >= forecast_cutoff_score]
 
             # Calculate mean TWR_Score
             mean_twr = data['TWR_Score'].mean()
@@ -49,7 +59,7 @@ for eval_month in mean_twr_df.columns:
     plt.errorbar(mean_twr_df.index, mean_twr_df[eval_month],
                  yerr=std_twr_df[eval_month], marker='o', alpha=0.75, linestyle = '-', label=eval_month, capsize=5, capthick=1, color = colors[i]) #, color = "black")
     i+=1
-plt.title('Mean TWR Score by Month (filtered FS >' + str(cutoff_score) + ")")
+plt.title('Mean TWR Score by Month (filtered FS >' + str(forecast_cutoff_score) + ")")
 plt.xlabel('Month')
 plt.ylabel('Mean TWR Score')
 plt.xticks(rotation=45)
