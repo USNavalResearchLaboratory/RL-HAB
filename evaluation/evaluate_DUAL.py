@@ -7,7 +7,7 @@ from stable_baselines3 import DQN
 
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from env.config.env_config import env_params
-from env.forecast_processing.forecast import Forecast
+from utils.initialize_forecast import initialize_forecasts
 
 model_name = "BEST_MODELS/aeolus-dual_Apr-2/effortless-blaze-23/DQN_SYNTH_150000000_steps"
 seed = None
@@ -18,11 +18,8 @@ pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
 rel_dist = env_params['rel_dist']
 
-FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
-# Get month associated with Synth
-month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-# Then process ERA5 to span the same timespan as a monthly Synthwinds File
-FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
+# Import Forecasts
+FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
 
 env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=None)
@@ -88,5 +85,5 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'Total_Reward': reward_score})
 
 eval_dir = "evaluation/EVALUATION_DATA/"
-df.to_csv(eval_dir+"DUAL-Jul-on-Apr-USA-genial-shadow-piecewise_TEST.csv")
+df.to_csv(eval_dir+"TIMEWARP-DUAL-Jul-on-Jul-USA-genial-shadow-piecewise_TEST.csv")
 print(df)

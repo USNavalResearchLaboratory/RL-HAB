@@ -1,19 +1,14 @@
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3 import DQN
-
-#from FlowEnv3D_SK_relative import FlowFieldEnv3d
-#from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
-
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from env.config.env_config import env_params
-
-#from era5.era5_gym import FlowFieldEnv3d
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 #from era5.era5_gym_SINGLE import FlowFieldEnv3d_SINGLE
-from env.forecast_processing.forecast import Forecast
+from utils.initialize_forecast import initialize_forecasts
+
 import git
-import pandas as pd
+
 
 repo = git.Repo(search_parent_directories=True)
 branch = repo.head.ref.name
@@ -47,15 +42,10 @@ config = {
 
 n_procs = 1
 
-FORECAST_SYNTH = Forecast(env_params['synth_netcdf'],  forecast_type = "SYNTH")
-# Get month associated with Synth
-month =  pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-#Then process ERA5 to span the same timespan as a monthly Synthwinds File
-FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month = month)
+# Import Forecasts
+FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-
-#env = FlowFieldEnv3d(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
-
+# Setup Env (SINGLE or Dual)
 env = make_vec_env(lambda: FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH), n_envs=n_procs)
 #env = make_vec_env(lambda: FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_ERA5), n_envs=n_procs)
 

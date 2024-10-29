@@ -1,3 +1,10 @@
+"""
+Tests to make sure that the manual interpretation methods match with xarray, scipy, and numpy methods
+
+Our manually written interpolation methods are faster for simulating
+"""
+
+
 import unittest
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
 from env.config.env_config import env_params
@@ -5,11 +12,12 @@ from datetime import datetime
 
 class TestFunctionOutputs(unittest.TestCase):
     def setUp(self):
-        # ERA5 Test
+        #Try some different variants here:
         #FORECAST_PRIMARY = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=7)
-
-        # Synth Test
+        #FORECAST_PRIMARY = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=7, timewarp=3)
+        #FORECAST_PRIMARY = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=None, timewarp=3)
         FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
+        FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH", timewarp=6)
 
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
         self.forecast_subset.randomize_coord()

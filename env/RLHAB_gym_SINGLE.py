@@ -13,6 +13,7 @@ from env.forecast_processing.forecast_visualizer import ForecastVisualizer
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
 from env.forecast_processing.ForecastClassifier import ForecastClassifier
 from utils.common import convert_range
+from utils.initialize_forecast import initialize_forecasts
 from line_profiler import profile
 
 
@@ -464,10 +465,8 @@ listener.start()
 def main():
 
     #ERA5 Test
-    FORECAST_PRIMARY = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=7)
+    FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH", month=None, timewarp=3)
 
-    #Synth Test
-    #FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
 
     env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=env_params['render_mode'])
 

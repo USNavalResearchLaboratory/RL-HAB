@@ -1,3 +1,12 @@
+"""
+Current Assumptions for Synth and ERA5 forecast
+
+- Both forecasts are downloaded for the same regions (0.25 degree resolution), same altitude band (config)
+- Synth Forecast is 1 month @ 12 hour intervals
+- Synth Forecast is 6 months @ 3 hour intervals
+
+"""
+
 import xarray as xr
 import numpy as np
 from env.config.env_config import env_params
@@ -17,48 +26,27 @@ class Forecast:
 
     Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
     """
-    def __init__(self, filename, forecast_type = None, month = None, ):
+    def __init__(self, filename, forecast_type = None, month = None, timewarp=None ):
 
         self.forecast_type = forecast_type
 
-        self.load_forecast(filename, month)
+        self.load_forecast(filename, month, timewarp=timewarp)
 
         #check and see if the forecast type is correct
         if forecast_type != "SYNTH" and forecast_type != "ERA5":
             raise Exception("Invalid forecast type " + str(forecast_type))
 
 
-    def load_forecast(self, filename, month = None, hour_interval = None):
+    def load_forecast(self, filename, month = None, timewarp = None):
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
 
-        # Drop temperature from ERA5 forecasts if it exists
+        # Drop temperature variable from forecasts if it exists
         if 't' in self.ds_original.data_vars:
             self.ds_original = self.ds_original.drop_vars('t')
 
-        # Reverse order of latitude, since era5 comes reversed for some reason
+        # Reverse order of latitude, since era5 comes reversed for some reason (We set up synth to be the same)
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))
 
-
-        #This is dependent on Synthwinds. Otherwise need to declare what month to look at
-        if self.forecast_type == "ERA5":
-
-            #for error printing
-            start_time = self.ds_original.time.values[0]
-            end_time = self.ds_original.time.values[0]
-
-
-            # Reformat the ERA5 forecast to only have times every 12 hours like SYnthwinds
-            #Also Only include the same month if ERA5 has more than a month
-            month_mask = self.ds_original.time.dt.month == month
-            hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
-            combined_mask = month_mask & hour_mask
-            self.ds_original = self.ds_original.sel(time=combined_mask)
-
-            if self.ds_original.time.size == 0:
-                raise Exception(f"Month {month} is out of range of ERA forecast with time range of {start_time} - {end_time}")
-
-        if self.forecast_type == "SYNTH":
-            pass
 
         # Cut off any pressure levels that are not in range of the altitude (only checking top bounds right now)
         da_slice = self.ds_original.isel(time=0, latitude=0, longitude=0)
@@ -68,55 +56,17 @@ class Forecast:
         #print('Max_pres level', max_pres_level)
 
 
+        # Some forecast formatting helper functions that are performed by default with v1.0
+        # Only include same ERA5 month as Synth, unless month is not specified
+        # Need to format ERA5 before timewarping
+        if self.forecast_type == "ERA5" and month != None:
+            self.drop_era5_months(month)
 
+        # Change the simulation timestamps of forecasts
+        if timewarp != None:
+            self.TIMEWARP(timewarp)
 
-        ''' HACKY SOLUTION FOR SIMULATING SYNTH WINDS + ERA5 FOR NOW
-                '''
-        if hour_interval != None:
-            print("HACK ACTIVATED")
-
-
-            #initial time variables
-            self.TIME_MIN = self.ds_original.time.values[0]
-            self.TIME_MAX = self.ds_original.time.values[-1]
-            self.TIME_DIM = len(self.ds_original.time.values)
-
-            print(colored("HACKY SOLUTION FOR SYNTH WINDS CURRENTLY ACTIVE","cyan"))
-            print(self.TIME_MIN)
-            synth_simulated_time = []
-            hour_interval = 3
-            for i in range(0, self.TIME_DIM ):
-                synth_simulated_time.append(self.TIME_MIN + np.timedelta64(i * hour_interval, "h"))
-
-            # print(synth_simulated_time)
-            print(len(synth_simulated_time))
-            self.ds_original['time'] = synth_simulated_time
-            self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
-
-            #print(colored("USA HACK", "magenta"))
-            #self.ds_original = self.ds_original.isel(level=slice(None, None))
-
-            #nan_check = self.ds_original.map(lambda x: np.isnan(x).any())
-
-
-            #print(colored("EVEN MORE HACKY SOLUTION FOR SEA SynthWinds cut of at 25k", "magenta"))
-            #self.ds_original = self.ds_original.isel(level=slice(7, None))
-
-            #new Hack for Synth SEA to ideally avoid
-
-            #self.ds_original = self.ds_original.sel(level=slice(24.54, None))
-            #print(self.ds_original)
-
-            #print(self.ds_original.isel(latitude = 0,longitude=0,level=0,time=0).z.values/9.81)
-
-
-            #print(self.ds_original)
-
-
-            #'''
-
-
-
+        # Set master forecast variables
         self.LAT_MIN = self.ds_original.latitude.values[0]
         self.LAT_MAX = self.ds_original.latitude.values[-1]
         self.LAT_DIM = len(self.ds_original.latitude.values)
@@ -133,12 +83,73 @@ class Forecast:
         self.TIME_MAX = self.ds_original.time.values[-1]
         self.TIME_DIM = len(self.ds_original.time.values)
 
-
-
         #print(f"LAT RANGE: ({self.LAT_DIM }) {self.LAT_MIN}, {self.LAT_MAX}")
         #print(f"LON RANGE: ({self.LON_DIM}) {self.LON_MIN}, {self.LON_MAX}")
         #print(f"PRES RANGE: ({self.LEVEL_DIM}) {self.LEVEL_MIN}, {self.LEVEL_MAX}")
         #print(f"TIME RANGE: ({self.TIME_DIM}) {self.TIME_MIN}, {self.TIME_MAX}")
+
+
+    def drop_era5_months(self, month):
+        '''By default, ERA5 forecasts are downloaded in 6 month @ 3 hour intervals
+
+        Since many simulations require both Synth and ERA5, we need to change ERA5 to 12 hour intervals
+
+        Then decide whether or not to do timewarping on both SYNTH and ERA5 (default is yes, and change
+        the simulated timestamp to 3 hours instead of 12 hours)
+        '''
+        print(colored("DROPPING ERA5 Months/times except (" + str(month) + ") and (12) hour intervals", "yellow"))
+
+        # for error printing
+        start_time = self.ds_original.time.values[0]
+        end_time = self.ds_original.time.values[-1]
+
+        # Reformat the ERA5 forecast to only have times every 12 hours like Synth Forecasts
+        # Also Only include the same month if ERA5 has more than a month
+        month_mask = self.ds_original.time.dt.month == month
+        hour_mask = self.ds_original.time.dt.hour.isin([0, 12])
+        combined_mask = month_mask & hour_mask
+        self.ds_original = self.ds_original.sel(time=combined_mask)
+
+        if self.ds_original.time.size == 0:
+            raise Exception(
+                f"Month {month} is out of range of ERA forecast with time range of {start_time} - {end_time}")
+
+
+    def TIMEWARP(self, timewarp):
+        '''
+        By Default ERA5 forecasts are downloaded in 3 hour intervals, whereas Synth are in 12 hour intervals
+
+        Therefore we perform a "timewarp" to overwrite timestamps in both forecasts, while still matching
+        up the data from the original timestamps with the new timestamps.
+
+        For example:
+
+        Synth (original):   2024-01-01 00:00:00, 2024-01-01 12:00:00, 2024-01-02 00:00:00, 2024-01-02 12:00:00
+        *original timestamps will be overwritten with the timewarp function
+        Synth (timewarp) :  2024-01-01 00:00:00, 2024-01-01 03:00:00, 2024-01-01 06:00:00, 2024-01-01 09:00:00
+        *to line up with the ERA5
+        ERA5:               2024-01-01 00:00:00, 2024-01-01 03:00:00, 2024-01-01 06:00:00, 2024-01-01 09:00:00
+
+        Timewarping will typically only be used for Synth Forecast due to their sparse timing
+        '''
+
+        if timewarp != 1 and timewarp != 3 and timewarp != 6 and timewarp != 12:
+            raise Exception(colored("Timewarp only accepts hour intervals of 1,3,6,12", "yellow"))
+
+        print(colored("TIMEWARPING (" + self.forecast_type + ")", "cyan"))
+
+        # determine initial time variables (temporary, not assigned)
+        time_min = self.ds_original.time.values[0]
+        time_dim = len(self.ds_original.time.values)
+
+        # Add timewarp time interval to the forecast
+        synth_simulated_time = []
+        for i in range(0, time_dim):
+            synth_simulated_time.append(time_min + np.timedelta64(i * timewarp, "h"))
+
+        self.ds_original['time'] = synth_simulated_time
+        self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
+
 
 class Forecast_Subset:
     """
@@ -225,8 +236,9 @@ class Forecast_Subset:
         self.lat_max = quarter(lat_max)
         self.lon_max = quarter(lon_max)
 
-        #2. Subset the forecast to a smaller array #This may not be necessary for simulating, but good for forecast visualization)
-        #No time for now?
+        #2. Subset the forecast to a smaller array
+        # This may not be necessary for simulating, but good for forecast visualization)
+        # No time for now?
         self.ds = self.Forecast.ds_original.sel(latitude=slice(self.lat_min, self.lat_max),
                               longitude=slice(self.lon_min, self.lon_max),
                               level=slice(pres_min,pres_max),
@@ -349,16 +361,17 @@ class Forecast_Subset:
 
 
 if __name__ == '__main__':
-    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
+    #Can't use utils.initialize_forecast here, because it would be a circular import
+    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH", timewarp=3)
     # Get month associated with Synth
-    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+    synth_month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
     # Then process ERA5 to span the same timespan as a monthly Synthwinds File
-    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
+    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=synth_month, timewarp=3)
 
-    forecast_subset = Forecast_Subset(FORECAST_SYNTH) #Choose FORECAST_SYNTH or FORECAST_ERA5 here
+
+    forecast_subset = Forecast_Subset(FORECAST_ERA5) #Choose FORECAST_SYNTH or FORECAST_ERA5 here
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
     forecast_subset.subset_forecast()
 
     print(forecast_subset.ds)
-

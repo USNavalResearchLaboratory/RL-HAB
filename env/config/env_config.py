@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xr
 
 env_params = {
         # TRAINING VARIABLES

@@ -63,7 +63,7 @@ class MatplotlibRenderer():
         self.scatter_goal = self.ax.scatter([], [], [], color='green')
         self.canvas = self.fig.canvas
 
-        self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+        self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, quiver_skip=self.render_skip)
 
         self.current_state_line, = self.ax.plot([], [], [], 'r--')
 
@@ -160,7 +160,7 @@ class MatplotlibRenderer():
 
                 self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
                 self.Forecast_visualizer.generate_flow_array(timestamp=self.SimulatorState.timestamp)
-                self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, skip=self.render_skip)
+                self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, quiver_skip=self.render_skip)
 
                 self.hour_count += 1
 

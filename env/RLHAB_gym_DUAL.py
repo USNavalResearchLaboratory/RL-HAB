@@ -14,6 +14,7 @@ from env.forecast_processing.forecast import Forecast, Forecast_Subset
 from env.forecast_processing.ForecastClassifier import ForecastClassifier
 
 from utils.common import convert_range
+from utils.initialize_forecast import initialize_forecasts
 import pandas as pd
 
 np.set_printoptions(suppress=True, precision=3)
@@ -482,15 +483,8 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
-    #np.set_printoptions(threshold=sys.maxsize)
-    #filename = "July-2024-SEA.nc"
-    #filename = "SYNTH-Jan-2023-SEA.nc"
-
-    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
-    # Get month associated with Synth
-    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-    # Then process ERA5 to span the same timespan as a monthly Synthwinds File
-    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
+    # Import Forecasts
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
     env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params['render_mode'])
 

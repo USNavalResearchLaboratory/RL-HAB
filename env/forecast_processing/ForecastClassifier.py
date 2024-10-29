@@ -1,10 +1,21 @@
+"""
+Simple Algorithm to classify forecasts based on number of opposing winds.  Similar to method used in RadioWinds.
+
+For now, we are assuming looking at 6 hour increments for a 24 hour window  (4 time instances)
+
+For each time instance,  calculate opposing winds with **n_sectors** (default is 8)
+
+Levels are based on the netcdf file and pressure range.  (Synth will have more levels than ERA5)
+"""
+
+
 import numpy as np
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
 import windrose
 import pandas as pd
 from env.forecast_processing.forecast_visualizer import ForecastVisualizer
 import matplotlib.pyplot as plt
-from env.config.env_config import env_params
+from utils.initialize_forecast import initialize_forecasts
 
 
 class ForecastClassifier:
@@ -17,7 +28,6 @@ class ForecastClassifier:
 
         #Determine the sectors (directions) that contain non zero values (altitude levels that have wind)
         df = pd.DataFrame(table)
-
 
         altitude_lookup_idxs = df.apply(np.flatnonzero, axis=0) # altitude can be pressure or height, depending on by_pressure variable
 
@@ -53,9 +63,8 @@ class ForecastClassifier:
         timestamp = start_time
         scores = []
 
-        intervals = 4
-
-        n_sectors = 8
+        intervals = 4 # Default Value (how many time incrememnts to look at given a 24 hour window)
+        n_sectors = 8 # Default Value (how many angular bins to classify angular bins into)
 
         for i in range (0,intervals):
 
@@ -82,28 +91,25 @@ class ForecastClassifier:
 
 
 if __name__ == '__main__':
-    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
-    # Get month associated with Synth
-    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-    # Then process ERA5 to span the same timespan as a monthly Synthwinds File
-    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
+    # Import Forecasts
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
+    # Initialize ForecastClassifier
+    ForecastClassifier = ForecastClassifier()
 
-    forecast_subset = Forecast_Subset(FORECAST_SYNTH) #Choose FORECAST_SYNTH or FORECAST_ERA5 here
+    #randomize coord, ERA5 or Synth
+    forecast_subset = forecast_subset_synth #choose _era5 or _synth
     forecast_subset.randomize_coord()
     print("random_coord", forecast_subset.lat_central, forecast_subset.lon_central, forecast_subset.start_time)
     forecast_subset.subset_forecast()
 
-    ForecastClassifier = ForecastClassifier()
+    #Determine Forecast Score
     scores, score = ForecastClassifier.determine_OW_Rate(forecast_subset)
-
     print(scores,score)
 
-    timestamp = forecast_subset.start_time
-    skip = 2
-
+    # Visualize the forecast at the first timestamp
     Forecast_visualizer = ForecastVisualizer(forecast_subset)
-    Forecast_visualizer.generate_flow_array(timestamp=timestamp)
+    Forecast_visualizer.generate_flow_array(timestamp=forecast_subset.start_time)
 
     # Initialize Figure
     fig = plt.figure(figsize=(15, 10))
@@ -111,5 +117,5 @@ if __name__ == '__main__':
 
     fig.add_axes(ax1)
 
-    Forecast_visualizer.visualize_3d_planar_flow(ax1, skip)
+    Forecast_visualizer.visualize_3d_planar_flow(ax1, quiver_skip= 2)
     plt.show()

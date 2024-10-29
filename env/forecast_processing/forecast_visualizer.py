@@ -1,3 +1,12 @@
+"""
+Create 3D visualizations of ERA5 or Synth forecast with colored quiver plots.  Can shoose between
+coloring via speed or direction (default is direction).
+
+Also gives an example of doing a side by side comparison of levels between ERA5 and Synth
+
+As well as how to make GIFs
+"""
+
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,11 +16,10 @@ from utils.Custom3DQuiver import Custom3DQuiver
 from matplotlib.projections import register_projection
 from termcolor import colored
 from env.config.env_config import env_params
-from env.forecast_processing.forecast import Forecast, Forecast_Subset
+from env.forecast_processing.forecast import Forecast_Subset
+from utils.initialize_forecast import initialize_forecasts
 import imageio
 import copy
-import pandas as pd
-
 
 class ForecastVisualizer:
     """
@@ -30,7 +38,9 @@ class ForecastVisualizer:
         register_projection(Custom3DQuiver)
 
     def map_pres2alt(self):
-        # Use interpolation to transform the original Z values to the desired visual scale
+        '''
+        Use interpolation to transform the original Z values to the desired visual scale
+        '''
         alts = []
 
         for pres in self.pressure_levels:
@@ -70,9 +80,9 @@ class ForecastVisualizer:
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
 
 
-    def visualize_3d_planar_flow(self, ax, skip=1, show_cbar = False, arrow_head_angle = 84.9, length = .05, arrow_length_ratio=3.5):
+    def visualize_3d_planar_flow(self, ax, quiver_skip=1, show_cbar = False, arrow_head_angle = 84.9, length = .05, arrow_length_ratio=3.5):
         '''
-        Plot the Flow Field
+        This is the main function for 3D quiver plots
         '''
 
         for z in range(self.flow_field.shape[0]):
@@ -101,8 +111,8 @@ class ForecastVisualizer:
             else:
                 raise Exception("UNdefined render_style for Forecast Visualization")
 
-            for i in range(0, X.shape[0], skip):
-                for j in range(0, Y.shape[1], skip):
+            for i in range(0, X.shape[0], quiver_skip):
+                for j in range(0, Y.shape[1], quiver_skip):
                     ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                               length = length, arrow_length_ratio=arrow_length_ratio, color=colors[i, j], arrow_head_angle=arrow_head_angle)
                               #length = .1, arrow_length_ratio = 1.5, color = colors[i, j], arrow_head_angle = 75)
@@ -160,92 +170,69 @@ class ForecastVisualizer:
         #plt.title()
 
 
-if __name__ == '__main__':
-    #filename = "SHAB14V_ERA5_20220822_20220823.nc"
-    #filename = "SYNTH-Jan-2023-SEA.nc"
-    #filename = "Jan-2023-SEA.nc"
-    #filename_era5 = "../../../../mnt/d/FORECASTS/ERA5-H2-2023-USA.nc"
-    #filename_synth = "../../../../mnt/d/FORECASTS/SYNTH-Jul-2023-USA-UPDATED.nc"
+"""
+Now we will provide some functions to show different ways to use the functions for different types of plots 
+"""
 
-    print(env_params['era_netcdf'])
+def plot_3d_quiver(timestamp, forecast_subset,  quiver_skip = 2):
+    forecast_visualizer = ForecastVisualizer(forecast_subset)
+    forecast_visualizer.generate_flow_array(timestamp=timestamp)
 
+    # Initialize Figure
+    fig = plt.figure(figsize=(15, 10))
+    # ax1 = fig.add_subplot(111, projection='3d')
+    ax1 = fig.add_subplot(111, projection='custom3dquiver')
+    # Manually add a CustomAxes3D to the figure
+    # ax1 = Custom3DQuiver(fig)
+    fig.add_axes(ax1)
 
-    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'],  forecast_type = "SYNTH")
-
-
-    # Get month associated with Synth
-    month =  pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-
-    #Then process ERA5 to span the same timespan as a monthly Synthwinds File
-    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month = month)
-
-    env_params["rel_dist"] = 10_000_000 #Manually Override relative distance to show a whole subset
-
-    timestamp = "2023-07-03T00:00:00.000000000"
-
+    print("Plotting Forecast (" +  forecast_subset.Forecast.forecast_type + ") -  "  + str(timestamp))
+    forecast_visualizer.visualize_3d_planar_flow(ax1, quiver_skip=quiver_skip)
+    # plt.savefig(str(i) +'.png')
+    plt.show()
+    #plt.close()
 
 
-    forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
-    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+def plot_side_by_side_levels():
+    """
+    Shows an example of creating a gif of comparing individual pressure levels between Synth and ERA5 for the same date
 
+    ERA5 and Synth need to contain the same downloaded region and date windows.
 
-    forecast_subset_synth.assign_coord(
-        0.5 * (forecast_subset_synth.Forecast.LAT_MAX + forecast_subset_synth.Forecast.LAT_MIN),
-        0.5 * (forecast_subset_synth.Forecast.LON_MAX + forecast_subset_synth.Forecast.LON_MIN),
-        timestamp)
-    forecast_subset_synth.subset_forecast(days=1)
+    We use xarrays isel method to find the matching pressure levels (since Synth is altitude based, and ERA5 is pressure
+    based)
+    """
 
-
-    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
-    forecast_subset_era5.assign_coord(forecast_subset_synth.lat_central, forecast_subset_synth.lon_central, timestamp)
-    # forecast_subset.randomize_coord()
-    forecast_subset_era5.subset_forecast(days=1)
-
-
-    # FIND ALTITUDE FOR COMPARISON WITH SYNTH WINDS EXAMPLE USAGE
-    """Find nearest pressure levels"""
-    alt_era5 = forecast_subset_era5.get_alt_from_pressure(30)
-
-    print("alt_era5", alt_era5)
-
-    # For Synthwinds, can Assume every coordinate has the same altitude column, so just take first index
-    alt_column = forecast_subset_synth.ds.isel(time=0, latitude=0, longitude=0)['z'].values/9.81
-
-    print("synth alts", alt_column)
-
-    # Find the index of the nearest z value
-    nearest_idx = np.argmin(np.abs(alt_column - alt_era5))
-
-    print("synth_idx", nearest_idx,forecast_subset_synth.ds.isel(time=0, latitude=0, level=nearest_idx, longitude=0)['z'].values/9.81)
-
-
-    skip = 2
-
-    #Now let's make a side by side GIF
-    #Leaving off 20 hpa and 150 hpa since synthwinds doesn't include those
-    for i in range(1, forecast_subset_era5.level_dim-1):
-
+    # Now let's make a side by side GIF
+    # Leaving off 20 hpa and 150 hpa since synthwinds doesn't include those
+    for i in range(1, forecast_subset_era5.level_dim - 1):
+        #Get current ERA5 pressure level
         pres = forecast_subset_era5.ds.level.values[i]
         print(pres)
+
+        # Find altitude for pressure level
         alt_era5 = forecast_subset_era5.get_alt_from_pressure(pres)
+
         # For Synthwinds, can Assume every coordinate has the same altitude column, so just take first index
         alt_column = forecast_subset_synth.ds.isel(time=0, latitude=0, longitude=0)['z'].values / 9.81
+        #print(alt_column)
+
+
         # Find the index of the nearest z value
         nearest_idx = np.argmin(np.abs(alt_column - alt_era5))
-        print(pres, alt_era5, forecast_subset_synth.ds.isel(time=0, latitude=0, level=nearest_idx, longitude=0)['z'].values/9.81)
+        print(pres, alt_era5,
+              forecast_subset_synth.ds.isel(time=0, latitude=0, level=nearest_idx, longitude=0)['z'].values / 9.81)
 
-
-        #Take some slices of the forecasts for plotting
+        # Take some slices of the forecasts for plotting
         era_5_slice = copy.deepcopy(forecast_subset_era5)
-        era_5_slice.ds =  forecast_subset_era5.ds.isel(level=slice(i, i+1))
+        era_5_slice.ds = forecast_subset_era5.ds.isel(level=slice(i, i + 1))
         forecast_visualizer_era5 = ForecastVisualizer(era_5_slice)
 
         synth_slice = copy.deepcopy(forecast_subset_synth)
-        synth_slice.ds = forecast_subset_synth.ds.isel(level=slice(nearest_idx, nearest_idx+1))
+        synth_slice.ds = forecast_subset_synth.ds.isel(level=slice(nearest_idx, nearest_idx + 1))
         forecast_visualizer_synth = ForecastVisualizer(synth_slice)
 
-
-        #Plot Side by Side
+        # Plot Side by Side
 
         fig = plt.figure(figsize=(18, 10))
         gs = fig.add_gridspec(nrows=1, ncols=2)
@@ -254,51 +241,49 @@ if __name__ == '__main__':
 
         fig.add_axes(ax1)
         forecast_visualizer_era5.generate_flow_array(timestamp=timestamp)
-        forecast_visualizer_era5.visualize_3d_planar_flow(ax1, skip)
-
+        forecast_visualizer_era5.visualize_3d_planar_flow(ax1, quiver_skip = 2)
 
         fig.add_axes(ax2)
         forecast_visualizer_synth.generate_flow_array(timestamp=timestamp)
-        forecast_visualizer_synth.visualize_3d_planar_flow(ax2, skip)
-
+        forecast_visualizer_synth.visualize_3d_planar_flow(ax2, quiver_skip = 2)
 
         plt.show()
 
-    #sdfsd
 
-    # Analyze Data
-    forecast_visualizer = ForecastVisualizer(forecast_subset_era5)
+if __name__ == '__main__':
+    # Import Forecasts
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
+
+    env_params["rel_dist"] = 100_000_000 # Manually Override relative distance to show a whole subset
+    timestamp = "2023-07-03T00:00:00.000000000"
+
+    # Assign central coordinate for synth
+    forecast_subset_synth.assign_coord(
+        0.5 * (forecast_subset_synth.Forecast.LAT_MAX + forecast_subset_synth.Forecast.LAT_MIN),
+        0.5 * (forecast_subset_synth.Forecast.LON_MAX + forecast_subset_synth.Forecast.LON_MIN),
+        timestamp)
+    forecast_subset_synth.subset_forecast(days=1)
+
+    # Assign central coordinate for era5
+    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+    forecast_subset_era5.assign_coord(forecast_subset_synth.lat_central, forecast_subset_synth.lon_central, timestamp)
+    # forecast_subset.randomize_coord()
+    forecast_subset_era5.subset_forecast(days=1)
 
 
+    # ***** PLOTTING EXAMPLES *******
 
-    i = 0
-    for timestamp in forecast_visualizer.forecast_subset.ds.time.values:
-        #forecast.randomize_coord()
-        #forecast.subset_forecast(rel_dist, pres_min, pres_max)
+    # Plot ERA5 or Synth 3d Quiver Plot
+    plot_3d_quiver(timestamp = timestamp, forecast_subset = forecast_subset_synth, quiver_skip = 5)
 
-        forecast_visualizer.generate_flow_array(timestamp = timestamp)
+    # Plot ERA5 and Synth side by side levels
+    #plot_side_by_side_levels()
 
-        # Initialize Figure
-        fig = plt.figure(figsize=(15, 10))
-        #ax1 = fig.add_subplot(111, projection='3d')
-        ax1 = fig.add_subplot(111, projection='custom3dquiver')
-        # Manually add a CustomAxes3D to the figure
-        #ax1 = Custom3DQuiver(fig)
-        fig.add_axes(ax1)
-
-        print("Saving Figure " + str(timestamp))
-        forecast_visualizer.visualize_3d_planar_flow(ax1, skip)
-        #plt.savefig(str(i) +'.png')
-        plt.show()
-        plt.close()
-        i +=1
-
-    #plt.show()
 
     #Generate gif of flowfield
-    with imageio.get_writer('Synth-wind.gif', mode='I', duration=500, loop = 0) as writer:
-        for i in range(len(forecast_visualizer.forecast_subset.ds.time.values)):
-            image = imageio.imread(str(i) +'.png')
-            writer.append_data(image)
+    #with imageio.get_writer('Synth-wind.gif', mode='I', duration=500, loop = 0) as writer:
+    #    for i in range(len(forecast_visualizer.forecast_subset.ds.time.values)):
+    #        image = imageio.imread(str(i) +'.png')
+    #        writer.append_data(image)
 
 
