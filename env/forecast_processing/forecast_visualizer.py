@@ -80,12 +80,15 @@ class ForecastVisualizer:
         self.flow_field = np.stack([self.u, self.v, self.w, self.z], axis=-1)
 
 
-    def visualize_3d_planar_flow(self, ax, quiver_skip=1, show_cbar = False, arrow_head_angle = 84.9, length = .05, arrow_length_ratio=3.5):
+    def visualize_3d_planar_flow(self, ax, quiver_skip=1, altitude_quiver_skip=3, show_cbar = False, arrow_head_angle = 84.9, length = .05, arrow_length_ratio=3.5):
         '''
         This is the main function for 3D quiver plots
         '''
+        #For altitude quiver skipping
+        for z in range(0, self.flow_field.shape[0]):
+            if z % altitude_quiver_skip != 0:
+                continue
 
-        for z in range(self.flow_field.shape[0]):
             # UPDATE added indexing 'ij' which fixed a hidden bug in visualization when flows are not all the same magnitude.
             X, Y = np.meshgrid(np.arange(self.flow_field.shape[1]), np.arange(self.flow_field.shape[2]), indexing='ij')
             U = self.flow_field[z, :, :, 0]
@@ -109,10 +112,14 @@ class ForecastVisualizer:
                 colors = cm.hsv(norm(directions)) #for Directions
 
             else:
-                raise Exception("UNdefined render_style for Forecast Visualization")
+                raise Exception("Undefined render_style for Forecast Visualization")
 
             for i in range(0, X.shape[0], quiver_skip):
                 for j in range(0, Y.shape[1], quiver_skip):
+                    # Skip z quivers based on the altitude (z) level
+                    #if (i + j) % altitude_quiver_skip != 0:  # Skip based on custom condition
+                    #    continue
+
                     ax.quiver(X[i, j] / res, Y[i, j] / res, Z[i, j], U[i, j], V[i, j], W[i, j], pivot='tail',
                               length = length, arrow_length_ratio=arrow_length_ratio, color=colors[i, j], arrow_head_angle=arrow_head_angle)
                               #length = .1, arrow_length_ratio = 1.5, color = colors[i, j], arrow_head_angle = 75)

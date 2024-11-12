@@ -1,26 +1,35 @@
+cartopy==0.22.0
 gymnasium==0.29.1
-matplotlib==3.9.0
+matplotlib==3.8.3
 numpy==1.26.4
+pandas==2.2.0
 pynput==1.7.7
 scipy==1.13.1
 stable_baselines3==2.3.0
 stable_baselines3[extra]
 tensorboard==2.17.0
 wandb==0.17.1
-xarray==0.21.0
+xarray==0.21.0 # Check if this can be upgraded,  2022
 optuna==3.6.1
 optuna-dashboard
 optuna-integration==3.6.0
 #cupy #install with conda with correct GPU versioning
 backports-datetime-fromisoformat
-termcolor
+termcolor==2.4.0
 gmplot
-netcdf4
-geographiclib
+netCDF4==1.6.5
+geographiclib==2.0
 imageio
 pvlib
 windrose==1.9.0
 pyproj
-metpy
+MetPy==1.6.1
 line_profiler
-seaborn
+seaborn==0.13.2
+# These are for SynthWinds
+fluids
+notebook
+ipympl
+plotly
+scitools_iris==3.7.0
+iris-sample-data

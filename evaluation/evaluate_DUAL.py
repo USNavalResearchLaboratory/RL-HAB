@@ -9,7 +9,7 @@ from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from env.config.env_config import env_params
 from utils.initialize_forecast import initialize_forecasts
 
-model_name = "BEST_MODELS/aeolus-dual_Apr-2/effortless-blaze-23/DQN_SYNTH_150000000_steps"
+model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
 seed = None
 
 print("Loading model")
@@ -22,7 +22,7 @@ rel_dist = env_params['rel_dist']
 FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
 
-env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=None)
+env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode="human")
 
 model = DQN.load(model_name, env=env, )
 

@@ -16,7 +16,8 @@ env_params = {
 
         # RENDERING VARIABLES
         'render_count': 30,     # How many dt frames ***(is this right, or is is seconds?) to skip when rendering
-        'render_skip': 2,       # How many quivers to skip when rendering forecast visualizations
+        'quiver_skip': 3,       # How many quivers to skip when rendering forecast visualizations
+        'alt_quiver_skip': 1,   # How many altitude quivers to skip when rendering forecast visualizations
         'render_mode': 'human', # 'human' or None to render or not during training or evaluating
 
 

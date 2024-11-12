@@ -40,7 +40,7 @@ config = {
     "NOTES": "" #change this to lower case
 }
 
-n_procs = 1
+n_procs = 30
 
 # Import Forecasts
 FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()

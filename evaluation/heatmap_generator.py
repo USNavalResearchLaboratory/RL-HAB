@@ -7,8 +7,9 @@ verbose = False
 cutoff_forecast_score = 0.0
 heat_map_mask_threshold = 1.0
 eval_dir = "evaluation/EVALUATION_DATA/"
-filename = eval_dir + "DUAL-Sep-on-Feb-USA-pretty-cosmos-piecewise.csv"
-
+filename = eval_dir + "DUAL-Jul-on-Jul-USA-hopeful-pyramid-piecewise.csv"
+filename = eval_dir + "TIMEWARP-DUAL-Apr-on-Jul-USA-effortless-blaze-piecewise_TEST.csv"
+filename = eval_dir + "TIMEWARP-DUAL-Jul-on-Jul-USA-genial-shadow-piecewise_TEST.csv"
 
 # Load data from CSV
 forecast_scores = []
@@ -85,7 +86,7 @@ ax2 = plt.gca()
 # The frequency heatmap simple plots how many occurances of ForecastScore/TWR discretizations occurs and color codes the boxes accordingly
 plt.imshow(heatmap_masked.T, origin='lower', cmap=cmap_freq, extent=[0, 1, 0, 1200], aspect='auto')
 plt.colorbar(label='Frequency of Forecast Column', extend="max")
-plt.clim(5,100.)
+plt.clim(5,40.)
 plt.xlabel('Forecast Score')
 plt.ylabel('TWR50 (%)')
 
