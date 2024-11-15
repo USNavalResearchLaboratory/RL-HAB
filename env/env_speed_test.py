@@ -2,6 +2,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3 import DQN
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
+from callbacks.RogueCallback import RogueCallback
 from env.config.env_config import env_params
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 #from era5.era5_gym_SINGLE import FlowFieldEnv3d_SINGLE
@@ -62,6 +63,7 @@ model.learn(
         TWRCallback(moving_avg_length=1000, radius='twr'),
         TWRCallback(moving_avg_length=1000, radius='twr_inner'),
         TWRCallback(moving_avg_length=1000, radius='twr_outer'),
-        FlowChangeCallback()],
+        FlowChangeCallback(),
+        RogueCallback()],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )

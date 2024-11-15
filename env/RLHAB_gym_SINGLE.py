@@ -34,7 +34,7 @@ class FlowFieldEnv3d_SINGLE(gym.Env):
         self.dt = env_params['dt']
         self.render_mode = render_mode
 
-        self.seed(seed)
+        self.seed(env_params['seed'])
 
         self.radius = env_params['radius'] # station keeping radius
         self.radius_inner = self.radius *.5
@@ -46,7 +46,7 @@ class FlowFieldEnv3d_SINGLE(gym.Env):
 
         # Initial randomized forecast subset from the master forecast to pass to rendering
         self.forecast_subset = Forecast_Subset(FORECAST_PRIMARY)
-        self.forecast_subset.randomize_coord()
+        self.forecast_subset.randomize_coord(self.np_rng)
         self.forecast_subset.subset_forecast(days=self.days)
         self.forecast_scores = [5, 5, 5, 5] # dummy score to trigger randomizing
 
@@ -84,6 +84,7 @@ class FlowFieldEnv3d_SINGLE(gym.Env):
         Need to assign numpy random number generator in cases multiple envelopes are selected.
         """
         if seed!=None:
+            print("Seed", seed)
             self.np_rng = np.random.default_rng(seed)
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
@@ -109,7 +110,7 @@ class FlowFieldEnv3d_SINGLE(gym.Env):
         #'''
         while self.forecast_score < env_params['forecast_score_threshold']:
 
-            self.forecast_subset.randomize_coord()
+            self.forecast_subset.randomize_coord(self.np_rng)
             self.forecast_subset.subset_forecast(days=self.days)
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset)
@@ -463,12 +464,10 @@ listener = keyboard.Listener(on_press=on_press)
 listener.start()
 
 def main():
+    # Import Forecasts
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    #ERA5 Test
-    FORECAST_PRIMARY = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH", month=None, timewarp=3)
-
-
-    env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=env_params['render_mode'])
+    env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_ERA5, render_mode=env_params['render_mode'])
 
     while True:
         start_time = time.time()

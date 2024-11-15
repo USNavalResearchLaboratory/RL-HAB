@@ -97,7 +97,7 @@ class Forecast:
         Then decide whether or not to do timewarping on both SYNTH and ERA5 (default is yes, and change
         the simulated timestamp to 3 hours instead of 12 hours)
         '''
-        print(colored("DROPPING ERA5 Months/times except (" + str(month) + ") and (12) hour intervals", "yellow"))
+        print(colored("DROPPING ERA5 Months except (" + str(month) + ") and  Times: (12) hour intervals", "yellow"))
 
         # for error printing
         start_time = self.ds_original.time.values[0]
@@ -166,7 +166,7 @@ class Forecast_Subset:
         self.lat_central = quarter(lat)
         self.lon_central = quarter(lon)
 
-    def randomize_coord(self):
+    def randomize_coord(self, np_rng):
         """
         Generates a random coordinate to centralize the Forecast Subset, and stores the coordinate for look up by other classes.
 
@@ -174,12 +174,17 @@ class Forecast_Subset:
         Horizontal Bounds are within 2 degrees of the min/max LAT/LON from the PRIMARY FORECAST
         Time Bounds are between the start time and up to 24 hours before the final timestamp of the PRIMARY FORECAST
 
+        pass np_rng to have forecasts randomize in the same order when manually setting seed
         """
-        lat = np.random.uniform(low=self.Forecast.LAT_MIN+2, high=self.Forecast.LAT_MAX-2)
-        lon = np.random.uniform(low=self.Forecast.LON_MIN + 2, high=self.Forecast.LON_MAX - 2)
+
+        #print("RANDOM NUMBER", np_rng.uniform(low=0, high=100))
+        #print("RANDOM NUMBER 2", np.random.uniform(low=0, high=100))
+
+        lat = np_rng.uniform(low=self.Forecast.LAT_MIN+2, high=self.Forecast.LAT_MAX-2)
+        lon = np_rng.uniform(low=self.Forecast.LON_MIN + 2, high=self.Forecast.LON_MAX - 2)
         #Convert time to unix for randomizing.
         # Subtract 24 hours from the end for simulating.
-        time = np.random.uniform(low=self.get_unixtime(self.Forecast.TIME_MIN), high=self.get_unixtime(self.Forecast.TIME_MAX-np.timedelta64(24, "h")))
+        time = np_rng.uniform(low=self.get_unixtime(self.Forecast.TIME_MIN), high=self.get_unixtime(self.Forecast.TIME_MAX-np.timedelta64(24, "h")))
         # Convert time back to dt64
         time = np.datetime64(int(time),'s')
 

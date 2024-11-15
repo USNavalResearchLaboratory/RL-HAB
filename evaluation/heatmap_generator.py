@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 
 # Select heatmap options
 verbose = False
-cutoff_forecast_score = 0.0
+cutoff_forecast_score = 0.01
 heat_map_mask_threshold = 1.0
 eval_dir = "evaluation/EVALUATION_DATA/"
 filename = eval_dir + "DUAL-Jul-on-Jul-USA-hopeful-pyramid-piecewise.csv"
 filename = eval_dir + "TIMEWARP-DUAL-Apr-on-Jul-USA-effortless-blaze-piecewise_TEST.csv"
 filename = eval_dir + "TIMEWARP-DUAL-Jul-on-Jul-USA-genial-shadow-piecewise_TEST.csv"
+
+filename = eval_dir + "baseline_july_DUAL.csv"
+filename = eval_dir + "baseline_july_DUAL_thresholded.csv"
 
 # Load data from CSV
 forecast_scores = []
@@ -32,6 +35,8 @@ print(f"Standard Dev Forecast: {np.std(forecast_scores)}")
 # Define the bins for the 2D histogram, this is manually set for now,  Need to change based on X: Forecast Score Discretizations, Y: TWR Score Discretizations
 bins_x = np.linspace(0, 1, 29)
 bins_y = np.linspace(0, 1200, 50)
+
+print(len(forecast_scores), len(twr_scores))
 
 # Create the 2D histogram
 heatmap, xedges, yedges = np.histogram2d(forecast_scores, twr_scores, bins=[bins_x, bins_y])

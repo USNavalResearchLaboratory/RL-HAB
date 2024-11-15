@@ -38,7 +38,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         self.dt = env_params['dt']
         self.render_mode = render_mode
 
-        self.seed(seed)
+        self.seed(env_params['seed'])
 
         self.radius = env_params['radius'] # station keeping radius
         self.radius_inner = self.radius *.5
@@ -50,7 +50,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
         # Initial randomized forecast subset from the master forecast to pass to rendering
         self.forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
-        self.forecast_subset_era5.randomize_coord()
+        self.forecast_subset_era5.randomize_coord(self.np_rng)
         self.forecast_subset_era5.subset_forecast(days=self.days)
 
 
@@ -103,6 +103,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         Need to assign numpy random number generator in cases multiple envelopes are selected.
         """
         if seed!=None:
+            print("Seed", seed)
             self.np_rng = np.random.default_rng(seed)
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
@@ -128,7 +129,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         while self.forecast_score < env_params['forecast_score_threshold']:
         #while not (self.forecast_score > .45 and self.forecast_score < .55):
 
-            self.forecast_subset_era5.randomize_coord()
+            self.forecast_subset_era5.randomize_coord(self.np_rng)
             self.forecast_subset_era5.subset_forecast(days=self.days)
 
             # Then assign coord to synth winds
@@ -155,7 +156,13 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         #    print(colored("WARNING: Bad forecast super score of " + str(self.count_greater_than_zero(self.forecast_scores)) + ". Re-randomizing" , "yellow"))
 
         #Reset custom metrics
+        self.total_steps = 0
         self.within_target = False
+
+        self.rogue_status = False
+        self.rogue_count = 0
+        self.rogue_step_trigger = None
+
         self.twr = 0 # time within radius
         self.twr_inner = 0  # time within radius
         self.twr_outer = 0  # time within radius
@@ -174,6 +181,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
         # Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates
         self.move_agent(1)
+        self.total_steps = 0 #Reset total steps for the initialization "move"
 
         self.Balloon.update(lat = self.forecast_subset_era5.lat_central, lon = self.forecast_subset_era5.lon_central, x=0, y=0, distance = 0)
         self.calculate_relative_wind_column() #?????????????????
@@ -246,6 +254,15 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         self.Balloon.altitude = np.clip(self.Balloon.altitude + self.Balloon.z_vel * self.dt,
                                         env_params["alt_min"],env_params["alt_max"])
         self.Balloon.last_action = action
+
+        if self.Balloon.distance > env_params["rel_dist"]:
+            if not self.rogue_status:
+                self.rogue_step_trigger = self.total_steps
+
+            self.rogue_count += 1
+            self.rogue_status = True
+
+        self.total_steps += 1
 
         return 0
 
@@ -453,7 +470,11 @@ class FlowFieldEnv3d_DUAL(gym.Env):
             "twr_outer": self.twr_outer,
             "forecast_score": self.forecast_score,
             "forecast_scores": self.forecast_scores,
-            "render_mode": self.render_mode
+            "render_mode": self.render_mode,
+
+            "total_steps": self.total_steps,
+            "rogue_count": self.rogue_count,
+            "rogue_step_trigger": self.rogue_step_trigger
         }
 
     def render(self, mode='human'):
@@ -493,7 +514,7 @@ def main():
 
         obs, info = env.reset()
         total_reward = 0
-        for step in range( env_params["episode_length"]+10):
+        for step in range( env_params["episode_length"]):
 
             #print()
             #print(obs)
@@ -514,7 +535,7 @@ def main():
             #time.sleep(2)
         # print(obs)
 
-        print("Total reward:", total_reward, info, env_params['seed'])
+        print("Total reward:", total_reward, info)
         end_time = time.time()
         execution_time = end_time - start_time
         print("Execution time:", execution_time)

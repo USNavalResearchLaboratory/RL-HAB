@@ -10,7 +10,6 @@ from env.forecast_processing.forecast import Forecast
 
 model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
 #env_params["episode_length"] = 1  # To override episode length, for getting quick forecast score distributions
-seed = None
 
 print("Loading model")
 

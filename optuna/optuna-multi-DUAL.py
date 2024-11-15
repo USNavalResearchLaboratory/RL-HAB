@@ -33,8 +33,11 @@ from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 #import custom callbacks
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
+from callbacks.RogueCallback import RogueCallback
 from env.config.env_config import env_params
 from env.forecast_processing.forecast import Forecast
+
+from utils.initialize_forecast import initialize_forecasts
 
 import git
 
@@ -44,7 +47,7 @@ hash = repo.git.rev_parse(repo.head, short=True)
 
 def objective(trial):
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = "DQN_SYNTH"
+    model_name = "DQN_DUAL_ROGUE"
     models_dir = f"{optuna_config.model_path}/{model_name}"
 
     if not os.path.exists(models_dir):
@@ -111,10 +114,10 @@ def objective(trial):
             'device': optuna_config.device,
         },
         "env_parameters": env_params,
-        "env_name": "3dflow-km-kinematics",
+        "env_name": "Rogue",
         "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
         "git": branch + " - " + hash,
-        "Notes": "Optuna tuning run"
+        "Notes": "Optuna ROGUE RUn July"
     }
 
     run = wandb.init(
@@ -128,16 +131,12 @@ def objective(trial):
 
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
-    FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH")
-    # Get month associated with Synth
-    month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
-    # Then process ERA5 to span the same timespan as a monthly Synthwinds File
-    FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=month)
+    # Import Forecasts
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    FORECAST_PRIMARY = FORECAST_ERA5 #ERA5 matches model dimensions from DUAL
+    # Setup Env (SINGLE or Dual)
+    env = make_vec_env(lambda: FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH), n_envs=optuna_config.n_envs)
 
-    env = make_vec_env(lambda: FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH),
-                       n_envs=optuna_config.n_envs)
 
     eval_env = DummyVecEnv([lambda: Monitor(FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH))])
     eval_env = VecMonitor(eval_env)
@@ -161,7 +160,8 @@ def objective(trial):
                         TWRCallback(moving_avg_length=1000, radius='twr'),
                         TWRCallback(moving_avg_length=1000, radius='twr_inner'),
                         TWRCallback(moving_avg_length=1000, radius='twr_outer'),
-                        FlowChangeCallback()],
+                        FlowChangeCallback(),
+                        RogueCallback()],
                     progress_bar=True)
 
         run.finish()

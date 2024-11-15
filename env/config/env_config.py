@@ -33,11 +33,11 @@ env_params = {
         'stay_rate_mean': 0,
         'stay_rate_std_dev': None,  #What is this value?
 
-        'forecast_directory': "forecasts/", #"../../../../mnt/d/FORECASTS/"
+        'forecast_directory': "FORECASTS/", #"../../../../mnt/d/FORECASTS/"
 
         # Provided Example Forecast for running Demos
-        'era_netcdf': "ERA5-H2-2023-USA.nc",
-        'synth_netcdf': "SYNTH-Jul-2023-USA-UPDATED.nc",
+        'era_netcdf': "ERA5-H1-2023-USA.nc",
+        'synth_netcdf': "SYNTH-Jan-2023-USA-UPDATED.nc",
 
         'forecast_score_threshold': 0.01 # 0-1  (0.1 removes all 100% bad forecasts for navigating, winter months are typically dominated by 0 scores)
 }
