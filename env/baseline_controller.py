@@ -165,11 +165,11 @@ def main(angle, eval_dir, sub_eval):
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=None)
-    #env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY = FORECAST_SYNTH, render_mode=None)
+    #env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=None)
+    env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY = FORECAST_ERA5, render_mode=None)
 
 
-    NUM_EPS = 500  # Number of episodes to evaulate on
+    NUM_EPS = 2_000  # Number of episodes to evaulate on
 
     for i in range(0, NUM_EPS):
         total_steps = 0
@@ -224,14 +224,14 @@ def main(angle, eval_dir, sub_eval):
                        'rogue': rogue,
                        'rogue_status': rogue_percent},)
 
-
-    df.to_csv(eval_dir + sub_eval + "/DUAL-baseline-on-Dec-USA-rogue.csv")
+    df.to_csv(eval_dir + sub_eval + "/SINGLE_SYNTH-baseline-on-Dec-USA-rogue.csv")
+    #df.to_csv(eval_dir + sub_eval + "/SINGLE_ERA5-baseline-on-Jan-USA-rogue.csv")
     print(df)
 
 if __name__ == '__main__':
     angles = [0, 5, 10, 15, 20, 30, 40]
     eval_dir = "evaluation/EVALUATION_DATA/"
-    sub_eval = "baseline_DUAL_rogue"
+    sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2"
 
     #for angle in angles:
     #    main(angle, eval_dir, sub_eval)

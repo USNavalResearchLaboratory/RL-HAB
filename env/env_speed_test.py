@@ -3,6 +3,8 @@ from stable_baselines3 import DQN
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from callbacks.RogueCallback import RogueCallback
+from callbacks.ForecastScoreDecayCallback import ForecastScoreDecayCallback
+from callbacks.TimewarpCallback import TimewarpCallback
 from env.config.env_config import env_params
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 #from era5.era5_gym_SINGLE import FlowFieldEnv3d_SINGLE
@@ -64,6 +66,8 @@ model.learn(
         TWRCallback(moving_avg_length=1000, radius='twr_inner'),
         TWRCallback(moving_avg_length=1000, radius='twr_outer'),
         FlowChangeCallback(),
-        RogueCallback()],
+        RogueCallback(),
+        TimewarpCallback(),
+        ForecastScoreDecayCallback(initial_percent=0.8, final_percent=0.01, decay_rate=1.0, total_timesteps=config["total_timesteps"], verbose=1)],
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
 )

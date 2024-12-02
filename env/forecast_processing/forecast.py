@@ -150,6 +150,9 @@ class Forecast:
         self.ds_original['time'] = synth_simulated_time
         self.ds_original = self.ds_original.reindex(time=synth_simulated_time)
 
+        #print(self.ds_original.time)
+        #sdfsdf
+
 
 class Forecast_Subset:
     """
@@ -271,6 +274,7 @@ class Forecast_Subset:
         self.forecast_np = self.ds.to_array()
         self.forecast_np = self.forecast_np.to_numpy()
         self.pressure_levels = self.ds.level.values
+
 
 
     @profile

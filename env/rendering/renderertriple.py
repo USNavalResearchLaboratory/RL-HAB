@@ -30,15 +30,15 @@ class MatplotlibRendererTriple():
         self.radius_inner = radius * .5  # m
         self.radius_outer = radius * 1.5  # m
 
-        try:
-            if self.coordinate_system == "geographic":
-                self.init_plot_geographic()
+        #try:
+        if self.coordinate_system == "geographic":
+            self.init_plot_geographic()
 
-            if self.coordinate_system == "cartesian":
-                # this does not exist right now
-                self.init_plot()
-        except:
-            print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian", "red"))
+        if self.coordinate_system == "cartesian":
+            # this does not exist right now
+            self.init_plot()
+        #except:
+            #print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian", "red"))
 
     def init_plot_geographic(self):
         self.fig = plt.figure(figsize=(18, 10))
@@ -106,7 +106,26 @@ class MatplotlibRendererTriple():
         cbar.set_ticks([-180, -90, 0, 90, 180])
         cbar.set_ticklabels([r'$-180^\circ$', r'$-90^\circ$', r'$0^\circ$', r'$90^\circ$', r'$180^\circ$'])
 
+        #self.reset(self.Balloon, self.goal, self.SimulatorState)
+
+    def reset_forecast_visualization(self):
+        self.ax2.clear()
+        self.ax2.remove()
+
+        self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
+        self.Forecast_visualizer.generate_flow_array(timestamp=self.SimulatorState.timestamp)
+        self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, quiver_skip=self.quiver_skip,
+                                                          altitude_quiver_skip=1)
+
+        self.ax4.clear()
+        self.ax4.remove()
+
+        self.ax4 = self.fig.add_subplot(self.gs[1, 2], projection='custom3dquiver')
+        self.Forecast_visualizer_synth.generate_flow_array(timestamp=self.SimulatorState.timestamp)
+        self.Forecast_visualizer_synth.visualize_3d_planar_flow(self.ax4, quiver_skip=self.quiver_skip)
+
     def reset(self, goal, Balloon, SimulatorState):
+        #close figures if already open, otherwise make them
         if hasattr(self, 'fig'):
             plt.close('all')
             delattr(self, 'fig')
@@ -123,7 +142,7 @@ class MatplotlibRendererTriple():
         self.SimulatorState = SimulatorState
         self.goal = goal
 
-        self.render_step = 1
+        self.render_step = 1 #for initial reset
         self.hour_count = 0
 
         #self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time
@@ -131,6 +150,14 @@ class MatplotlibRendererTriple():
 
         self.render_timestamp = self.SimulatorState.timestamp    #self.Forecast_visualizer.forecast_subset.start_time
 
+        if not hasattr(self, 'fig'):
+            if self.coordinate_system == "geographic":
+                self.init_plot_geographic()
+
+            if self.coordinate_system == "cartesian":
+                self.init_plot()
+
+        self.reset_forecast_visualization()
 
     def is_timestamp_in_interval(self, timestamp, interval):
         """
@@ -150,6 +177,8 @@ class MatplotlibRendererTriple():
             return False
 
         # Check if the hour is divisible by the interval
+        if interval == 1:
+            return hour % 1 == 0
         if interval == 3:
             return hour % 3 == 0
         elif interval == 6:
@@ -162,12 +191,7 @@ class MatplotlibRendererTriple():
 
     def render(self, mode='human'):
 
-        if not hasattr(self, 'fig'):
-            if self.coordinate_system == "geographic":
-                self.init_plot_geographic()
-
-            if self.coordinate_system == "cartesian":
-                self.init_plot()
+        #print("render step", self.render_step, "render count", self.render_count)
 
         if self.render_step == self.render_count:
 
@@ -183,20 +207,13 @@ class MatplotlibRendererTriple():
             self.ax3.set_title("Timestamp: " + str(self.SimulatorState.timestamp) + "\nTime Elapsed: " + str(
                 (self.SimulatorState.timestamp - self.render_timestamp)))
 
-            if self.is_timestamp_in_interval(self.SimulatorState.timestamp, 3):
-                self.ax2.clear()
-                self.ax2.remove()
+            if env_params['timewarp'] == None:
+                forecast_visualizer_update = 12
+            else:
+                forecast_visualizer_update = env_params['timewarp']
 
-                self.ax2 = self.fig.add_subplot(self.gs[1, 1], projection='custom3dquiver')
-                self.Forecast_visualizer.generate_flow_array(timestamp=self.SimulatorState.timestamp)
-                self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, quiver_skip=self.quiver_skip, altitude_quiver_skip = 1)
-
-                self.ax4.clear()
-                self.ax4.remove()
-
-                self.ax4 = self.fig.add_subplot(self.gs[1, 2], projection='custom3dquiver')
-                self.Forecast_visualizer_synth.generate_flow_array(timestamp=self.SimulatorState.timestamp)
-                self.Forecast_visualizer_synth.visualize_3d_planar_flow(self.ax4, quiver_skip=self.quiver_skip)
+            if self.is_timestamp_in_interval(self.SimulatorState.timestamp, forecast_visualizer_update):
+                self.reset_forecast_visualization()
 
             if mode == 'human':
                 plt.pause(0.001)

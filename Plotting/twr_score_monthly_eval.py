@@ -11,16 +11,16 @@ To run this script, evaluation has to have already been run on all 12 months ind
 import pandas as pd
 import matplotlib.pyplot as plt
 
-eval_months = [ ("Jan" , "dainty-water"), ("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
+eval_months = [ ("Jan" , "dainty-water"), ("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos"), ("Jul_cust", "silvery-jazz")]
 #eval_months = [ ("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-colors = [ "blue", "green", "orange", "red", "black", "purple"]
+colors = [ "blue", "green", "orange", "red", "black", "purple", "pink", "cyan"]
 
 # Create a DataFrame to store mean TWR_Score for each evaluation month
 mean_twr_df = pd.DataFrame(index=months)
 std_twr_df = pd.DataFrame(index=months)
 
-forecast_cutoff_score = 0.75
+forecast_cutoff_score = 0.01
 
 eval_dir = "evaluation/EVALUATION_DATA/"
 
@@ -28,6 +28,8 @@ for e in eval_months:
     # List to hold mean TWR_Score for the current evaluation month
     mean_twr_scores = []
     std_twr_scores = []
+
+    print(e)
 
 
     for month in months:
@@ -57,16 +59,17 @@ for e in eval_months:
 #ADD Baseline***********************
 
 
-eval_dir = "evaluation/EVALUATION_DATA/baseline_DUAL/"
+eval_dir = "evaluation/EVALUATION_DATA/"
+sub_eval = "baseline_DUAL_rogue_seed2"
 
 # List to hold mean TWR_Score for the current evaluation month
 mean_twr_scores = []
 std_twr_scores = []
 
 
-e = ["baseline"]
+e = ["baseline_DUAL"]
 for month in months:
-    csv_name = eval_dir + "baseline_" + month + "_DUAL-0.csv"
+    csv_name = eval_dir + sub_eval + "/DUAL-baseline-on-" + month +"-USA-rogue.csv"
     print(csv_name)
 
     try:
@@ -84,22 +87,24 @@ for month in months:
         mean_twr_scores.append(float('nan'))
         std_twr_scores.append(float('nan'))
 
-# Add the mean TWR_Scores for this evaluation month to the DataFrame
+
 mean_twr_df[e[0]] = mean_twr_scores
 std_twr_df[e[0]] = std_twr_scores
 
 
+
 #ADD Baseline***********************
 
-eval_dir = "evaluation/EVALUATION_DATA/baseline_SINGLE_SYNTH/"
+eval_dir = "evaluation/EVALUATION_DATA/"
+sub_eval = "baseline_SINGLE_ERA5_rogue_seed2"
 
 # List to hold mean TWR_Score for the current evaluation month
 mean_twr_scores = []
 std_twr_scores = []
 
-e = ["baseline_synth"]
+e = ["baseline_SINGLE_ERA5"]
 for month in months:
-    csv_name = eval_dir + "baseline_" + month + "_SINGLE-SYNTH-0.csv"
+    csv_name = eval_dir + sub_eval + "/SINGLE_ERA5-baseline" +"-on-" + month +"-USA-rogue.csv"
     print(csv_name)
 
     try:
@@ -118,6 +123,43 @@ for month in months:
         std_twr_scores.append(float('nan'))
 
 # Add the mean TWR_Scores for this evaluation month to the DataFrame
+#e = "baseline_SINGLE_ERA5"
+mean_twr_df[e[0]] = mean_twr_scores
+std_twr_df[e[0]] = std_twr_scores
+
+#*******************************
+
+#ADD Baseline***********************
+
+eval_dir = "evaluation/EVALUATION_DATA/"
+sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2"
+
+# List to hold mean TWR_Score for the current evaluation month
+mean_twr_scores = []
+std_twr_scores = []
+
+e = ["baseline_SINGLE_SYNTH"]
+for month in months:
+    csv_name = eval_dir + sub_eval + "/SINGLE_SYNTH-baseline" +"-on-" + month +"-USA-rogue.csv"
+    print(csv_name)
+
+    try:
+        data = pd.read_csv(csv_name)
+        # Filter out TWR_Score values below 0.5
+        data = data[data['Forecast_Score'] >= forecast_cutoff_score]
+
+        # Calculate mean TWR_Score
+        mean_twr = data['TWR_Score'].mean()
+        std_twr = data['TWR_Score'].std()
+        mean_twr_scores.append(mean_twr)
+        std_twr_scores.append(std_twr)
+    except FileNotFoundError:
+        # If the file does not exist, append NaN
+        mean_twr_scores.append(float('nan'))
+        std_twr_scores.append(float('nan'))
+
+# Add the mean TWR_Scores for this evaluation month to the DataFrame
+#e = "baseline_SINGLE_ERA5"
 mean_twr_df[e[0]] = mean_twr_scores
 std_twr_df[e[0]] = std_twr_scores
 

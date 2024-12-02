@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 eval_months = [ ("Jan" , "serene-meadow")]
 #eval_months = [ ("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-colors = [ "cyan", "magenta", "brown"]
+colors = [ "cyan", "magenta", "brown", "pink"]
 
 # Create a DataFrame to store mean TWR_Score for each evaluation month
 mean_twr_df = pd.DataFrame(index=months)
@@ -62,11 +62,11 @@ for e in eval_months:
 mean_twr_scores = []
 std_twr_scores = []
 eval_dir = "evaluation/EVALUATION_DATA/"
-sub_eval = "baseline_SINGLE_rogue"
+sub_eval = "baseline_SINGLE_ERA5_rogue_seed2"
 e = "baseline"
 
 for month in months:
-    csv_name = eval_dir + sub_eval + "/DUAL-" +e +"-on-" + month +"-USA-rogue.csv"
+    csv_name = eval_dir + sub_eval + "/SINGLE_ERA5-" +e +"-on-" + month +"-USA-rogue.csv"
     print(csv_name)
 
     try:
@@ -88,7 +88,7 @@ for month in months:
         std_twr_scores.append(float('nan'))
 
 # Add the mean TWR_Scores for this evaluation month to the DataFrame
-e = "baseline_SINGLE_SYNTH"
+e = "baseline_SINGLE_ERA5"
 mean_twr_df[e] = mean_twr_scores
 std_twr_df[e] = std_twr_scores
 
@@ -96,7 +96,7 @@ std_twr_df[e] = std_twr_scores
 mean_twr_scores = []
 std_twr_scores = []
 eval_dir = "evaluation/EVALUATION_DATA/"
-sub_eval = "baseline_DUAL_rogue"
+sub_eval = "baseline_DUAL_rogue_seed2"
 e = "baseline"
 
 for month in months:
@@ -123,6 +123,40 @@ for month in months:
 
 # Add the mean TWR_Scores for this evaluation month to the DataFrame
 e = "baseline_DUAL"
+mean_twr_df[e] = mean_twr_scores
+std_twr_df[e] = std_twr_scores
+
+#Hardcoded for rogue
+mean_twr_scores = []
+std_twr_scores = []
+eval_dir = "evaluation/EVALUATION_DATA/"
+sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2"
+e = "baseline"
+
+for month in months:
+    csv_name = eval_dir + sub_eval + "/SINGLE_SYNTH-" +e +"-on-" + month +"-USA-rogue.csv"
+    print(csv_name)
+
+    try:
+        data = pd.read_csv(csv_name)
+        # Filter out TWR_Score values below 0.5
+        data = data[data['Forecast_Score'] >= forecast_cutoff_score]
+
+        #If plotting rogue percent (only include trajectories that go rogue)
+        data = data[data['rogue_status'] != 0]
+
+        # Calculate mean TWR_Score
+        mean_twr = data['TWR_Score'].mean()
+        std_twr = data['TWR_Score'].std()
+        mean_twr_scores.append(mean_twr)
+        std_twr_scores.append(std_twr)
+    except FileNotFoundError:
+        # If the file does not exist, append NaN
+        mean_twr_scores.append(float('nan'))
+        std_twr_scores.append(float('nan'))
+
+# Add the mean TWR_Scores for this evaluation month to the DataFrame
+e = "baseline_SINGLE_SYNTH"
 mean_twr_df[e] = mean_twr_scores
 std_twr_df[e] = std_twr_scores
 

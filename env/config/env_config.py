@@ -8,7 +8,7 @@ env_params = {
         'rel_dist': 150_000,    # m - How large to make the arena in relative distance from station keeping central coord
         'alt_min': 15_000,      # m - Minimum Altitude Bounds for training (can't go lower, HAB will stay at this altitude)
         'alt_max': 25_500,      # m - Maximum Altitude Bounds for training (can't go higher, HAB will stay at this altitude)
-        'seed': np.random.randint(0, 2 ** 32), # typically ranomized, but could be set to a static seed for repeatability
+        'seed': 2, #np.random.randint(0, 2 ** 32), # typically ranomized, but could be set to a static seed for repeatability
 
         # KINEMATICS ***(Add these options in, unused for now)
         'max_accel': None,  # km/min^2
@@ -18,7 +18,7 @@ env_params = {
         'render_count': 30,     # How many dt frames ***(is this right, or is is seconds?) to skip when rendering
         'quiver_skip': 3,       # How many quivers to skip when rendering forecast visualizations
         'alt_quiver_skip': 1,   # How many altitude quivers to skip when rendering forecast visualizations
-        'render_mode': 'human', # 'human' or None to render or not during training or evaluating
+        'render_mode': None, # 'human' or None to render or not during training or evaluating
 
 
         # These need to be mandatory pressure levels (https://glossarytest.ametsoc.net/wiki/Mandatory_level)
@@ -36,8 +36,30 @@ env_params = {
         'forecast_directory': "FORECASTS/", #"../../../../mnt/d/FORECASTS/"
 
         # Provided Example Forecast for running Demos
-        'era_netcdf': "ERA5-H1-2023-USA.nc",
-        'synth_netcdf': "SYNTH-Jan-2023-USA-UPDATED.nc",
+        'era_netcdf': "ERA5-H2-2023-USA.nc",
+        'synth_netcdf': "SYNTH-Jul-2023-USA-UPDATED.nc",
 
-        'forecast_score_threshold': 0.01 # 0-1  (0.1 removes all 100% bad forecasts for navigating, winter months are typically dominated by 0 scores)
+        #New params
+        'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
+
+        # If using Forecast Score Decay
+        'forecast_score_threshold_initial': .01,
+        'forecast_score_threshold_final': .01,
+        'forecast_score_threshold_decay': 0,
+
+        # Otherwise
+        'forecast_score_threshold': 0.01, # 0-1  (0.1 removes all 100% bad forecasts for navigating, winter months are typically dominated by 0 scores)
+
+        # Evaluation Parameters
+        'eval_dir': "evaluation/EVALUATION_DATA/",
+        'eval_type': "DUAL_IMITATION", # DUAL or SINGLE or Baseline
+        'model_name': "BEST_MODELS/aeolus-dual_Jul-custom-hps/silvery-jazz-1/DQN_DUAL_ROGUE_150000000_steps",
+        'eval_model': "silvery-jazz",
+        'model_month': "Jul",
+        'eval_month':  "test"
 }
+
+
+def set_param(key, value):
+        env_params[key] = value
+        print("updating", env_params["synth_netcdf"])

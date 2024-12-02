@@ -1,8 +1,8 @@
 """Config file for optuna hyperparemter studies"""
 
-project_name = "RL_models_DUAL_rogue"  # Name of Optuna database and Wandb project name
-model_path="RL_models_DUAL_rogue"      # Where SB3 RL models will be stored
-log_path = "logs_DUAL_rogue"           # Where SB3 log files will be stored
+project_name = "RL_models_DUAL_custom-hps"  # Name of Optuna database and Wandb project name
+model_path="RL_models_DUAL_rogue_custom-hps"      # Where SB3 RL models will be stored
+log_path = "logs_DUAL_rogue_no_custom-hps"           # Where SB3 log files will be stored
 
 device = "cuda"  # CPU or cuda
 

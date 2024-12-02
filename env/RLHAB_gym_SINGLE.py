@@ -84,7 +84,7 @@ class FlowFieldEnv3d_SINGLE(gym.Env):
         Need to assign numpy random number generator in cases multiple envelopes are selected.
         """
         if seed!=None:
-            print("Seed", seed)
+            #print("Seed", seed)
             self.np_rng = np.random.default_rng(seed)
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))

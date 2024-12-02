@@ -9,10 +9,17 @@ from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from env.config.env_config import env_params
 from utils.initialize_forecast import initialize_forecasts
 
+import os
+
 #model_name = "BEST_MODELS/aeolus-dual_Jul-2/genial-shadow-5/DQN_SYNTH_150000000_steps"
-model_name = "BEST_MODELS/aeolus-dual_Jan-2/serene-meadow-14/DQN_SYNTH_150000000_steps"
+#model_name = "BEST_MODELS/aeolus-dual_Jan-2/serene-meadow-14/DQN_SYNTH_150000000_steps"
+#model_name = "BEST_MODELS/aeolus-dual_Jul-rogue-notimewarp/wild-lion-24/DQN_DUAL_ROGUE_150000000_steps"
+model_name = env_params["model_name"] #BEST_MODELS/aeolus-dual_Jul-custom-hps/silvery-jazz-1/DQN_DUAL_ROGUE_150000000_steps"
 
 print("Loading model")
+
+print(model_name)
+print(env_params["synth_netcdf"])
 
 pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
@@ -22,7 +29,7 @@ rel_dist = env_params['rel_dist']
 FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
 
-env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=None)
+env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params["render_mode"])
 
 model = DQN.load(model_name, env=env, )
 
@@ -39,7 +46,9 @@ forecast_score = []
 rogue = []
 rogue_percent = []
 
-NUM_EPS = 500 # how many episodes to evaluate
+NUM_EPS = 2 # how many episodes to evaluate
+
+print(env_params)
 
 for i in range (0,NUM_EPS):
 
@@ -103,6 +112,13 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
 
                   )
 
-eval_dir = "evaluation/EVALUATION_DATA/"
-df.to_csv(eval_dir+"DUAL-Jan-on-Dec-USA-rogue.csv")
+eval_dir = env_params["eval_dir"]
+full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "/"
+#env_params["eval_month"] = "Jan"
+
+if not os.path.exists(full_dir):
+    os.makedirs(full_dir)
+
+
+df.to_csv(full_dir + env_params["eval_type"] + "-" + env_params["model_month"] + "-on-" + env_params["eval_month"] + "-" + env_params["eval_model"] + ".csv")
 print(df)

@@ -103,7 +103,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         Need to assign numpy random number generator in cases multiple envelopes are selected.
         """
         if seed!=None:
-            print("Seed", seed)
+            #print("Seed", seed)
             self.np_rng = np.random.default_rng(seed)
         else:
             self.np_rng = np.random.default_rng(np.random.randint(0, 2**32))
@@ -137,6 +137,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
                                                     lon=self.forecast_subset_era5.lon_central,
                                                     timestamp=self.forecast_subset_era5.start_time)
             self.forecast_subset_synth.subset_forecast(days=self.days)
+
+            #print("updated coord", self.forecast_subset_era5.start_time, self.forecast_subset_era5.lat_central,self.forecast_subset_era5.lat_central)
         
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset_era5)
@@ -266,6 +268,46 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
         return 0
 
+    def baseline_controller(self, obs):
+        """
+        Given the current altitude and a list of relative flow column entries ([altitude, relative angle, speed]),
+        this function returns the best altitude to transition to in order to minimize the relative angle and the action
+        needed to reach that altitude.
+
+        Args:
+        - obs (dict): Observation dictionary that contains the following keys:
+            - 'current_altitude' (float): The current altitude.
+            - 'flow_field' (list of lists): List of flow field entries [altitude, relative angle, speed].
+
+        Returns:
+        - action (int): -1 for down, 0 for stay, 1 for up.
+        - best_altitude (float): The altitude to transition to that minimizes the relative angle.
+        """
+        # Initialize variables to track the best altitude and its corresponding relative angle
+        best_altitude = None
+        min_relative_angle = float('inf')
+
+        # Loop through the flow column to find the altitude with the smallest relative angle
+        for level in obs['flow_field']:
+            altitude, relative_angle, speed = level
+
+            # Update if a new minimum relative angle is found
+            # print(altitude, relative_angle, min_relative_angle)
+            if relative_angle < min_relative_angle:
+                min_relative_angle = relative_angle
+                best_altitude = altitude
+
+        # Determine the action to take based on the current altitude and the best altitude found
+        if obs['altitude'] < best_altitude:
+            action = 2  # Go up
+        elif obs['altitude'] > best_altitude:
+            action = 0  # Go down
+        else:
+            action = 1  # stay
+
+        # Return the best altitude found
+        return best_altitude, action
+
     def reward_google(self):
         distance_to_target = self.Balloon.distance
         c_cliff = 0.4
@@ -370,11 +412,19 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return reward
 
     def step(self, action):
-        reward = self.move_agent(action)
-        reward += self.reward_piecewise()
 
+
+        reward = self.move_agent(action)
         observation = self._get_obs()
         info = self._get_info()
+
+        #best_altitude, baseline_action = self.baseline_controller(self._get_obs())
+        #if baseline_action == action:
+        #    reward += 1
+
+        reward += self.reward_piecewise()
+
+
 
         done = self.SimulatorState.step(self.Balloon)
 

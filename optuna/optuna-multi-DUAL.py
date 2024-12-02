@@ -34,6 +34,9 @@ from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from callbacks.TWRCallback import TWRCallback
 from callbacks.FlowChangeCallback import FlowChangeCallback
 from callbacks.RogueCallback import RogueCallback
+from callbacks.ForecastScoreDecayCallback import ForecastScoreDecayCallback
+from callbacks.TimewarpCallback import TimewarpCallback
+
 from env.config.env_config import env_params
 from env.forecast_processing.forecast import Forecast
 
@@ -94,6 +97,13 @@ def objective(trial):
     layer_sizes = [trial.suggest_int(f'layer_size_{i}', 32, 600) for i in range(num_layers)]
     net_arch = layer_sizes
 
+
+    # Custom Decays
+    env_params['timewarp'] = trial.suggest_categorical('timewarp', [3, 6, 12])
+    env_params['forecast_score_threshold_initial'] = trial.suggest_float('forecast_score_threshold_initial', 0.5, 1)
+    env_params['forecast_score_threshold_final'] = trial.suggest_float('forecast_score_threshold_final', 0.01, 0.25)
+    env_params['forecast_score_threshold_decay'] = trial.suggest_float('forecast_score_threshold_decay', 0.2, 1)
+
     policy_kwargs = dict(activation_fn=nn.ReLU, net_arch=net_arch)
 
     config = {
@@ -117,7 +127,7 @@ def objective(trial):
         "env_name": "Rogue",
         "motion_model": "Discrete", #Discrete or Kinematics, this is just a categorical note for now
         "git": branch + " - " + hash,
-        "Notes": "Optuna ROGUE RUn July"
+        "Notes": "Optuna ROGUE RUn July with forecast decay"
     }
 
     run = wandb.init(
@@ -132,7 +142,7 @@ def objective(trial):
     SAVE_FREQ = int(5e6/optuna_config.n_envs)
 
     # Import Forecasts
-    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts(timewarp=env_params['timewarp'])
 
     # Setup Env (SINGLE or Dual)
     env = make_vec_env(lambda: FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH), n_envs=optuna_config.n_envs)
@@ -161,7 +171,12 @@ def objective(trial):
                         TWRCallback(moving_avg_length=1000, radius='twr_inner'),
                         TWRCallback(moving_avg_length=1000, radius='twr_outer'),
                         FlowChangeCallback(),
-                        RogueCallback()],
+                        RogueCallback(),
+                        TimewarpCallback(),
+                        ForecastScoreDecayCallback(initial_percent=env_params['forecast_score_threshold_initial'],
+                                                   final_percent=env_params['forecast_score_threshold_final'],
+                                                   decay_rate=env_params['forecast_score_threshold_decay'],
+                                                   total_timesteps=config["total_timesteps"])],
                     progress_bar=True)
 
         run.finish()

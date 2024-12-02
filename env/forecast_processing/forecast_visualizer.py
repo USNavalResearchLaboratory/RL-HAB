@@ -84,6 +84,9 @@ class ForecastVisualizer:
         '''
         This is the main function for 3D quiver plots
         '''
+
+        #print( self.forecast_subset.Forecast.forecast_type, self.timestamp, self.flow_field[:5,0,0,0])
+
         #For altitude quiver skipping
         for z in range(0, self.flow_field.shape[0]):
             if z % altitude_quiver_skip != 0:

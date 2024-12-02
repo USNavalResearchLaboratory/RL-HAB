@@ -21,7 +21,7 @@ FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=m
 
 FORECAST_PRIMARY = FORECAST_ERA5 # Choose Forecast_SYNTH or FORECAST_ERA5,  or manually upload a Forecast
 
-env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode="human")
+env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY=FORECAST_PRIMARY, render_mode=env_params["render_mode"])
 
 model = DQN.load(model_name, env=env, )
 
