@@ -18,21 +18,22 @@ script = "evaluation/evaluate_DUAL.py"
 
 for month in months_H1:
     #print(month)
-    env_config.set_param("eval_month",month)
-    env_config.set_param("era_netcdf", "ERA5-H1-2023-USA.nc")
-    env_config.set_param("synth_netcdf", f"SYNTH-{month}-2023-USA-UPDATED.nc")
-    #env_params["eval_month"] = month
-    #env_params["era_netcdf"] = "ERA5-H1-2023-USA.nc"
-    #env_params["synth_netcdf"] = f"SYNTH-{month}-2023-USA-UPDATED.nc"
-
-    print(env_params["synth_netcdf"])
-
+    eval_month = month
+    era_netcdf = "ERA5-H1-2023-USA.nc"
+    synth_netcdf = f"SYNTH-{month}-2023-USA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"
 
     # Construct the command to run the script with the month as an argument
     command = f"screen -dmS {session_name} python {script} --month {month}"
+
+    command = (
+        f"screen -dmS {session_name} python {script} "
+        f"--month {eval_month} "
+        f"--era_netcdf {era_netcdf} "
+        f"--synth_netcdf {synth_netcdf}"
+    )
 
     print(command)
 
@@ -40,17 +41,25 @@ for month in months_H1:
     subprocess.run(command, shell=True)
 
 for month in months_H2:
-
-    env_params["eval_month"] = month
-    env_params["era_netcdf"] = "ERA5-H2-2023-USA.nc"
-    env_params["synth_netcdf"] = "SYNTH-" + month + "-2023-USA-UPDATED.nc"
-
+    #print(month)
+    eval_month = month
+    era_netcdf = "ERA5-H2-2023-USA.nc"
+    synth_netcdf = f"SYNTH-{month}-2023-USA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"
 
     # Construct the command to run the script with the month as an argument
     command = f"screen -dmS {session_name} python {script} --month {month}"
+
+    command = (
+        f"screen -dmS {session_name} python {script} "
+        f"--month {eval_month} "
+        f"--era_netcdf {era_netcdf} "
+        f"--synth_netcdf {synth_netcdf}"
+    )
+
+    print(command)
 
     # Launch the screen session
     subprocess.run(command, shell=True)

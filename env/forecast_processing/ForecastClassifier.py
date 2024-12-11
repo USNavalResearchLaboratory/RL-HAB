@@ -19,10 +19,33 @@ from utils.initialize_forecast import initialize_forecasts
 
 
 class ForecastClassifier:
+    """
+    Classifies forecasts based on opposing wind patterns.
+
+    Methods:
+        - determine_opposing_winds: Identify opposing wind levels and directions.
+        - determine_OW_Rate: Calculate the opposing wind rate for a forecast subset.
+    """
     def __init__(self):
+        """
+        Initialize the ForecastClassifier.
+        """
         pass
 
     def determine_opposing_winds(self, wd, levels, n_sectors):
+        """
+        Identify opposing wind levels and directions from wind data.
+
+        Args:
+            wd (numpy.ndarray): Wind direction array (degrees).
+            levels (numpy.ndarray): Pressure or altitude levels.
+            n_sectors (int): Number of angular sectors.
+
+        Returns:
+            tuple:
+                - opposing_wind_directions (numpy.ndarray): Indices of opposing wind directions.
+                - opposing_wind_levels (numpy.ndarray): Levels with opposing winds.
+        """
 
         dir_edges, var_bins, table = windrose.windrose.histogram(wd, levels, bins=levels, nsector=n_sectors)
 
@@ -56,6 +79,17 @@ class ForecastClassifier:
 
 
     def determine_OW_Rate(self, forecast_subset):
+        """
+        Calculate the opposing wind rate for a forecast subset over a 24-hour window.
+
+        Args:
+            forecast_subset (Forecast_Subset): Subset of the forecast.
+
+        Returns:
+            tuple:
+                - scores (list): Number of opposing wind levels at each time interval.
+                - score (float): Normalized opposing wind rate.
+        """
 
         #Assuming 24 hour subset window right now
 

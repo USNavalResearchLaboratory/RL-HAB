@@ -1,3 +1,12 @@
+"""
+This module contains functionality for evaluating a baseline controller
+and generating scores and visualizations for a high-altitude balloon environment.
+
+Modules:
+    - Baseline controller functions
+    - Evaluation and plotting utilities
+"""
+
 import time
 from env.config.env_config import env_params
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
@@ -16,13 +25,14 @@ def baseline_controller(obs):
     needed to reach that altitude.
 
     Args:
-    - obs (dict): Observation dictionary that contains the following keys:
-        - 'current_altitude' (float): The current altitude.
-        - 'flow_field' (list of lists): List of flow field entries [altitude, relative angle, speed].
+        obs (dict): Observation dictionary containing:
+            - altitude (float): The current altitude.
+            - flow_field (list of lists): Each list contains [altitude, relative angle, speed].
 
     Returns:
-    - action (int): -1 for down, 0 for stay, 1 for up.
-    - best_altitude (float): The altitude to transition to that minimizes the relative angle.
+        tuple:
+            - float: The best altitude to transition to.
+            - int: Action to take (2 for up, 1 for stay, 0 for down).
     """
     # Initialize variables to track the best altitude and its corresponding relative angle
     best_altitude = None
@@ -57,14 +67,15 @@ def baseline_controller_thresholded(obs, angle_threshold=np.radians(10)):
     it will select the next best altitude outside the threshold.
 
     Args:
-    - obs (dict): Observation dictionary that contains the following keys:
-        - 'altitude' (float): The current altitude.
-        - 'flow_field' (list of lists): List of flow field entries [altitude, relative angle, speed].
-    - angle_threshold (float): The maximum allowed relative angle for a candidate altitude.
+        obs (dict): Observation dictionary containing:
+            - altitude (float): The current altitude.
+            - flow_field (list of lists): Each list contains [altitude, relative angle, speed].
+        angle_threshold (float): Maximum allowable relative angle for selecting an altitude.
 
     Returns:
-    - action (int): -1 for down, 0 for stay, 1 for up.
-    - best_altitude (float): The altitude to transition to.
+        tuple:
+            - float: The best altitude to transition to.
+            - int: Action to take (2 for up, 1 for stay, 0 for down).
     """
 
     # Extract flow field data

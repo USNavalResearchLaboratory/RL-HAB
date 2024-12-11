@@ -1,3 +1,9 @@
+"""
+This module is excluded from the index.
+
+.. :noindex:
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from env.config.env_config import env_params

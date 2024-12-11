@@ -23,10 +23,27 @@ import copy
 
 class ForecastVisualizer:
     """
-    Visualizes a forecast.  a Forecast needs to be converted to a Forecast_Subset before visualizing to determine ranges
-    and convert to a numpy array for faster processing.
+    Visualizes forecast data for 3D quiver plots and comparisons.
+
+    Attributes:
+        forecast_subset (Forecast_Subset): The forecast subset to visualize.
+        render_style (str): Visualization style ('direction' or 'speed').
+        pressure_levels (list): Pressure levels in the forecast subset.
+        alts2 (numpy.ndarray): Altitudes corresponding to pressure levels.
+        flow_field (numpy.ndarray): Processed 3D flow field data.
+        levels (numpy.ndarray): Altitude levels for plotting.
     """
     def __init__(self, forecast, render_style = "direction"):
+        """
+        Initialize the ForecastVisualizer with a forecast subset.
+
+        Args:
+            forecast (Forecast_Subset): Subset of the forecast to visualize.
+            render_style (str, optional): Style for rendering ('direction' or 'speed').
+
+        Raises:
+            Exception: If the provided forecast is not an instance of Forecast_Subset.
+        """
         if not isinstance(forecast, Forecast_Subset):
             raise Exception (colored("Provided forecast type is not <class 'era5.forecast.Forecast_Subset'> and instead " + str(type(forecast)),"red"))
 
@@ -38,9 +55,12 @@ class ForecastVisualizer:
         register_projection(Custom3DQuiver)
 
     def map_pres2alt(self):
-        '''
-        Use interpolation to transform the original Z values to the desired visual scale
-        '''
+        """
+        Map pressure levels to altitudes using standard atmospheric conditions. (Rough approximation)
+
+        Returns:
+            list: List of altitudes corresponding to the pressure levels.
+        """
         alts = []
 
         for pres in self.pressure_levels:
@@ -54,6 +74,12 @@ class ForecastVisualizer:
         return alts
 
     def generate_flow_array(self, timestamp):
+        """
+        Generate a 3D flow field array for visualization.
+
+        Args:
+            timestamp (numpy.datetime64): Timestamp for the forecast data.
+        """
 
         #For plotting altitude levels
         self.alts2 = self.forecast_subset.ds.sel(latitude=self.forecast_subset.lat_central, longitude=self.forecast_subset.lon_central,
@@ -81,11 +107,18 @@ class ForecastVisualizer:
 
 
     def visualize_3d_planar_flow(self, ax, quiver_skip=1, altitude_quiver_skip=3, show_cbar = False, arrow_head_angle = 84.9, length = .05, arrow_length_ratio=3.5):
-        '''
-        This is the main function for 3D quiver plots
-        '''
+        """
+        Visualize the 3D planar flow field using quiver plots.
 
-        #print( self.forecast_subset.Forecast.forecast_type, self.timestamp, self.flow_field[:5,0,0,0])
+        Args:
+            ax (matplotlib.axes._axes.Axes): Axes object for plotting.
+            quiver_skip (int, optional): Skip factor for quiver points in x and y.
+            altitude_quiver_skip (int, optional): Skip factor for altitude levels.
+            show_cbar (bool, optional): Whether to display the colorbar.
+            arrow_head_angle (float, optional): Angle of arrowheads in quiver plot.
+            length (float, optional): Length of arrows.
+            arrow_length_ratio (float, optional): Ratio of arrowhead length to arrow length.
+        """
 
         #For altitude quiver skipping
         for z in range(0, self.flow_field.shape[0]):
@@ -179,10 +212,6 @@ class ForecastVisualizer:
 
         #plt.title()
 
-
-"""
-Now we will provide some functions to show different ways to use the functions for different types of plots 
-"""
 
 def plot_3d_quiver(timestamp, forecast_subset,  quiver_skip = 2):
     forecast_visualizer = ForecastVisualizer(forecast_subset)

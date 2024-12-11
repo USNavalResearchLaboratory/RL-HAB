@@ -1,3 +1,5 @@
+# sphinx-apidoc-skip
+
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3 import DQN
 from callbacks.TWRCallback import TWRCallback

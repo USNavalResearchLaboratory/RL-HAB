@@ -4,10 +4,50 @@ An example of Evaluating a Dual (ERA5 obs, SYNTH movement)  training.  Config fi
 
 import pandas as pd
 from stable_baselines3 import DQN
+import argparse
 
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from env.config.env_config import env_params
 from utils.initialize_forecast import initialize_forecasts
+from env.forecast_processing.forecast import Forecast, Forecast_Subset
+
+
+# Load default parameters from EnvParams
+default_eval_month = env_params["eval_month"]
+default_era_netcdf = env_params["era_netcdf"]
+default_synth_netcdf = env_params["synth_netcdf"]
+
+
+# Set up argument parser
+parser = argparse.ArgumentParser(description="Run evaluation with optional overrides.")
+parser.add_argument(
+    "--month",
+    default=default_eval_month,
+    help=f"Evaluation month (default: {default_eval_month})"
+)
+parser.add_argument(
+    "--era_netcdf",
+    default=default_era_netcdf,
+    help=f"Path to ERA netCDF file (default: {default_era_netcdf})"
+)
+parser.add_argument(
+    "--synth_netcdf",
+    default=default_synth_netcdf,
+    help=f"Path to Synth netCDF file (default: {default_synth_netcdf})"
+)
+
+# Parse command-line arguments
+args = parser.parse_args()
+
+# Use args.<param> in the script
+print(f"Running evaluation with:")
+print(f"  Month: {args.month}")
+print(f"  ERA netCDF: {args.era_netcdf}")
+print(f"  Synth netCDF: {args.synth_netcdf}")
+
+env_params["eval_month"] = args.month
+env_params["era_netcdf"] = args.era_netcdf
+env_params["synth_netcdf"] = args.synth_netcdf
 
 import os
 
@@ -18,15 +58,22 @@ model_name = env_params["model_name"] #BEST_MODELS/aeolus-dual_Jul-custom-hps/si
 
 print("Loading model")
 
-print(model_name)
-print(env_params["synth_netcdf"])
-
 pres_min = env_params['pres_min']
 pres_max = env_params['pres_max']
 rel_dist = env_params['rel_dist']
 
+
+#overrided initialize_forecasts
+
 # Import Forecasts
-FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
+FORECAST_SYNTH = Forecast(env_params['synth_netcdf'], forecast_type="SYNTH", timewarp=env_params['timewarp'])
+# Get month associated with Synth
+synth_month = pd.to_datetime(FORECAST_SYNTH.TIME_MIN).month
+# Then process ERA5 to span the same timespan as a monthly Synthwinds File
+FORECAST_ERA5 = Forecast(env_params['era_netcdf'], forecast_type="ERA5", month=synth_month, timewarp=env_params['timewarp'])
+
+forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
+forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
 
 
 env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params["render_mode"])
@@ -47,8 +94,6 @@ rogue = []
 rogue_percent = []
 
 NUM_EPS = 2 # how many episodes to evaluate
-
-print(env_params)
 
 for i in range (0,NUM_EPS):
 

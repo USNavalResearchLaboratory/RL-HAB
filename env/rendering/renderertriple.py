@@ -6,8 +6,38 @@ import matplotlib as mpl
 from termcolor import colored
 
 class MatplotlibRendererTriple():
+    """
+    Handles the visualization of ERA5 and Synthetic forecasts using 3D quiver plots and trajectory visualization.
+
+    Attributes:
+        coordinate_system (str): Coordinate system used for visualization ('geographic' or 'cartesian').
+        Forecast_visualizer (object): Visualizer for ERA5 forecasts.
+        Forecast_visualizer_synth (object): Visualizer for synthetic forecasts.
+        render_count (int): Frequency of rendering updates.
+        quiver_skip (int): Frequency of skipping quivers in plots for performance.
+        render_mode (str): Rendering mode ('human', etc.).
+        render_timestamp (numpy.datetime64): Timestamp for ERA5 rendering.
+        render_timestamp_synth (numpy.datetime64): Timestamp for synthetic rendering.
+        dt (float): Time step of the simulation.
+        episode_length (int): Total steps in an episode.
+        goal (dict): Goal position (x, y).
+        radius (float): Station-keeping radius.
+        radius_inner (float): Inner radius for goal visualization.
+        radius_outer (float): Outer radius for goal visualization.
+        trajectory_plotter (Trajectory3DPlotter): Handles trajectory visualization.
+    """
     def __init__(self, Forecast_visualizer_ERA5, Forecast_visualizer_SYNTH,  render_mode,
                  radius, coordinate_system = "geographic"):
+        """
+        Initialize the renderer.
+
+        Args:
+            Forecast_visualizer_ERA5 (object): Visualizer for ERA5 forecast.
+            Forecast_visualizer_SYNTH (object): Visualizer for synthetic forecast.
+            render_mode (str): Rendering mode ('human', etc.).
+            radius (float): Station-keeping radius in meters.
+            coordinate_system (str, optional): Coordinate system ('geographic' or 'cartesian').
+        """
 
         self.coordinate_system = coordinate_system
 
@@ -41,6 +71,9 @@ class MatplotlibRendererTriple():
             #print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian", "red"))
 
     def init_plot_geographic(self):
+        """
+        Initialize the plot layout for geographic visualization.
+        """
         self.fig = plt.figure(figsize=(18, 10))
         self.gs = self.fig.add_gridspec(nrows=2, ncols=4, height_ratios=[1, 4], width_ratios=[.9, .9, .9, 0.05])
 
@@ -109,6 +142,9 @@ class MatplotlibRendererTriple():
         #self.reset(self.Balloon, self.goal, self.SimulatorState)
 
     def reset_forecast_visualization(self):
+        """
+        Reset the forecast visualization for ERA5 and Synthetic forecasts.
+        """
         self.ax2.clear()
         self.ax2.remove()
 
@@ -125,6 +161,14 @@ class MatplotlibRendererTriple():
         self.Forecast_visualizer_synth.visualize_3d_planar_flow(self.ax4, quiver_skip=self.quiver_skip)
 
     def reset(self, goal, Balloon, SimulatorState):
+        """
+        Reset the renderer.
+
+        Args:
+            goal (dict): Goal position (x, y).
+            Balloon (object): Balloon state object.
+            SimulatorState (object): Simulator state object.
+        """
         #close figures if already open, otherwise make them
         if hasattr(self, 'fig'):
             plt.close('all')
@@ -161,9 +205,14 @@ class MatplotlibRendererTriple():
 
     def is_timestamp_in_interval(self, timestamp, interval):
         """
-        Maybe move this to utils
+        Check if a timestamp falls within a specified interval.
 
-        Checks if the provided timestamp is in intervals of 3, 6, or 12 hours..
+        Args:
+            timestamp (datetime.datetime): Timestamp to check.
+            interval (int): Interval in hours.
+
+        Returns:
+            bool: True if timestamp falls within the interval, False otherwise.
         """
         # Convert the timestamp string to a datetime object
         #dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
@@ -190,8 +239,12 @@ class MatplotlibRendererTriple():
 
 
     def render(self, mode='human'):
+        """
+        Render the simulation environment.
 
-        #print("render step", self.render_step, "render count", self.render_count)
+        Args:
+            mode (str, optional): Rendering mode ('human', etc.).
+        """
 
         if self.render_step == self.render_count:
 

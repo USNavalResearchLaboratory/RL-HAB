@@ -19,14 +19,34 @@ import pandas as pd
 
 class Forecast:
     """
-    Loads a Full ERA5 forecast into memory.
+        Loads a full ERA5 or synthetic forecast into memory.
 
-    The downloaded forecast should be Multiple days long, in the pressure region (20-200), and cover
-    several thousand square kilometers of area.
+        This class handles large-scale climate forecasts used for simulations, supporting operations
+        like subsetting, time adjustments, and aligning forecasts for simulating.
 
-    Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
-    """
+        Download from https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=form
+
+        Attributes:
+            forecast_type (str): Type of forecast ('SYNTH' or 'ERA5').
+            ds_original (xarray.Dataset): Original dataset loaded from the forecast file.
+            LAT_MIN, LAT_MAX (float): Latitude range of the forecast.
+            LON_MIN, LON_MAX (float): Longitude range of the forecast.
+            LEVEL_MIN, LEVEL_MAX (float): Pressure level range of the forecast.
+            TIME_MIN, TIME_MAX (numpy.datetime64): Time range of the forecast.
+        """
     def __init__(self, filename, forecast_type = None, month = None, timewarp=None ):
+        """
+        Initialize the Forecast object and load a dataset.
+
+        Args:
+            filename (str): Path to the forecast file.
+            forecast_type (str): Type of forecast ('SYNTH' or 'ERA5').
+            month (int, optional): Month to filter for ERA5 forecasts.
+            timewarp (int, optional): Simulation Time interval adjustment (e.g., 3, 6, or 12 hours).
+
+        Raises:
+            Exception: If the forecast type is invalid.
+        """
 
         self.forecast_type = forecast_type
 
@@ -38,6 +58,14 @@ class Forecast:
 
 
     def load_forecast(self, filename, month = None, timewarp = None):
+        """
+        Load and preprocess the forecast dataset.
+
+        Args:
+            filename (str): Path to the forecast file.
+            month (int, optional): Month to filter for ERA5 forecasts.
+            timewarp (int, optional): Time interval adjustment (e.g., 3, 6, or 12 hours).
+        """
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
 
         # Drop temperature variable from forecasts if it exists
@@ -90,13 +118,19 @@ class Forecast:
 
 
     def drop_era5_months(self, month):
-        '''By default, ERA5 forecasts are downloaded in 6 month @ 3 hour intervals
+        """
+        Filter ERA5 forecast to match the specified month and reduce time intervals to 12 hours. This is a bit hardcoded rn
 
-        Since many simulations require both Synth and ERA5, we need to change ERA5 to 12 hour intervals
+        By default, ERA5 forecasts are downloaded in 6 month @ 3 hour intervals. Since many simulations require
+        both Synth and ERA5, we need change ERA5 to 12 hour intervals
 
-        Then decide whether or not to do timewarping on both SYNTH and ERA5 (default is yes, and change
-        the simulated timestamp to 3 hours instead of 12 hours)
-        '''
+        Args:
+            month (int): Month to retain in the dataset.
+
+        Raises:
+            Exception: If the specified month is not within the forecast's range.
+        """
+
         print(colored("DROPPING ERA5 Months except (" + str(month) + ") and  Times: (12) hour intervals", "yellow"))
 
         # for error printing
@@ -156,14 +190,34 @@ class Forecast:
 
 class Forecast_Subset:
     """
-    Generates a Forecast Subset from a master Forecast. This significantly speeds up processing time when randomizing areas
-    to run episodes on
+    Creates a subset of the master forecast for efficient processing and simulation.
+
+    Attributes:
+        Forecast (Forecast): Master forecast object.
+        lat_central (float): Central latitude of the subset.
+        lon_central (float): Central longitude of the subset.
+        start_time (numpy.datetime64): Start time of the subset.
+        ds (xarray.Dataset): Subset dataset.
     """
     # Load from config file for now.  Maybe change this later
     def __init__(self, Forecast):
+        """
+        Initialize the Forecast_Subset object.
+
+        Args:
+            Forecast (Forecast): Master forecast object.
+        """
         self.Forecast = Forecast
 
     def assign_coord(self, lat, lon, timestamp):
+        """
+        Assign central coordinates and timestamp for the subset.
+
+        Args:
+            lat (float): Central latitude.
+            lon (float): Central longitude.
+            timestamp (numpy.datetime64): Start timestamp.
+        """
         # Round time to nearest hour and quarter
         self.start_time = np.array(timestamp, dtype='datetime64[h]')
         self.lat_central = quarter(lat)
@@ -178,6 +232,9 @@ class Forecast_Subset:
         Time Bounds are between the start time and up to 24 hours before the final timestamp of the PRIMARY FORECAST
 
         pass np_rng to have forecasts randomize in the same order when manually setting seed
+
+        Args:
+            np_rng (numpy.random.Generator): Random number generator.
         """
 
         #print("RANDOM NUMBER", np_rng.uniform(low=0, high=100))
@@ -200,7 +257,15 @@ class Forecast_Subset:
 
 
     def get_alt_from_pressure(self, pressure):
-        "Get average altitude from ERA5 for a forecast subset. Average is taken since z is geopotential converted to altitude"
+        """Get average altitude from ERA5 for a forecast subset. Average is taken since z is geopotential converted
+        to altitude
+
+        Args:
+            pressure (float): atmospheric pressure.
+
+        Returns:
+            alt: corresponding altitude (from geopotential) for pressure level
+        """
         try:
             # Use sel() to find the matching index
             alt_array = self.ds.sel({"level": pressure}).z.values/9.81
@@ -223,6 +288,9 @@ class Forecast_Subset:
         Time is 24 hours
 
         Converts the DataSet to a numpy array for faster processing
+
+        Args:
+            days (int): Number of days to include in the subset.
 
         """
 
@@ -292,15 +360,31 @@ class Forecast_Subset:
         return (z,u,v)
 
     def get_unixtime(self, dt64):
-        """Converts numpy datetime64 to epoch time in seconds"""
+        """
+        Convert numpy.datetime64 to Unix time in seconds.
+
+        Args:
+            dt64 (numpy.datetime64): DateTime value.
+
+        Returns:
+            int: Unix timestamp in seconds.
+        """
         return dt64.astype('datetime64[s]').astype('int')
 
 
     @profile
     def np_lookup(self,lat, lon, time):
+        """
+        Perform a fast lookup for wind data using numpy arrays.
 
-        """A function to match xarray.sel() functionality but with numpy.  This function is over 100x faster than xarray."""
+        Args:
+            lat (float): Latitude.
+            lon (float): Longitude.
+            time (numpy.datetime64): Time.
 
+        Returns:
+            tuple: Altitude, u-component, and v-component of the wind.
+        """
         lat_idx = int(convert_range(lat, self.lat_min, self.lat_max, 0, self.lat_dim))
         lon_idx = int(convert_range(lon, self.lon_min, self.lon_max, 0, self.lon_dim))
         time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time),

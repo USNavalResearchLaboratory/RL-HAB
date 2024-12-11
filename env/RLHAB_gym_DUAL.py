@@ -15,13 +15,45 @@ from env.forecast_processing.ForecastClassifier import ForecastClassifier
 
 from utils.common import convert_range
 from utils.initialize_forecast import initialize_forecasts
-import pandas as pd
 
 np.set_printoptions(suppress=True, precision=3)
 
 class FlowFieldEnv3d_DUAL(gym.Env):
+    """
+    A custom Gym environment simulating 3D flow fields for high-altitude balloons.
+
+    This environment allows the agent to control the altitude of a balloon while considering
+    two types of flow forecasts (ERA5 and synthetic). The goal is to perform station keeping
+    within a defined radius around a target location.
+
+    :param FORECAST_ERA5: ERA5 forecast object.
+    :type FORECAST_ERA5: Forecast
+    :param FORECAST_SYNTH: Synthetic forecast object.
+    :type FORECAST_SYNTH: Forecast
+    :param days: Number of days in the forecast subset.
+    :type days: int
+    :param seed: Random seed for reproducibility (default is None).
+    :type seed: int, optional
+    :param render_mode: Mode for rendering the environment ('human', 'rgb_array', etc.).
+    :type render_mode: str, optional
+    :param render_style: Visualization style for rendering (default is "direction").
+    :type render_style: str, optional
+
+    :ivar radius: Target station-keeping radius.
+    :vartype radius: float
+    :ivar radius_inner: Inner radius for reward calculation.
+    :vartype radius_inner: float
+    :ivar radius_outer: Outer radius for metrics tracking.
+    :vartype radius_outer: float
+    :ivar dt: Time step duration from the environment parameters.
+    :vartype dt: float
+    :ivar action_space: Discrete action space (Move Down, Stay, Move Up).
+    :vartype action_space: gym.Space
+    :ivar observation_space: Dict space for altitude, distance, relative bearing, and flow field.
+    :vartype observation_space: gym.Space
+    """
+
     metadata = {'render.modes': ['human', 'rgb_array']}
-    # UPDATE: Now the enviornment takes in parameters we can keep track of.
 
     def __init__(self, FORECAST_ERA5, FORECAST_SYNTH, days = 1, seed=None, render_mode=None, render_style = "direction" ):
         super(FlowFieldEnv3d_DUAL, self).__init__()
@@ -100,7 +132,10 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
     def seed(self, seed=None):
         """
-        Need to assign numpy random number generator in cases multiple envelopes are selected.
+        Set the random seed for reproducibility.
+
+        :param seed: Random seed value.
+        :type seed: int, optional
         """
         if seed!=None:
             #print("Seed", seed)
@@ -112,6 +147,16 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return np.sum(np.array(arr) > 0)
 
     def reset(self, seed=None, options=None):
+        """
+        Reset the environment to its initial state.
+
+        :param seed: Random seed for reproducibility.
+        :type seed: int, optional
+        :param options: Additional reset options.
+        :type options: dict, optional
+        :returns: Observation and additional info.
+        :rtype: tuple
+        """
 
         #Randomize new coordinate and forecast subset
         #self.forecast_score = 0
@@ -194,7 +239,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
         return self._get_obs(), self._get_info()
 
-    """
+    '''
     @profile
     def getCoord_ERA5(self,coord,dt):
         return self.gfs.getNewCoord(coord, dt)
@@ -219,12 +264,17 @@ class FlowFieldEnv3d_DUAL(gym.Env):
     @profile
     def getCoord_forecast(self):
         return self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
-    """
+    '''
 
     def move_agent(self, action):
         """
-        Altitude is currently capped to not be able to go out of bounds.
+        Update the balloon's position and altitude based on the selected action.
 
+        Args:
+            action (int): Action to take (0: Down, 1: Stay, 2: Up).
+
+        Returns:
+            float: reward (0 for now, no reward/penalty for moving).
         """
         #self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.getCoord_ERA5(coord,self.dt)
         #self.getCoord_XR(coord, self.dt)
@@ -309,6 +359,10 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return best_altitude, action
 
     def reward_google(self):
+        """
+        Google Loon's reward function from the paper `"Autonomous navigation of stratospheric balloons using reinforcement
+        learning" <https://www.nature.com/articles/s41586-020-2939-8>`_
+        """
         distance_to_target = self.Balloon.distance
         c_cliff = 0.4
         tau = 100
@@ -337,10 +391,12 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return reward
 
     def reward_piecewise(self):
-        '''
-        Extra reward possible for station keeping within inner necessary, otherwise following google's structure
-        :return:
-        '''
+        """
+        Compute the reward based on the balloon's distance to the target.
+
+        Returns:
+            float: Reward value.
+        """
         distance_to_target = self.Balloon.distance
         c_cliff = 0.4
         tau = 100
@@ -373,10 +429,10 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return reward
 
     def reward_euclidian(self):
-        '''
+        """
         Linear Euclidian reward within target region, google cliff function for outside of radius
 
-        '''
+        """
 
         distance_to_target = self.Balloon.distance
         c_cliff = 0.4
@@ -412,6 +468,14 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return reward
 
     def step(self, action):
+        """
+        Perform one step in the environment.
+
+        :param action: Action to take (0: Down, 1: Stay, 2: Up).
+        :type action: int
+        :returns: Observation, reward, done flag, truncated flag, and additional info.
+        :rtype: tuple
+        """
 
 
         reward = self.move_agent(action)
@@ -502,6 +566,12 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return np.stack((alt_column, flow_field_rel_angle, flow_field_magnitude), axis=-1)
 
     def _get_obs(self):
+        """
+        Get the current observation.
+
+        Returns:
+            dict: Observation dictionary.
+        """
         observation = {
             'altitude': np.array([self.Balloon.altitude]),
             'distance': np.array([self.Balloon.distance]),
@@ -512,6 +582,12 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         return observation
 
     def _get_info(self):
+        """
+        Get additional environment info.
+
+        Returns:
+            dict: Information dictionary.
+        """
         return {
             "distance": self.Balloon.distance,
             "within_target": self.within_target,
@@ -528,6 +604,12 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         }
 
     def render(self, mode='human'):
+        """
+        Render the environment.
+
+        :param mode: Mode for rendering ('human', 'rgb_array', etc.).
+        :type mode: str
+        """
         self.renderer.render(mode='human')
 
     def close(self):
