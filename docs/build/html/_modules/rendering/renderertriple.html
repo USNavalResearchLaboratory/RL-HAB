@@ -1,0 +1,401 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rendering.renderertriple &mdash; RLHAB 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            RLHAB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../env.html">Environment Module (<cite>env</cite> Directory)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../API/modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../citing.html">Citing RLHAB</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">RLHAB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">rendering.renderertriple</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for rendering.renderertriple</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">env.config.env_config</span> <span class="kn">import</span> <span class="n">env_params</span>
+<span class="kn">from</span> <span class="nn">env.rendering.Trajectory3DPlotter</span> <span class="kn">import</span> <span class="n">Trajectory3DPlotter</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">from</span> <span class="nn">termcolor</span> <span class="kn">import</span> <span class="n">colored</span>
+
+<div class="viewcode-block" id="MatplotlibRendererTriple">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple">[docs]</a>
+<span class="k">class</span> <span class="nc">MatplotlibRendererTriple</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handles the visualization of ERA5 and Synthetic forecasts using 3D quiver plots and trajectory visualization.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        coordinate_system (str): Coordinate system used for visualization (&#39;geographic&#39; or &#39;cartesian&#39;).</span>
+<span class="sd">        Forecast_visualizer (object): Visualizer for ERA5 forecasts.</span>
+<span class="sd">        Forecast_visualizer_synth (object): Visualizer for synthetic forecasts.</span>
+<span class="sd">        render_count (int): Frequency of rendering updates.</span>
+<span class="sd">        quiver_skip (int): Frequency of skipping quivers in plots for performance.</span>
+<span class="sd">        render_mode (str): Rendering mode (&#39;human&#39;, etc.).</span>
+<span class="sd">        render_timestamp (numpy.datetime64): Timestamp for ERA5 rendering.</span>
+<span class="sd">        render_timestamp_synth (numpy.datetime64): Timestamp for synthetic rendering.</span>
+<span class="sd">        dt (float): Time step of the simulation.</span>
+<span class="sd">        episode_length (int): Total steps in an episode.</span>
+<span class="sd">        goal (dict): Goal position (x, y).</span>
+<span class="sd">        radius (float): Station-keeping radius.</span>
+<span class="sd">        radius_inner (float): Inner radius for goal visualization.</span>
+<span class="sd">        radius_outer (float): Outer radius for goal visualization.</span>
+<span class="sd">        trajectory_plotter (Trajectory3DPlotter): Handles trajectory visualization.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Forecast_visualizer_ERA5</span><span class="p">,</span> <span class="n">Forecast_visualizer_SYNTH</span><span class="p">,</span>  <span class="n">render_mode</span><span class="p">,</span>
+                 <span class="n">radius</span><span class="p">,</span> <span class="n">coordinate_system</span> <span class="o">=</span> <span class="s2">&quot;geographic&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the renderer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            Forecast_visualizer_ERA5 (object): Visualizer for ERA5 forecast.</span>
+<span class="sd">            Forecast_visualizer_SYNTH (object): Visualizer for synthetic forecast.</span>
+<span class="sd">            render_mode (str): Rendering mode (&#39;human&#39;, etc.).</span>
+<span class="sd">            radius (float): Station-keeping radius in meters.</span>
+<span class="sd">            coordinate_system (str, optional): Coordinate system (&#39;geographic&#39; or &#39;cartesian&#39;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordinate_system</span> <span class="o">=</span> <span class="n">coordinate_system</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer</span> <span class="o">=</span> <span class="n">Forecast_visualizer_ERA5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer_synth</span> <span class="o">=</span> <span class="n">Forecast_visualizer_SYNTH</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_count</span> <span class="o">=</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;render_count&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quiver_skip</span> <span class="o">=</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;quiver_skip&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_mode</span> <span class="o">=</span> <span class="n">render_mode</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">forecast_subset</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_timestamp_synth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer_synth</span><span class="o">.</span><span class="n">forecast_subset</span><span class="o">.</span><span class="n">start_time</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">episode_length</span> <span class="o">=</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;episode_length&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">goal</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="c1">#relative</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>  <span class="c1"># m</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius_inner</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="mf">.5</span>  <span class="c1"># m</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius_outer</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="mf">1.5</span>  <span class="c1"># m</span>
+
+        <span class="c1">#try:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinate_system</span> <span class="o">==</span> <span class="s2">&quot;geographic&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_plot_geographic</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinate_system</span> <span class="o">==</span> <span class="s2">&quot;cartesian&quot;</span><span class="p">:</span>
+            <span class="c1"># this does not exist right now</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_plot</span><span class="p">()</span>
+        <span class="c1">#except:</span>
+            <span class="c1">#print(colored(&quot;Not a Valid Coordinate System. Can either be geographic or cartesian&quot;, &quot;red&quot;))</span>
+
+<div class="viewcode-block" id="MatplotlibRendererTriple.init_plot_geographic">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple.init_plot_geographic">[docs]</a>
+    <span class="k">def</span> <span class="nf">init_plot_geographic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the plot layout for geographic visualization.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">height_ratios</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">width_ratios</span><span class="o">=</span><span class="p">[</span><span class="mf">.9</span><span class="p">,</span> <span class="mf">.9</span><span class="p">,</span> <span class="mf">.9</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+
+        <span class="c1"># Top Altitude Plot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])</span>
+
+        <span class="c1"># 3D plots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span> <span class="c1"># ERA5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span> <span class="c1"># Synth</span>
+
+        <span class="c1"># Adjust the space between rows (hspace = 0 for no space)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1">#box1 = self.ax.get_position()  # Get the original position of the top plot</span>
+        <span class="n">box2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>  <span class="c1"># Get the original position of the bottom plot</span>
+
+        <span class="c1"># Adjust the position of the bottom plot to overlap the top one slightly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="o">.</span><span class="n">set_position</span><span class="p">([</span><span class="n">box2</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">box2</span><span class="o">.</span><span class="n">y0</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">box2</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">box2</span><span class="o">.</span><span class="n">height</span><span class="p">])</span>
+
+        <span class="c1">#These 3 lines make it so the first ERA5 forecast visualization is not glitchy during rendering.  Not sure why it is in the first place.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the 3D trajectory plotter here</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trajectory_plotter</span> <span class="o">=</span> <span class="n">Trajectory3DPlotter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">episode_length</span><span class="p">)</span>
+
+        <span class="c1"># Initialize 2 Forecast visualizers, 1 for ERA5, one for Synth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">visualize_3d_planar_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="p">,</span> <span class="n">quiver_skip</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiver_skip</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer_synth</span><span class="o">.</span><span class="n">visualize_3d_planar_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax4</span><span class="p">,</span> <span class="n">quiver_skip</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiver_skip</span><span class="p">)</span>
+
+        <span class="c1"># Altitude Profile Plot Setup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">altitude_line</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="s1">&#39;b-&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Number of Steps (dt=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;s)&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Altitude (km)&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">episode_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;alt_min&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">,</span><span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;alt_max&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">)</span>
+
+        <span class="c1"># Manual COlor Bar stuff:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Manual colorbar creation from -180° to 180°</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=-</span><span class="mi">180</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">180</span><span class="p">)</span>  <span class="c1"># Normalize the range from -180 to 180</span>
+        <span class="n">sm</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ScalarMappable</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hsv&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>  <span class="c1"># ScalarMappable ties the colormap and normalization together</span>
+        <span class="n">sm</span><span class="o">.</span><span class="n">set_array</span><span class="p">([])</span>  <span class="c1"># Required for ScalarMappable (no actual data, so empty array)</span>
+
+        <span class="c1"># Create a new axis for the colorbar with manual size</span>
+        <span class="c1"># [left, bottom, width, height] where values are fractions of figure size</span>
+        <span class="n">cbar_ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.89</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">])</span>  <span class="c1"># Half-height colorbar</span>
+
+        <span class="c1"># Create colorbar in this new axis</span>
+        <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sm</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cbar_ax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;Wind Direction (degrees)&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Remove any title from the colorbar</span>
+        <span class="c1"># print(&quot;title&quot;,cbar_ax.title())</span>
+        <span class="c1">#cbar_ax.title.set_text(&#39;First Plot&#39;)</span>
+        <span class="c1"># sdfsdf</span>
+        <span class="c1"># self.cbar_ax.set_title(&#39;&#39;)  # Ensures no title appears</span>
+
+        <span class="c1"># Set custom ticks and labels (with degree symbols)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">180</span><span class="p">])</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([</span><span class="sa">r</span><span class="s1">&#39;$-180^\circ$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$-90^\circ$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$0^\circ$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$90^\circ$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$180^\circ$&#39;</span><span class="p">])</span></div>
+
+
+        <span class="c1">#self.reset(self.Balloon, self.goal, self.SimulatorState)</span>
+
+<div class="viewcode-block" id="MatplotlibRendererTriple.reset_forecast_visualization">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple.reset_forecast_visualization">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset_forecast_visualization</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset the forecast visualization for ERA5 and Synthetic forecasts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">visualize_3d_planar_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax2</span><span class="p">,</span> <span class="n">quiver_skip</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiver_skip</span><span class="p">,</span>
+                                                          <span class="n">altitude_quiver_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax4</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax4</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer_synth</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Forecast_visualizer_synth</span><span class="o">.</span><span class="n">visualize_3d_planar_flow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax4</span><span class="p">,</span> <span class="n">quiver_skip</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiver_skip</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MatplotlibRendererTriple.reset">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">Balloon</span><span class="p">,</span> <span class="n">SimulatorState</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset the renderer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            goal (dict): Goal position (x, y).</span>
+<span class="sd">            Balloon (object): Balloon state object.</span>
+<span class="sd">            SimulatorState (object): Simulator state object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#close figures if already open, otherwise make them</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;fig&#39;</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
+            <span class="nb">delattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;fig&#39;</span><span class="p">)</span>
+            <span class="nb">delattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;ax&#39;</span><span class="p">)</span>
+            <span class="c1">#delattr(self, &#39;ax2&#39;)</span>
+            <span class="nb">delattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;ax3&#39;</span><span class="p">)</span>
+            <span class="c1">#delattr(self, &#39;ax4&#39;)</span>
+            <span class="nb">delattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;goal&#39;</span><span class="p">)</span>
+            <span class="c1">#delattr(self, &#39;scatter&#39;)</span>
+            <span class="c1">#delattr(self, &#39;canvas&#39;)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span> <span class="o">=</span> <span class="n">Balloon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span> <span class="o">=</span> <span class="n">SimulatorState</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goal</span> <span class="o">=</span> <span class="n">goal</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_step</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1">#for initial reset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hour_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1">#self.render_timestamp = self.Forecast_visualizer.forecast_subset.start_time</span>
+        <span class="c1">#self.render_timestamp_synth = self.Forecast_visualizer_synth.forecast_subset.start_time</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span>    <span class="c1">#self.Forecast_visualizer.forecast_subset.start_time</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;fig&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinate_system</span> <span class="o">==</span> <span class="s2">&quot;geographic&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init_plot_geographic</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinate_system</span> <span class="o">==</span> <span class="s2">&quot;cartesian&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init_plot</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_forecast_visualization</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MatplotlibRendererTriple.is_timestamp_in_interval">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple.is_timestamp_in_interval">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_timestamp_in_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">interval</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a timestamp falls within a specified interval.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timestamp (datetime.datetime): Timestamp to check.</span>
+<span class="sd">            interval (int): Interval in hours.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if timestamp falls within the interval, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert the timestamp string to a datetime object</span>
+        <span class="c1">#dt = datetime.strptime(timestamp, &quot;%Y-%m-%dT%H:%M:%S&quot;)</span>
+
+        <span class="c1"># Get the hour from the datetime object</span>
+        <span class="n">hour</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">hour</span>
+        <span class="n">minute</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">minute</span>
+
+        <span class="c1"># Check if the minutes are exactly 00</span>
+        <span class="k">if</span> <span class="n">minute</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Check if the hour is divisible by the interval</span>
+        <span class="k">if</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hour</span> <span class="o">%</span> <span class="mi">1</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hour</span> <span class="o">%</span> <span class="mi">3</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hour</span> <span class="o">%</span> <span class="mi">6</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hour</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Interval must be 3, 6, or 12 hours.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MatplotlibRendererTriple.render">
+<a class="viewcode-back" href="../../API/rendering.html#rendering.renderertriple.MatplotlibRendererTriple.render">[docs]</a>
+    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;human&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Render the simulation environment.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mode (str, optional): Rendering mode (&#39;human&#39;, etc.).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_step</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_count</span><span class="p">:</span>
+
+            <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">trajectory</span><span class="p">)</span>
+
+            <span class="c1"># Update the 3D trajectory plot</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trajectory_plotter</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trajectory_plotter</span><span class="o">.</span><span class="n">update_altitude</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trajectory_plotter</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+            <span class="c1"># Update Altitude Profile</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">altitude_line</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)),</span> <span class="n">path</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">)</span> <span class="c1">#Doing this in km</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Timestamp: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Time Elapsed: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_timestamp</span><span class="p">)))</span>
+
+            <span class="k">if</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;timewarp&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">forecast_visualizer_update</span> <span class="o">=</span> <span class="mi">12</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">forecast_visualizer_update</span> <span class="o">=</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;timewarp&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_timestamp_in_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">forecast_visualizer_update</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reset_forecast_visualization</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;human&#39;</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">render_step</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render_step</span> <span class="o">+=</span> <span class="mi">1</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Tristan Schuler, Chinthan Prasad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

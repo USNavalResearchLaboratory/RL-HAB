@@ -1,0 +1,724 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forecast Processing &mdash; RLHAB 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Changelog" href="../changelog.html" />
+    <link rel="prev" title="Rendering" href="rendering.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            RLHAB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env.html">Environment Module (<cite>env</cite> Directory)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="RLHAB_gym_DUAL.html">RLHAB Gym Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="balloon.html">Balloon and Simulator State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="baseline_controller.html">Baseline Controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rendering.html">Rendering</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Forecast Processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecast_processing.ForecastClassifier">forecast_processing.ForecastClassifier module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecast_processing.forecast">forecast_processing.forecast module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecast_processing.forecast_test">forecast_processing.forecast_test module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-forecast_processing.forecast_visualizer">forecast_processing.forecast_visualizer module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../citing.html">Citing RLHAB</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">RLHAB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API</a></li>
+      <li class="breadcrumb-item active">Forecast Processing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/API/forecast_processing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="forecast-processing">
+<h1>Forecast Processing<a class="headerlink" href="#forecast-processing" title="Link to this heading"></a></h1>
+<section id="module-forecast_processing.ForecastClassifier">
+<span id="forecast-processing-forecastclassifier-module"></span><h2>forecast_processing.ForecastClassifier module<a class="headerlink" href="#module-forecast_processing.ForecastClassifier" title="Link to this heading"></a></h2>
+<p>Simple Algorithm to classify forecasts based on number of opposing winds.  Similar to method used in RadioWinds.</p>
+<p>For now, we are assuming looking at 6 hour increments for a 24 hour window  (4 time instances)</p>
+<p>For each time instance,  calculate opposing winds with <strong>n_sectors</strong> (default is 8)</p>
+<p>Levels are based on the netcdf file and pressure range.  (Synth will have more levels than ERA5)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="forecast_processing.ForecastClassifier.ForecastClassifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">forecast_processing.ForecastClassifier.</span></span><span class="sig-name descname"><span class="pre">ForecastClassifier</span></span><a class="reference internal" href="../_modules/forecast_processing/ForecastClassifier.html#ForecastClassifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.ForecastClassifier.ForecastClassifier" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Classifies forecasts based on opposing wind patterns.</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">determine_opposing_winds</span></span></dt>
+<dd><p>Identify opposing wind levels and directions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">determine_OW_Rate</span></span></dt>
+<dd><p>Calculate the opposing wind rate for a forecast subset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.ForecastClassifier.ForecastClassifier.determine_OW_Rate">
+<span class="sig-name descname"><span class="pre">determine_OW_Rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forecast_subset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/ForecastClassifier.html#ForecastClassifier.determine_OW_Rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.ForecastClassifier.ForecastClassifier.determine_OW_Rate" title="Link to this definition"></a></dt>
+<dd><p>Calculate the opposing wind rate for a forecast subset over a 24-hour window.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forecast_subset</strong> (<a class="reference internal" href="#forecast_processing.forecast.Forecast_Subset" title="forecast_processing.forecast.Forecast_Subset"><em>Forecast_Subset</em></a>) – Subset of the forecast.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>scores (list): Number of opposing wind levels at each time interval.</p></li>
+<li><p>score (float): Normalized opposing wind rate.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.ForecastClassifier.ForecastClassifier.determine_opposing_winds">
+<span class="sig-name descname"><span class="pre">determine_opposing_winds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sectors</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/ForecastClassifier.html#ForecastClassifier.determine_opposing_winds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.ForecastClassifier.ForecastClassifier.determine_opposing_winds" title="Link to this definition"></a></dt>
+<dd><p>Identify opposing wind levels and directions from wind data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wd</strong> (<em>numpy.ndarray</em>) – Wind direction array (degrees).</p></li>
+<li><p><strong>levels</strong> (<em>numpy.ndarray</em>) – Pressure or altitude levels.</p></li>
+<li><p><strong>n_sectors</strong> (<em>int</em>) – Number of angular sectors.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>opposing_wind_directions (numpy.ndarray): Indices of opposing wind directions.</p></li>
+<li><p>opposing_wind_levels (numpy.ndarray): Levels with opposing winds.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-forecast_processing.forecast">
+<span id="forecast-processing-forecast-module"></span><h2>forecast_processing.forecast module<a class="headerlink" href="#module-forecast_processing.forecast" title="Link to this heading"></a></h2>
+<p>Current Assumptions for Synth and ERA5 forecast</p>
+<ul class="simple">
+<li><p>Both forecasts are downloaded for the same regions (0.25 degree resolution), same altitude band (config)</p></li>
+<li><p>Synth Forecast is 1 month &#64; 12 hour intervals</p></li>
+<li><p>Synth Forecast is 6 months &#64; 3 hour intervals</p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast.</span></span><span class="sig-name descname"><span class="pre">Forecast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">month</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timewarp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Loads a full ERA5 or synthetic forecast into memory.</p>
+<p>This class handles large-scale climate forecasts used for simulations, supporting operations
+like subsetting, time adjustments, and aligning forecasts for simulating.</p>
+<p>Download from <a class="reference external" href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels">https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels</a>?tab=form</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast.forecast_type">
+<span class="sig-name descname"><span class="pre">forecast_type</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast.forecast_type" title="Link to this definition"></a></dt>
+<dd><p>Type of forecast (‘SYNTH’ or ‘ERA5’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast.ds_original">
+<span class="sig-name descname"><span class="pre">ds_original</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast.ds_original" title="Link to this definition"></a></dt>
+<dd><p>Original dataset loaded from the forecast file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">LAT_MIN,</span> <span class="pre">LAT_MAX</span></span></dt>
+<dd><p>Latitude range of the forecast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">LON_MIN,</span> <span class="pre">LON_MAX</span></span></dt>
+<dd><p>Longitude range of the forecast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">LEVEL_MIN,</span> <span class="pre">LEVEL_MAX</span></span></dt>
+<dd><p>Pressure level range of the forecast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">TIME_MIN,</span> <span class="pre">TIME_MAX</span></span></dt>
+<dd><p>Time range of the forecast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.datetime64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast.TIMEWARP">
+<span class="sig-name descname"><span class="pre">TIMEWARP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timewarp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast.TIMEWARP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast.TIMEWARP" title="Link to this definition"></a></dt>
+<dd><p>By Default ERA5 forecasts are downloaded in 3 hour intervals, whereas Synth are in 12 hour intervals</p>
+<p>Therefore we perform a “timewarp” to overwrite timestamps in both forecasts, while still matching
+up the data from the original timestamps with the new timestamps.</p>
+<p>For example:</p>
+<p>Synth (original):   2024-01-01 00:00:00, 2024-01-01 12:00:00, 2024-01-02 00:00:00, 2024-01-02 12:00:00
+<a href="#id1"><span class="problematic" id="id2">*</span></a>original timestamps will be overwritten with the timewarp function
+Synth (timewarp) :  2024-01-01 00:00:00, 2024-01-01 03:00:00, 2024-01-01 06:00:00, 2024-01-01 09:00:00
+<a href="#id3"><span class="problematic" id="id4">*</span></a>to line up with the ERA5
+ERA5:               2024-01-01 00:00:00, 2024-01-01 03:00:00, 2024-01-01 06:00:00, 2024-01-01 09:00:00</p>
+<p>Timewarping will typically only be used for Synth Forecast due to their sparse timing</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast.drop_era5_months">
+<span class="sig-name descname"><span class="pre">drop_era5_months</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">month</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast.drop_era5_months"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast.drop_era5_months" title="Link to this definition"></a></dt>
+<dd><p>Filter ERA5 forecast to match the specified month and reduce time intervals to 12 hours. This is a bit hardcoded rn</p>
+<p>By default, ERA5 forecasts are downloaded in 6 month &#64; 3 hour intervals. Since many simulations require
+both Synth and ERA5, we need change ERA5 to 12 hour intervals</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>month</strong> (<em>int</em>) – Month to retain in the dataset.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – If the specified month is not within the forecast’s range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast.load_forecast">
+<span class="sig-name descname"><span class="pre">load_forecast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">month</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timewarp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast.load_forecast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast.load_forecast" title="Link to this definition"></a></dt>
+<dd><p>Load and preprocess the forecast dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – Path to the forecast file.</p></li>
+<li><p><strong>month</strong> (<em>int</em><em>, </em><em>optional</em>) – Month to filter for ERA5 forecasts.</p></li>
+<li><p><strong>timewarp</strong> (<em>int</em><em>, </em><em>optional</em>) – Time interval adjustment (e.g., 3, 6, or 12 hours).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast.</span></span><span class="sig-name descname"><span class="pre">Forecast_Subset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Forecast</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Creates a subset of the master forecast for efficient processing and simulation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.Forecast">
+<span class="sig-name descname"><span class="pre">Forecast</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.Forecast" title="Link to this definition"></a></dt>
+<dd><p>Master forecast object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecast_processing.forecast.Forecast" title="forecast_processing.forecast.Forecast">Forecast</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.lat_central">
+<span class="sig-name descname"><span class="pre">lat_central</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.lat_central" title="Link to this definition"></a></dt>
+<dd><p>Central latitude of the subset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.lon_central">
+<span class="sig-name descname"><span class="pre">lon_central</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.lon_central" title="Link to this definition"></a></dt>
+<dd><p>Central longitude of the subset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.start_time">
+<span class="sig-name descname"><span class="pre">start_time</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.start_time" title="Link to this definition"></a></dt>
+<dd><p>Start time of the subset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.datetime64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.ds">
+<span class="sig-name descname"><span class="pre">ds</span></span><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.ds" title="Link to this definition"></a></dt>
+<dd><p>Subset dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xarray.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.assign_coord">
+<span class="sig-name descname"><span class="pre">assign_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.assign_coord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.assign_coord" title="Link to this definition"></a></dt>
+<dd><p>Assign central coordinates and timestamp for the subset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lat</strong> (<em>float</em>) – Central latitude.</p></li>
+<li><p><strong>lon</strong> (<em>float</em>) – Central longitude.</p></li>
+<li><p><strong>timestamp</strong> (<em>numpy.datetime64</em>) – Start timestamp.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.getNewCoord">
+<span class="sig-name descname"><span class="pre">getNewCoord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Balloon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SimulationState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.getNewCoord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.getNewCoord" title="Link to this definition"></a></dt>
+<dd><p>Determines new coordinate based on the flow at the current position and integrates forward int time via dt</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.get_alt_from_pressure">
+<span class="sig-name descname"><span class="pre">get_alt_from_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pressure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.get_alt_from_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.get_alt_from_pressure" title="Link to this definition"></a></dt>
+<dd><p>Get average altitude from ERA5 for a forecast subset. Average is taken since z is geopotential converted
+to altitude</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pressure</strong> (<em>float</em>) – atmospheric pressure.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>corresponding altitude (from geopotential) for pressure level</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>alt</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.get_unixtime">
+<span class="sig-name descname"><span class="pre">get_unixtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt64</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.get_unixtime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.get_unixtime" title="Link to this definition"></a></dt>
+<dd><p>Convert numpy.datetime64 to Unix time in seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dt64</strong> (<em>numpy.datetime64</em>) – DateTime value.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unix timestamp in seconds.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.interpolate_wind">
+<span class="sig-name descname"><span class="pre">interpolate_wind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.interpolate_wind"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.interpolate_wind" title="Link to this definition"></a></dt>
+<dd><p>Interpolates the u and v wind components given a 3D coordinate (lat,lon,alt)
+Currently only interpolating in the Z direction.  No smoothing for time or horizontal changes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.np_lookup">
+<span class="sig-name descname"><span class="pre">np_lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.np_lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.np_lookup" title="Link to this definition"></a></dt>
+<dd><p>Perform a fast lookup for wind data using numpy arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lat</strong> (<em>float</em>) – Latitude.</p></li>
+<li><p><strong>lon</strong> (<em>float</em>) – Longitude.</p></li>
+<li><p><strong>time</strong> (<em>numpy.datetime64</em>) – Time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Altitude, u-component, and v-component of the wind.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.randomize_coord">
+<span class="sig-name descname"><span class="pre">randomize_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">np_rng</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.randomize_coord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.randomize_coord" title="Link to this definition"></a></dt>
+<dd><p>Generates a random coordinate to centralize the Forecast Subset, and stores the coordinate for look up by other classes.</p>
+<p>Altitude Bounds are the same as the PRIMARY FORECAST
+Horizontal Bounds are within 2 degrees of the min/max LAT/LON from the PRIMARY FORECAST
+Time Bounds are between the start time and up to 24 hours before the final timestamp of the PRIMARY FORECAST</p>
+<p>pass np_rng to have forecasts randomize in the same order when manually setting seed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>np_rng</strong> (<em>numpy.random.Generator</em>) – Random number generator.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.subset_forecast">
+<span class="sig-name descname"><span class="pre">subset_forecast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.subset_forecast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.subset_forecast" title="Link to this definition"></a></dt>
+<dd><p>Subsets the Forecast to the central coordinate. This assume a random coordinate or user input coordinate has already been assigned.</p>
+<p>Horizontal Bounds are determined by the relative distance (converted to lat/lon degrees)
+Altitude is the same
+Time is 24 hours</p>
+<p>Converts the DataSet to a numpy array for faster processing</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>days</strong> (<em>int</em>) – Number of days to include in the subset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.windVectorToBearing">
+<span class="sig-name descname"><span class="pre">windVectorToBearing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.windVectorToBearing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.windVectorToBearing" title="Link to this definition"></a></dt>
+<dd><p>Helper function to convert u-v wind components to bearing and speed.</p>
+<p>Not being used right now.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast.Forecast_Subset.xr_lookup">
+<span class="sig-name descname"><span class="pre">xr_lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast.html#Forecast_Subset.xr_lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast.Forecast_Subset.xr_lookup" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-forecast_processing.forecast_test">
+<span id="forecast-processing-forecast-test-module"></span><h2>forecast_processing.forecast_test module<a class="headerlink" href="#module-forecast_processing.forecast_test" title="Link to this heading"></a></h2>
+<p>Tests to make sure that the manual interpretation methods match with xarray, scipy, and numpy methods</p>
+<p>Our manually written interpolation methods are faster for simulating</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast_test.</span></span><span class="sig-name descname"><span class="pre">TestFunctionOutputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methodName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'runTest'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TestCase</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.setUp">
+<span class="sig-name descname"><span class="pre">setUp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.setUp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.setUp" title="Link to this definition"></a></dt>
+<dd><p>Hook method for setting up the test fixture before exercising it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test1">
+<span class="sig-name descname"><span class="pre">test1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test10">
+<span class="sig-name descname"><span class="pre">test10</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test10"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test10" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test2">
+<span class="sig-name descname"><span class="pre">test2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test3">
+<span class="sig-name descname"><span class="pre">test3</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test4">
+<span class="sig-name descname"><span class="pre">test4</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test4" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test5">
+<span class="sig-name descname"><span class="pre">test5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test6">
+<span class="sig-name descname"><span class="pre">test6</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test6"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test6" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test7">
+<span class="sig-name descname"><span class="pre">test7</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test7"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test7" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test8">
+<span class="sig-name descname"><span class="pre">test8</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test8"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test8" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_test.TestFunctionOutputs.test9">
+<span class="sig-name descname"><span class="pre">test9</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_test.html#TestFunctionOutputs.test9"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_test.TestFunctionOutputs.test9" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-forecast_processing.forecast_visualizer">
+<span id="forecast-processing-forecast-visualizer-module"></span><h2>forecast_processing.forecast_visualizer module<a class="headerlink" href="#module-forecast_processing.forecast_visualizer" title="Link to this heading"></a></h2>
+<p>Create 3D visualizations of ERA5 or Synth forecast with colored quiver plots.  Can shoose between
+coloring via speed or direction (default is direction).</p>
+<p>Also gives an example of doing a side by side comparison of levels between ERA5 and Synth</p>
+<p>As well as how to make GIFs</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast_visualizer.</span></span><span class="sig-name descname"><span class="pre">ForecastVisualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forecast</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_style</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'direction'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#ForecastVisualizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Visualizes forecast data for 3D quiver plots and comparisons.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.forecast_subset">
+<span class="sig-name descname"><span class="pre">forecast_subset</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.forecast_subset" title="Link to this definition"></a></dt>
+<dd><p>The forecast subset to visualize.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#forecast_processing.forecast.Forecast_Subset" title="forecast_processing.forecast.Forecast_Subset">Forecast_Subset</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.render_style">
+<span class="sig-name descname"><span class="pre">render_style</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.render_style" title="Link to this definition"></a></dt>
+<dd><p>Visualization style (‘direction’ or ‘speed’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.pressure_levels">
+<span class="sig-name descname"><span class="pre">pressure_levels</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.pressure_levels" title="Link to this definition"></a></dt>
+<dd><p>Pressure levels in the forecast subset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.alts2">
+<span class="sig-name descname"><span class="pre">alts2</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.alts2" title="Link to this definition"></a></dt>
+<dd><p>Altitudes corresponding to pressure levels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.flow_field">
+<span class="sig-name descname"><span class="pre">flow_field</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.flow_field" title="Link to this definition"></a></dt>
+<dd><p>Processed 3D flow field data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.levels">
+<span class="sig-name descname"><span class="pre">levels</span></span><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.levels" title="Link to this definition"></a></dt>
+<dd><p>Altitude levels for plotting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.generate_flow_array">
+<span class="sig-name descname"><span class="pre">generate_flow_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#ForecastVisualizer.generate_flow_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.generate_flow_array" title="Link to this definition"></a></dt>
+<dd><p>Generate a 3D flow field array for visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timestamp</strong> (<em>numpy.datetime64</em>) – Timestamp for the forecast data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.map_pres2alt">
+<span class="sig-name descname"><span class="pre">map_pres2alt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#ForecastVisualizer.map_pres2alt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.map_pres2alt" title="Link to this definition"></a></dt>
+<dd><p>Map pressure levels to altitudes using standard atmospheric conditions. (Rough approximation)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of altitudes corresponding to the pressure levels.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.ForecastVisualizer.visualize_3d_planar_flow">
+<span class="sig-name descname"><span class="pre">visualize_3d_planar_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiver_skip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altitude_quiver_skip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_cbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrow_head_angle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrow_length_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#ForecastVisualizer.visualize_3d_planar_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.ForecastVisualizer.visualize_3d_planar_flow" title="Link to this definition"></a></dt>
+<dd><p>Visualize the 3D planar flow field using quiver plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes._axes.Axes</em>) – Axes object for plotting.</p></li>
+<li><p><strong>quiver_skip</strong> (<em>int</em><em>, </em><em>optional</em>) – Skip factor for quiver points in x and y.</p></li>
+<li><p><strong>altitude_quiver_skip</strong> (<em>int</em><em>, </em><em>optional</em>) – Skip factor for altitude levels.</p></li>
+<li><p><strong>show_cbar</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display the colorbar.</p></li>
+<li><p><strong>arrow_head_angle</strong> (<em>float</em><em>, </em><em>optional</em>) – Angle of arrowheads in quiver plot.</p></li>
+<li><p><strong>length</strong> (<em>float</em><em>, </em><em>optional</em>) – Length of arrows.</p></li>
+<li><p><strong>arrow_length_ratio</strong> (<em>float</em><em>, </em><em>optional</em>) – Ratio of arrowhead length to arrow length.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.plot_3d_quiver">
+<span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast_visualizer.</span></span><span class="sig-name descname"><span class="pre">plot_3d_quiver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_subset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiver_skip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#plot_3d_quiver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.plot_3d_quiver" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="forecast_processing.forecast_visualizer.plot_side_by_side_levels">
+<span class="sig-prename descclassname"><span class="pre">forecast_processing.forecast_visualizer.</span></span><span class="sig-name descname"><span class="pre">plot_side_by_side_levels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/forecast_processing/forecast_visualizer.html#plot_side_by_side_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#forecast_processing.forecast_visualizer.plot_side_by_side_levels" title="Link to this definition"></a></dt>
+<dd><p>Shows an example of creating a gif of comparing individual pressure levels between Synth and ERA5 for the same date</p>
+<p>ERA5 and Synth need to contain the same downloaded region and date windows.</p>
+<p>We use xarrays isel method to find the matching pressure levels (since Synth is altitude based, and ERA5 is pressure
+based)</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rendering.html" class="btn btn-neutral float-left" title="Rendering" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Tristan Schuler, Chinthan Prasad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
