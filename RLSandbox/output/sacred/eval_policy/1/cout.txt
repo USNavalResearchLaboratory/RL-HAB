@@ -1,6 +1,0 @@
-INFO - eval_policy - Running command 'eval_policy'
-INFO - eval_policy - Started run with ID "1"
-INFO - imitation.scripts.ingredients.logging - Logging to /home/schuler/FLOW2D/RLSandbox/output/eval_policy/CartPole-v1/expert
-INFO - root - Loading Stable Baselines policy for '<class 'stable_baselines3.ppo.ppo.PPO'>' from 'output/train_rl/CartPole-v1/expert/policies/final/model.zip'
-INFO - eval_policy - Result: {'n_traj': 51, 'monitor_return_len': 51, 'return_min': 83.0, 'return_mean': 196.45098039215685, 'return_std': 89.80574105529007, 'return_max': 500.0, 'len_min': 83, 'len_mean': 196.45098039215685, 'len_std': 89.80574105529007, 'len_max': 500, 'monitor_return_min': 83.0, 'monitor_return_mean': 196.45098039215685, 'monitor_return_std': 89.80574105529007, 'monitor_return_max': 500.0}
-INFO - eval_policy - Completed after 0:00:21

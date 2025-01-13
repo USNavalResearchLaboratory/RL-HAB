@@ -10,7 +10,7 @@ DQN in stable-baselines-3.  This package also include optional integration of wa
 tuning and analysis.
 
 
-These enviorments are inspired by high altitude balloons that can only actuate up and down but then leverage changes in winds at various altitudes to
+These environments are inspired by high altitude balloons that can only actuate up and down but then leverage changes in winds at various altitudes to
 have limited horizontal control
 
 HABs can leverage opposing winds to perform station keeping maneuvers for persistent area coverage of a 
