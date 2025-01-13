@@ -2,10 +2,12 @@
    :maxdepth: 1
    :caption: Contents:
    :hidden:
-   
+
+   about
    installation
-   env
    getting_started
+   forecasts
+   env
    API/modules
    changelog
    citing

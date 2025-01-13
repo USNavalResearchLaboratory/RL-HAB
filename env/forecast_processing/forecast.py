@@ -68,9 +68,31 @@ class Forecast:
         """
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
 
+
         # Drop temperature variable from forecasts if it exists
         if 't' in self.ds_original.data_vars:
             self.ds_original = self.ds_original.drop_vars('t')
+
+        # Do some reformatting for the new format of ERA5
+        if 'valid_time' in self.ds_original.coords:
+            #self.ds_original = self.ds_original.drop_vars('expver')
+            #self.ds_original = self.ds_original.drop_vars('number')
+            self.ds_original = self.ds_original.rename({'valid_time': 'time','pressure_level': 'level'})
+
+            #self.ds_original['latitude'] = self.ds_original['latitude'].astype('float32')
+            #self.ds_original['longitude'] = self.ds_original['longitude'].astype('float32')
+
+            #reformat the pressure level to match the old format
+            #self.ds_original['level'] = self.ds_original['level'].astype('int32')
+            #Reverse the 'level' coordinate
+            self.ds_original = self.ds_original.reindex(level=self.ds_original.level[::-1])
+            print("DID WE GO IN HERE")
+
+        if self.forecast_type == "ERA5":
+            print(self.ds_original)
+            memory_size_gb = self.ds_original.nbytes / 1e9
+            # Print the memory size of the dataset in gigabytes
+            print(f"Memory size of the dataset: {memory_size_gb:.6f} GB")
 
         # Reverse order of latitude, since era5 comes reversed for some reason (We set up synth to be the same)
         self.ds_original = self.ds_original.reindex(latitude=list(reversed(self.ds_original.latitude)))

@@ -33,14 +33,14 @@ env_params = {
         'stay_rate_mean': 0,
         'stay_rate_std_dev': None,  #What is this value?
 
-        'forecast_directory': "FORECASTS/", #"../../../../mnt/d/FORECASTS/"
+        'forecast_directory': "FORECASTS/", #"FORECASTS/", #"../../../../mnt/d/FORECASTS/"
 
         # Provided Example Forecast for running Demos
         'era_netcdf': "ERA5-H2-2023-USA.nc",
         'synth_netcdf': "SYNTH-Jul-2023-USA-UPDATED.nc",
 
         #New params
-        'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
+        'timewarp': None, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
 
         # If using Forecast Score Decay
         'forecast_score_threshold_initial': .01,

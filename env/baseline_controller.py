@@ -235,14 +235,14 @@ def main(angle, eval_dir, sub_eval):
                        'rogue': rogue,
                        'rogue_status': rogue_percent},)
 
-    df.to_csv(eval_dir + sub_eval + "/SINGLE_SYNTH-baseline-on-Dec-USA-rogue.csv")
+    df.to_csv(eval_dir + sub_eval + "/SINGLE_SYNTH-baseline-on-Oct-USA-rogue.csv")
     #df.to_csv(eval_dir + sub_eval + "/SINGLE_ERA5-baseline-on-Jan-USA-rogue.csv")
     print(df)
 
 if __name__ == '__main__':
     angles = [0, 5, 10, 15, 20, 30, 40]
     eval_dir = "evaluation/EVALUATION_DATA/"
-    sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2"
+    sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2-UPDATED"
 
     #for angle in angles:
     #    main(angle, eval_dir, sub_eval)

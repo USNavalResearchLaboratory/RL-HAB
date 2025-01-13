@@ -8,6 +8,7 @@ wandb
 FORECASTS
 BEST_MODELS
 *.csv
+*.joblib
 
 *.sqlite3
 

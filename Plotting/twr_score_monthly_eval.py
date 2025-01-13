@@ -20,7 +20,7 @@ colors = [ "blue", "green", "orange", "red", "black", "purple", "pink", "cyan"]
 mean_twr_df = pd.DataFrame(index=months)
 std_twr_df = pd.DataFrame(index=months)
 
-forecast_cutoff_score = 0.01
+forecast_cutoff_score = 0.75
 
 eval_dir = "evaluation/EVALUATION_DATA/"
 
@@ -132,7 +132,7 @@ std_twr_df[e[0]] = std_twr_scores
 #ADD Baseline***********************
 
 eval_dir = "evaluation/EVALUATION_DATA/"
-sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2"
+sub_eval = "baseline_SINGLE_SYNTH_rogue_seed2-UPDATED"
 
 # List to hold mean TWR_Score for the current evaluation month
 mean_twr_scores = []

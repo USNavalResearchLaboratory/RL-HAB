@@ -1,0 +1,66 @@
+INFO - train_rl - Running command 'train_rl'
+INFO - train_rl - Started run with ID "2"
+INFO - imitation.scripts.ingredients.logging - Logging to /home/schuler/FLOW2D/quickstart/rl
+INFO - imitation.scripts.ingredients.rl - RL algorithm: <class 'stable_baselines3.ppo.ppo.PPO'>
+INFO - imitation.scripts.ingredients.rl - Policy network summary:
+ FeedForward32Policy(
+  (features_extractor): FlattenExtractor(
+    (flatten): Flatten(start_dim=1, end_dim=-1)
+  )
+  (pi_features_extractor): FlattenExtractor(
+    (flatten): Flatten(start_dim=1, end_dim=-1)
+  )
+  (vf_features_extractor): FlattenExtractor(
+    (flatten): Flatten(start_dim=1, end_dim=-1)
+  )
+  (mlp_extractor): MlpExtractor(
+    (policy_net): Sequential(
+      (0): Linear(in_features=3, out_features=32, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=32, out_features=32, bias=True)
+      (3): Tanh()
+    )
+    (value_net): Sequential(
+      (0): Linear(in_features=3, out_features=32, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=32, out_features=32, bias=True)
+      (3): Tanh()
+    )
+  )
+  (action_net): Linear(in_features=32, out_features=1, bias=True)
+  (value_net): Linear(in_features=32, out_features=1, bias=True)
+)
+INFO - root - Saved policy to /home/schuler/FLOW2D/quickstart/rl/policies/000000000002
+---------------------------
+| time/              |    |
+|    fps             | 14 |
+|    iterations      | 1  |
+|    time_elapsed    | 0  |
+|    total_timesteps | 2  |
+---------------------------
+INFO - root - Saved policy to /home/schuler/FLOW2D/quickstart/rl/policies/000000000004
+--------------------------------------
+| time/                   |          |
+|    fps                  | 12       |
+|    iterations           | 2        |
+|    time_elapsed         | 0        |
+|    total_timesteps      | 4        |
+| train/                  |          |
+|    approx_kl            | 0.0      |
+|    clip_fraction        | 0        |
+|    clip_range           | 0.2      |
+|    entropy_loss         | -1.42    |
+|    explained_variance   | 0.637    |
+|    learning_rate        | 0.001    |
+|    loss                 | 0.824    |
+|    n_updates            | 1        |
+|    policy_gradient_loss | 0        |
+|    std                  | 0.999    |
+|    value_loss           | 1.65     |
+--------------------------------------
+INFO - root - Rollout stats: {'n_traj': 400, 'return_min': -49.08048149235364, 'return_mean': -17.919588419003638, 'return_std': 15.033550453199036, 'return_max': -0.05214341857388513, 'len_min': 5, 'len_mean': 5.0, 'len_std': 0.0, 'len_max': 5}
+Saving the dataset (0/1 shards):   0%|          | 0/400 [00:00<?, ? examples/s]Saving the dataset (1/1 shards): 100%|██████████| 400/400 [00:00<00:00, 117323.19 examples/s]Saving the dataset (1/1 shards): 100%|██████████| 400/400 [00:00<00:00, 112410.16 examples/s]
+INFO - root - Dumped demonstrations to /home/schuler/FLOW2D/quickstart/rl/rollouts/final.npz.
+INFO - root - Saved policy to /home/schuler/FLOW2D/quickstart/rl/policies/final
+INFO - train_rl - Result: {'n_traj': 2, 'monitor_return_len': 2, 'return_min': -1.8243789672851562, 'return_mean': -0.9275856617605314, 'return_std': 0.8967933055246249, 'return_max': -0.030792356235906482, 'len_min': 5, 'len_mean': 5.0, 'len_std': 0.0, 'len_max': 5, 'monitor_return_min': -20.119767, 'monitor_return_mean': -10.2296625, 'monitor_return_std': 9.8901045, 'monitor_return_max': -0.339558}
+INFO - train_rl - Completed after 0:00:03
