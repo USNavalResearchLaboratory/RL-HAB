@@ -1,7 +1,13 @@
+image: python:3.9
+
 pages:
   stage: deploy
   script:
-    - cp -r docs/build/html/ public/
+    - pip install sphinx
+    - sphinx-build -b html docs/ public/
   artifacts:
     paths:
       - public
+  only:
+    - main  # Deploy only when changes are pushed to the main branch
+image: "image: python:3.9"
