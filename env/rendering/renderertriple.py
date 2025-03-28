@@ -1,9 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
+
+#from Plotting.era5_forecast_visualizations import skip_array
+#dfdg
 from env.config.env_config import env_params
 from env.rendering.Trajectory3DPlotter import Trajectory3DPlotter
 import matplotlib as mpl
 from termcolor import colored
+import os
 
 class MatplotlibRendererTriple():
     """
@@ -43,6 +47,7 @@ class MatplotlibRendererTriple():
 
         self.Forecast_visualizer = Forecast_visualizer_ERA5
         self.Forecast_visualizer_synth = Forecast_visualizer_SYNTH
+        
 
         self.render_count = env_params['render_count']
         self.quiver_skip = env_params['quiver_skip']
@@ -60,6 +65,14 @@ class MatplotlibRendererTriple():
         self.radius_inner = radius * .5  # m
         self.radius_outer = radius * 1.5  # m
 
+        self.save_figure = env_params['save_figure']
+
+        if self.save_figure:
+            self.frame_save_dir = env_params['save_dir']
+            os.makedirs(self.frame_save_dir, exist_ok=True)
+            self.frame_count = 0
+
+
         #try:
         if self.coordinate_system == "geographic":
             self.init_plot_geographic()
@@ -69,6 +82,7 @@ class MatplotlibRendererTriple():
             self.init_plot()
         #except:
             #print(colored("Not a Valid Coordinate System. Can either be geographic or cartesian", "red"))
+            
 
     def init_plot_geographic(self):
         """
@@ -270,6 +284,13 @@ class MatplotlibRendererTriple():
 
             if mode == 'human':
                 plt.pause(0.001)
+                print(self.SimulatorState.timestamp, self.Balloon)
+
+            # Save frame as image
+            if self.save_figure:
+                frame_filename = os.path.join(self.frame_save_dir, f"frame_{self.frame_count:05d}.png")
+                self.fig.savefig(frame_filename)
+                self.frame_count += 1
 
             self.render_step = 1
 

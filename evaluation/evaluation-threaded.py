@@ -19,8 +19,8 @@ script = "evaluation/evaluate_DUAL.py"
 for month in months_H1:
     #print(month)
     eval_month = month
-    era_netcdf = "ERA5-H1-2023-USA.nc"
-    synth_netcdf = f"SYNTH-{month}-2023-USA-UPDATED.nc"
+    era_netcdf = "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc"
+    synth_netcdf = f"../forecasts/SYNTH-{month}-2023-USA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"
@@ -43,8 +43,8 @@ for month in months_H1:
 for month in months_H2:
     #print(month)
     eval_month = month
-    era_netcdf = "ERA5-H2-2023-USA.nc"
-    synth_netcdf = f"SYNTH-{month}-2023-USA-UPDATED.nc"
+    era_netcdf = "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc"
+    synth_netcdf = f"../forecasts/SYNTH-{month}-2023-USA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"

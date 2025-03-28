@@ -68,7 +68,6 @@ class Forecast:
         """
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
 
-
         # Drop temperature variable from forecasts if it exists
         if 't' in self.ds_original.data_vars:
             self.ds_original = self.ds_original.drop_vars('t')
@@ -89,7 +88,6 @@ class Forecast:
             print("DID WE GO IN HERE")
 
         if self.forecast_type == "ERA5":
-            print(self.ds_original)
             memory_size_gb = self.ds_original.nbytes / 1e9
             # Print the memory size of the dataset in gigabytes
             print(f"Memory size of the dataset: {memory_size_gb:.6f} GB")
@@ -112,9 +110,13 @@ class Forecast:
         if self.forecast_type == "ERA5" and month != None:
             self.drop_era5_months(month)
 
+
         # Change the simulation timestamps of forecasts
         if timewarp != None:
             self.TIMEWARP(timewarp)
+
+        print(colored(self.forecast_type, "green"))
+        print(self.ds_original)
 
         # Set master forecast variables
         self.LAT_MIN = self.ds_original.latitude.values[0]
@@ -334,6 +336,9 @@ class Forecast_Subset:
         self.lat_max = quarter(lat_max)
         self.lon_max = quarter(lon_max)
 
+        #print("SUBSETTING")
+
+
         #2. Subset the forecast to a smaller array
         # This may not be necessary for simulating, but good for forecast visualization)
         # No time for now?
@@ -342,9 +347,7 @@ class Forecast_Subset:
                               level=slice(pres_min,pres_max),
                               time=slice(self.start_time, self.start_time + np.timedelta64(days, "D"))) #1 day of time for now
 
-
         # 3. Determine new min and max values from the subsetted forecast
-
         self.lat_min = self.ds.latitude.values[0]
         self.lat_max = self.ds.latitude.values[-1]
 
@@ -361,6 +364,11 @@ class Forecast_Subset:
         self.time_dim = len(self.ds.time)
 
         # Convert the subset forecast Dataset to a numpy array for faster processing
+
+        # Make sure the forecast subset has been changed to the right order:
+        ordered_vars = ['z', 'u', 'v']# Reorder ds2 to match ds1
+        self.ds = self.ds[ordered_vars]
+
         self.forecast_np = self.ds.to_array()
         self.forecast_np = self.forecast_np.to_numpy()
         self.pressure_levels = self.ds.level.values
@@ -458,19 +466,32 @@ class Forecast_Subset:
         z_col, u_col, v_col = self.np_lookup(Balloon.lat, Balloon.lon, SimulationState.timestamp)
         x_vel, y_vel = self.interpolate_wind(Balloon.altitude, z_col, u_col, v_col )
 
+        #print("alt", Balloon.altitude, z_col, "u_vel:", u_col, "v_vel", v_col)
+
+
         #Get current relative X,Y Position
         relative_x, relative_y = transform.latlon_to_meters_spherical(self.lat_central,
                                                                 self.lon_central,
                                                                 Balloon.lat, Balloon.lon)
 
+        #print()
+        #print("alt", Balloon.altitude, "x_vel:", x_vel, "y_vel", y_vel)
+        #print("relative_x", relative_x, "relative_y" , relative_y )
+
         #Apply the velocity to relative Position
         x_new = relative_x + x_vel * dt
         y_new =  relative_y + y_vel * dt
+
+
 
         # Convert New Relative Position back to Lat/Lon
         lat_new, lon_new = transform.meters_to_latlon_spherical(self.lat_central,
                                                                 self.lon_central,
                                                                 x_new, y_new)
+        #print("x_new", x_new, "y_new", y_new)
+        #print("pre_lat", Balloon.lat, "pre_lon", Balloon.lon)
+        #print("lat_new", lat_new, "lon_new", lon_new)
+
 
         return [lat_new, lon_new, x_vel, y_vel, x_new, y_new ]
 

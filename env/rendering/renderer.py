@@ -133,6 +133,8 @@ class MatplotlibRenderer():
                 self.Forecast_visualizer.visualize_3d_planar_flow(self.ax2, quiver_skip=self.quiver_skip)
 
 
+
+
             if mode == 'human':
                 plt.pause(0.001)
 

@@ -293,30 +293,44 @@ if __name__ == '__main__':
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    env_params["rel_dist"] = 100_000_000 # Manually Override relative distance to show a whole subset
-    timestamp = "2023-07-03T00:00:00.000000000"
+    #env_params["rel_dist"] = 100_000_000 # Manually Override relative distance to show a whole subset
+    #timestamp = "2023-01-03T00:00:00.000000000"
+
+    if env_params["seed"] != None:
+        # print("Seed", seed)
+        np_rng = np.random.default_rng(env_params["seed"])
+    else:
+        np_rng = np.random.default_rng(np.random.randint(0, 2 ** 32))
 
     # Assign central coordinate for synth
-    forecast_subset_synth.assign_coord(
-        0.5 * (forecast_subset_synth.Forecast.LAT_MAX + forecast_subset_synth.Forecast.LAT_MIN),
-        0.5 * (forecast_subset_synth.Forecast.LON_MAX + forecast_subset_synth.Forecast.LON_MIN),
-        timestamp)
+    #forecast_subset_synth.assign_coord(
+    #    0.5 * (forecast_subset_synth.Forecast.LAT_MAX + forecast_subset_synth.Forecast.LAT_MIN),
+    #    0.5 * (forecast_subset_synth.Forecast.LON_MAX + forecast_subset_synth.Forecast.LON_MIN),
+    #    timestamp)
+
+    forecast_subset_synth.randomize_coord(np_rng)
+
+    # Assign samecoordinate for era5
+    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
+    forecast_subset_era5.assign_coord(forecast_subset_synth.lat_central, forecast_subset_synth.lon_central, forecast_subset_synth.start_time)
+
+    forecast_subset_era5.subset_forecast( days=1)
     forecast_subset_synth.subset_forecast(days=1)
 
-    # Assign central coordinate for era5
-    forecast_subset_era5 = Forecast_Subset(FORECAST_ERA5)
-    forecast_subset_era5.assign_coord(forecast_subset_synth.lat_central, forecast_subset_synth.lon_central, timestamp)
-    # forecast_subset.randomize_coord()
-    forecast_subset_era5.subset_forecast(days=1)
+
+    print("randomized coord: ", forecast_subset_era5.start_time,
+                                forecast_subset_era5.lat_central,
+                                forecast_subset_era5.lon_central)
+    #forecast_subset_era5.subset_forecast(days=1)
 
 
     # ***** PLOTTING EXAMPLES *******
 
     # Plot ERA5 or Synth 3d Quiver Plot
-    plot_3d_quiver(timestamp = timestamp, forecast_subset = forecast_subset_synth, quiver_skip = 5)
+    plot_3d_quiver(timestamp = forecast_subset_era5.start_time, forecast_subset = forecast_subset_era5, quiver_skip = 5)
 
     # Plot ERA5 and Synth side by side levels
-    #plot_side_by_side_levels()
+    plot_side_by_side_levels()
 
 
     #Generate gif of flowfield

@@ -80,6 +80,19 @@ env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_S
 
 model = DQN.load(model_name, env=env, )
 
+#Disable Exploration in Evaulation?
+#model.policy.set_training_mode(False)
+
+print("Training timesteps:", model.num_timesteps)
+
+replay_buffer = model.replay_buffer
+print(f"Replay buffer size: {replay_buffer.size()}")
+#print(model.__dict__)
+#print(model.__dict__['_last_original_obs']["flow_field"].shape)
+#sdfsdf
+
+#sdfsdf
+
 n_procs = 1
 vec_env = model.get_env()
 
@@ -93,7 +106,12 @@ forecast_score = []
 rogue = []
 rogue_percent = []
 
-NUM_EPS = 2 # how many episodes to evaluate
+lats = []
+lons = []
+timestamps = []
+altitudes = []
+
+NUM_EPS = 1000 # how many episodes to evaluate
 
 for i in range (0,NUM_EPS):
 
@@ -107,7 +125,7 @@ for i in range (0,NUM_EPS):
 
     eps_length = env_params["episode_length"]
     for _ in range (eps_length):
-        action, _states = model.predict(obs, deterministic=False)
+        action, _states = model.predict(obs, deterministic=True)
 
         obs, rewards, dones, info = vec_env.step(action)
         total_reward += rewards
@@ -139,7 +157,12 @@ for i in range (0,NUM_EPS):
     rogue_percent.append(rogue_cumulative / (total_steps*1.))
 
     print("episode length", total_steps, "Total Reward", total_reward, "TWR", info[0]["twr"], "Rogue", rogue_status, "Rogue Percent", rogue_cumulative / (total_steps*1.)  )
-    print("Coord", env.forecast_subset_era5.start_time, env.forecast_subset_era5.lat_central,env.forecast_subset_era5.lat_central )
+    print("Coord", env.forecast_subset_era5.start_time, env.forecast_subset_era5.lat_central,env.forecast_subset_era5.lon_central, env.Balloon.altitude)
+        
+    timestamps.append(env.forecast_subset_era5.start_time)
+    lats.append(env.forecast_subset_era5.lat_central)
+    lons.append(env.forecast_subset_era5.lon_central)
+    altitudes.append(env.Balloon.altitude)
 
     #Example For saving simulator final renderings
     #plt.savefig("pics-Oct/" + str(i) + "-Oct-FS-" + str(int(score*100)) + "-TWR-" + str(twr_rounded))
@@ -153,9 +176,12 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                    'TWR_Outer_Score': twr_outer_score,
                    'Total_Reward': reward_score,
                     'rogue': rogue,
-                   'rogue_status': rogue_percent},
-
-                  )
+                   'rogue_status': rogue_percent,
+                       'timestamp': timestamps,
+                       'lon': lons,
+                       'lat': lats,
+                       'altitude': altitudes}
+                       )
 
 eval_dir = env_params["eval_dir"]
 full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "/"

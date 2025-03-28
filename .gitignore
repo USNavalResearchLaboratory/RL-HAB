@@ -11,6 +11,7 @@ BEST_MODELS
 *.joblib
 
 *.sqlite3
+img/*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -18,7 +18,7 @@ env_params = {
         'render_count': 30,     # How many dt frames ***(is this right, or is is seconds?) to skip when rendering
         'quiver_skip': 3,       # How many quivers to skip when rendering forecast visualizations
         'alt_quiver_skip': 1,   # How many altitude quivers to skip when rendering forecast visualizations
-        'render_mode': None, # 'human' or None to render or not during training or evaluating
+        'render_mode': 'None', # 'human' or None to render or not during training or evaluating
 
 
         # These need to be mandatory pressure levels (https://glossarytest.ametsoc.net/wiki/Mandatory_level)
@@ -33,14 +33,17 @@ env_params = {
         'stay_rate_mean': 0,
         'stay_rate_std_dev': None,  #What is this value?
 
-        'forecast_directory': "FORECASTS/", #"FORECASTS/", #"../../../../mnt/d/FORECASTS/"
+        'forecast_directory': "forecasts/", #"../../../../mnt/d/FORECASTS/"
 
         # Provided Example Forecast for running Demos
-        'era_netcdf': "ERA5-H2-2023-USA.nc",
-        'synth_netcdf': "SYNTH-Jul-2023-USA-UPDATED.nc",
+        #'era_netcdf': "ERA5-H2-2023-USA.nc",
+        
+        
+        'era_netcdf': "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc",
+        'synth_netcdf': "../forecasts/SYNTH-Apr-2023-USA-UPDATED.nc",
 
-        #New params
-        'timewarp': None, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
+        #New params 
+        'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
 
         # If using Forecast Score Decay
         'forecast_score_threshold_initial': .01,
@@ -51,12 +54,17 @@ env_params = {
         'forecast_score_threshold': 0.01, # 0-1  (0.1 removes all 100% bad forecasts for navigating, winter months are typically dominated by 0 scores)
 
         # Evaluation Parameters
-        'eval_dir': "evaluation/EVALUATION_DATA/",
-        'eval_type': "DUAL_IMITATION", # DUAL or SINGLE or Baseline
-        'model_name': "BEST_MODELS/aeolus-dual_Jul-custom-hps/silvery-jazz-1/DQN_DUAL_ROGUE_150000000_steps",
-        'eval_model': "silvery-jazz",
-        'model_month': "Jul",
-        'eval_month':  "test"
+        'eval_dir': "evaluation/EVALUATION_DATA3/",
+        'eval_type': "DUAL", # DUAL or SINGLE or Baseline
+        #'model_name': "RL_models_aeolus-Jan-COMPLETE/frosty-plasma-36/DQN_DUAL_COMPLETE_150000000_steps",
+        #'model_name': "RL_models_aeolus-Jan-COMPLETE-bearing/playful-sound-2/DQN_DUAL_COMPLETE_150000000_steps",
+        #'model_name': "RL_models_aeolus-Jan-COMPLETE-transform_fix/fast-oath-5/DQN_DUAL_COMPLETE_150000000_steps",
+        'model_name': "RL_models_aeolus-Jan-COMPLETE-tau_fix/misunderstood-bush-9/DQN_DUAL_COMPLETE_150000000_steps",
+        'eval_model': "misunderstood-bush-9",
+        'model_month': "Jan",
+        'eval_month':  "Apr",
+        'save_figure': False, #f or saving renderings
+        'save_dir': "img/DUAL-jul_tau/"
 }
 
 

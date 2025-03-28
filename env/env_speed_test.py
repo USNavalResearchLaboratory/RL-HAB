@@ -59,6 +59,7 @@ model = DQN(env=env, verbose=1,**config['hyperparameters'])
 #model = PPO(env=env, policy = "MultiInputPolicy", verbose=1)
 
 
+
 model.learn(
     total_timesteps=config["total_timesteps"],
     #tb_log_name=run.name,  #added this for restarting a training

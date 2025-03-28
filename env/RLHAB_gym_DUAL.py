@@ -12,6 +12,7 @@ from env.balloon import BalloonState, SimulatorState
 from env.balloon import AltitudeControlCommand as command
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
 from env.forecast_processing.ForecastClassifier import ForecastClassifier
+from termcolor import colored
 
 from utils.common import convert_range
 from utils.initialize_forecast import initialize_forecasts
@@ -86,6 +87,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         self.forecast_subset_era5.subset_forecast(days=self.days)
 
 
+
+
         #Then assign coord to synth winds
         self.forecast_subset_synth = Forecast_Subset(FORECAST_SYNTH)
         self.forecast_subset_synth.assign_coord(lat = self.forecast_subset_era5.lat_central,
@@ -110,7 +113,6 @@ class FlowFieldEnv3d_DUAL(gym.Env):
                                                render_mode=self.render_mode, radius=self.radius,  coordinate_system = "geographic")
 
         self.action_space = spaces.Discrete(3)  # 0: Move down, 1: Stay, 2: Move up
-
 
         min_vel = 0  # m/s
         max_vel = 50 # m/s
@@ -158,6 +160,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         :rtype: tuple
         """
 
+
         #Randomize new coordinate and forecast subset
         #self.forecast_score = 0
         #while self.forecast_score< 0.25:
@@ -184,7 +187,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
             self.forecast_subset_synth.subset_forecast(days=self.days)
 
             #print("updated coord", self.forecast_subset_era5.start_time, self.forecast_subset_era5.lat_central,self.forecast_subset_era5.lat_central)
-        
+
 
             self.forecast_scores, self.forecast_score = self.ForecastClassifier.determine_OW_Rate(self.forecast_subset_era5)
         #'''
@@ -276,6 +279,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         Returns:
             float: reward (0 for now, no reward/penalty for moving).
         """
+
         #self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, _, _, _,_, _, _ = self.getCoord_ERA5(coord,self.dt)
         #self.getCoord_XR(coord, self.dt)
 
@@ -364,8 +368,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         learning" <https://www.nature.com/articles/s41586-020-2939-8>`_
         """
         distance_to_target = self.Balloon.distance
-        c_cliff = 0.4
-        tau = 100
+        c_cliff = 0.4 # scale factor
+        tau = 100000 # m
 
         if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
 
@@ -398,8 +402,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
             float: Reward value.
         """
         distance_to_target = self.Balloon.distance
-        c_cliff = 0.4
-        tau = 100
+        c_cliff = 0.4 # scale factor
+        tau = 100000 # m
 
         if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
 
@@ -435,8 +439,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         """
 
         distance_to_target = self.Balloon.distance
-        c_cliff = 0.4
-        tau = 100
+        c_cliff = 0.4 # scale factor
+        tau = 100000 # m
         self.within_target = False #by default
 
         if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
@@ -466,6 +470,29 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         #print(self.within_target, "Reward", reward)
 
         return reward
+        
+    def reward_bearing(self):
+        "Trying a new reward strategy"
+
+        distance_to_target = self.Balloon.distance
+
+        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
+
+            if distance_to_target <= self.radius:
+                self.twr += 1
+                self.within_target = True
+            # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
+            if distance_to_target <= self.radius_inner:
+                self.twr_inner += 1
+
+            if distance_to_target <= self.radius_outer:
+                self.twr_outer += 1
+            else:
+                self.within_target = False
+
+            reward = convert_range(self.Balloon.rel_bearing, 0, np.pi, 1, 0)
+
+            return reward
 
     def step(self, action):
         """
@@ -488,7 +515,9 @@ class FlowFieldEnv3d_DUAL(gym.Env):
 
         reward += self.reward_piecewise()
 
-
+        #print(self.reward_piecewise(), reward )
+        #print(self.radius)
+        #reward += self.reward_bearing()
 
         done = self.SimulatorState.step(self.Balloon)
 
@@ -523,6 +552,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         # Find the absolute difference between the two angles
         rel_bearing = np.abs(heading - true_bearing)
 
+        #print(x, y, goal_x, goal_y, heading_x, heading_y)
+
         # map from [-pi, pi] to [0,pi]
         rel_bearing = abs((rel_bearing + np.pi) % (2 * np.pi) - np.pi)
 
@@ -533,7 +564,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         Builds off of the same calculation as calculate_relative_angle() to calculate the relative
         "flow map" vertical slice from the balloons current position between 0 and 180 degrees.
 
-        (z, magnitude, bearing)  add uncertatinty later)
+        (z, magnitude, bearing)  add uncertainty later)
 
         :return: flowfield with relative bearins and magnitude
         """
@@ -557,6 +588,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         for i in range (0,len(alt_column)):
             rel_angle = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y,
                                                       self.goal["x"], self.goal["y"], u_column[i], v_column[i])
+
+            #print(alt_column[i])
             magnitude = math.sqrt(u_column[i]**2 + v_column[i]**2)
 
             flow_field_rel_angle.append(rel_angle)
@@ -612,6 +645,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         """
         self.renderer.render(mode='human')
 
+        #print(self.SimulatorState.timestamp, self._get_obs())
+
     def close(self):
         pass
 
@@ -639,6 +674,7 @@ def main():
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
+
     env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params['render_mode'])
 
     while True:
@@ -652,7 +688,12 @@ def main():
             #print(obs)
 
             # Use this for keyboard input
-            obs, reward, done, truncated, info = env.step(last_action)
+            #obs, reward, done, truncated, info = env.step(last_action)
+
+            if step < 150:
+                obs, reward, done, truncated, info = env.step(0)
+            if step > 150:
+                obs, reward, done, truncated, info = env.step(2)
             total_reward += reward
 
 

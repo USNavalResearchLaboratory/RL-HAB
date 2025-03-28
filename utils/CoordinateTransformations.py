@@ -34,7 +34,8 @@ def latlon_to_meters_spherical(origin_lat, origin_lon, target_lat, target_lon):
     lat_distance = (target_lat - origin_lat) * 111000  # meters per degree of latitude
 
     # Calculate distance for longitude change
-    longitude_distance = (target_lon - origin_lon) * 111000 * math.cos((origin_lat_rad + target_lat_rad) / 2)
+    #longitude_distance = (target_lon - origin_lon) * 111000 * math.cos((origin_lat_rad + target_lat_rad) / 2) #OLD OUTDATED TRANSFROM.  THIS FAILED OUTSIDE of 150 km due to Transform errors
+    longitude_distance = (target_lon - origin_lon) * 111000 * math.cos(origin_lat_rad)
 
     # Latitude distance will be positive or negative depending on direction
     return longitude_distance, lat_distance
@@ -49,9 +50,7 @@ def meters_to_latlon_spherical(origin_lat, origin_lon, x_m, y_m):
     lat_change = y_m / 111000  # meters to degrees
 
     # Longitude change
-    # Calculate average latitude in radians
-    avg_lat_rad = math.radians(origin_lat)
-    lon_change = x_m / (111000 * math.cos(avg_lat_rad))  # meters to degrees
+    lon_change = x_m / (111000 * math.cos(origin_lat_rad))  # meters to degrees
 
     # Calculate target latitude and longitude
     target_lat = origin_lat + lat_change

@@ -106,19 +106,17 @@ class ForecastClassifier:
                                                 timestamp)
 
             bearing, speed = forecast_subset.windVectorToBearing(u, v)
+
             bearing = bearing % (2 * np.pi)
             bearing = np.degrees(bearing)
 
             levels = forecast_subset.ds.level.values
             opposing_wind_directions, opposing_wind_levels = self.determine_opposing_winds(bearing, levels, n_sectors)
-
             scores.append(len(opposing_wind_levels))
 
             timestamp = timestamp + np.timedelta64(6, "h")
 
-
         max_score = (forecast_subset.level_dim*intervals)
-
         score = np.sum(scores)/max_score
 
         return scores, score
