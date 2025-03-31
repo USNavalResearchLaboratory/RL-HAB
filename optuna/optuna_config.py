@@ -1,8 +1,8 @@
 """Config file for optuna hyperparamter studies"""
 
-project_name = "RL_models_aeolus-Jan-COMPLETE-tau_fix"  # Name of Optuna database and Wandb project name
-model_path="RL_models_aeolus-Jan-COMPLETE-tau_fix"      # Where SB3 RL models will be stored
-log_path = "logs_aeolus-Jan-COMPLETE-tau_fix"           # Where SB3 log files will be stored
+project_name = "RL_models_aeolus-Apr-COMPLETE-tau_fix"  # Name of Optuna database and Wandb project name
+model_path="RL_models_aeolus-Apr-COMPLETE-tau_fix"      # Where SB3 RL models will be stored
+log_path = "logs_aeolus-Apr-COMPLETE-tau_fix"           # Where SB3 log files will be stored
 
 device = "cuda"  # CPU or cuda
 

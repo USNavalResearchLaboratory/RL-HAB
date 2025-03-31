@@ -15,7 +15,7 @@ from env.forecast_processing.ForecastClassifier import ForecastClassifier
 from termcolor import colored
 
 from utils.common import convert_range
-from utils.initialize_forecast import initialize_forecasts
+from utils.initialize_forecast import initialize_forecasts, initialize_forecasts_full
 
 np.set_printoptions(suppress=True, precision=3)
 
@@ -212,6 +212,8 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         self.rogue_status = False
         self.rogue_count = 0
         self.rogue_step_trigger = None
+
+        self.timestamp = self.forecast_subset_era5.start_time
 
         self.twr = 0 # time within radius
         self.twr_inner = 0  # time within radius
@@ -630,6 +632,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
             "forecast_score": self.forecast_score,
             "forecast_scores": self.forecast_scores,
             "render_mode": self.render_mode,
+            "timestamp": self.timestamp,
 
             "total_steps": self.total_steps,
             "rogue_count": self.rogue_count,
@@ -672,7 +675,7 @@ listener.start()
 
 def main():
     # Import Forecasts
-    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts_full()
 
 
     env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params['render_mode'])
@@ -690,11 +693,9 @@ def main():
             # Use this for keyboard input
             #obs, reward, done, truncated, info = env.step(last_action)
 
-            if step < 150:
-                obs, reward, done, truncated, info = env.step(0)
-            if step > 150:
-                obs, reward, done, truncated, info = env.step(2)
-            total_reward += reward
+            # For random actions
+            obs, reward, done, truncated, info = env.step(random.randint(0, 2))
+                
 
 
             if env_params['render_mode'] == "human":

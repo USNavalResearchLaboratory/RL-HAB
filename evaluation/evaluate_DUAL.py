@@ -184,12 +184,12 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                        )
 
 eval_dir = env_params["eval_dir"]
-full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "/"
+full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "-deterministic/"
 #env_params["eval_month"] = "Jan"
 
 if not os.path.exists(full_dir):
     os.makedirs(full_dir)
 
 
-df.to_csv(full_dir + env_params["eval_type"] + "-" + env_params["model_month"] + "-on-" + env_params["eval_month"] + "-" + env_params["eval_model"] + ".csv")
+df.to_csv(full_dir + env_params["eval_type"] + "-" + env_params["model_month"] + "-on-" + env_params["eval_month"] + "-" + env_params["eval_model"] + "-deterministic.csv")
 print(df)

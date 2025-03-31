@@ -39,8 +39,9 @@ env_params = {
         #'era_netcdf': "ERA5-H2-2023-USA.nc",
         
         
-        'era_netcdf': "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc",
-        'synth_netcdf': "../forecasts/SYNTH-Apr-2023-USA-UPDATED.nc",
+        'era_netcdf': "../../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc",
+        'synth_netcdf': "../forecasts/SYNTH-Sep-2023-USA-UPDATED.nc",
+        #'synth_netcdf': "../forecasts/SYNTH-2023-USA.nc",
 
         #New params 
         'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
@@ -59,10 +60,10 @@ env_params = {
         #'model_name': "RL_models_aeolus-Jan-COMPLETE/frosty-plasma-36/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-bearing/playful-sound-2/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-transform_fix/fast-oath-5/DQN_DUAL_COMPLETE_150000000_steps",
-        'model_name': "RL_models_aeolus-Jan-COMPLETE-tau_fix/misunderstood-bush-9/DQN_DUAL_COMPLETE_150000000_steps",
-        'eval_model': "misunderstood-bush-9",
-        'model_month': "Jan",
-        'eval_month':  "Apr",
+        'model_name': "RL_models_aeolus-Sep-COMPLETE-tau_fix/brisk-durian-5/DQN_DUAL_COMPLETE_150000000_steps",
+        'eval_model': "brisk-durian-5",
+        'model_month': "Sep",
+        'eval_month':  "Sep",
         'save_figure': False, #f or saving renderings
         'save_dir': "img/DUAL-jul_tau/"
 }

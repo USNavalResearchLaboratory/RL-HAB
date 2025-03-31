@@ -13,6 +13,8 @@ BEST_MODELS
 *.sqlite3
 img/*/
 
+forecasts/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

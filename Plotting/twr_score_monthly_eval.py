@@ -14,13 +14,13 @@ import matplotlib.pyplot as plt
 eval_months = [ ("Jan" , "frosty-plasma", "36"), ("Apr" , "ethereal-yogurt", "14"),("Jul" , "deep-fire", "2"), ("Sep", "toasty-glade","17")]
 #eval_months = [ ("Jan" , "dainty-water"),("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-colors = [ "blue", "green", "orange", "red", "black", "gray", "purple", "cyan", "pink"]
+colors = [ "blue", "green", "orange", "red", "limegreen", "brown", "purple", "cyan", "pink"]
 
 # Create a DataFrame to store mean TWR_Score for each evaluation month
 mean_twr_df = pd.DataFrame(index=months)
 std_twr_df = pd.DataFrame(index=months)
 
-forecast_cutoff_score = .5
+forecast_cutoff_score = .01
 forecast_cutoff_score_max = 1.
 
 eval_dir = "evaluation/EVALUATION_DATA2/"
@@ -56,9 +56,9 @@ for e in eval_months:
     
     
     
+
     
-    
-eval_months = [("Jan", "misunderstood-bush","9")]
+eval_months = [("Apr", "atomic-breeze","11")]
 #eval_months = [ ("Jan" , "dainty-water"),("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -71,7 +71,7 @@ for e in eval_months:
 
 
     for month in months:
-        csv_name = eval_dir + "DUAL_" +e[1] + "-"  + e[2]  +"_" + e[0]    + "/" +  "DUAL-" +e[0] +"-on-" + month + "-" + e[1] +"-" + e[2] + "-deterministic.csv"
+        csv_name = eval_dir + "DUAL_" +e[1] + "-"  + e[2]  +"_" + e[0]    + "/" +  "DUAL-" +e[0] +"-on-" + month + "-" + e[1] +"-" + e[2] + ".csv"
         print(csv_name)
 
         try:
@@ -91,8 +91,8 @@ for e in eval_months:
             
 
     # Add the mean TWR_Scores for this evaluation month to the DataFrame
-    mean_twr_df["Jan-tau-deterministic"] = mean_twr_scores
-    std_twr_df["Jan-tau-deterministic"] = std_twr_scores
+    mean_twr_df["Apr-tau"] = mean_twr_scores
+    std_twr_df["Apr-tau"] = std_twr_scores
 
     print(mean_twr_df)
     
@@ -100,11 +100,11 @@ for e in eval_months:
     
     
 
-eval_months = [("Jan", "frosty-plasma","36")]
+eval_months = [("Sep", "brisk-durian","5")]
 #eval_months = [ ("Jan" , "dainty-water"),("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-eval_dir = "evaluation/EVALUATION_DATA2/"
+eval_dir = "evaluation/EVALUATION_DATA3/"
 
 for e in eval_months:
     # List to hold mean TWR_Score for the current evaluation month
@@ -113,7 +113,7 @@ for e in eval_months:
 
 
     for month in months:
-        csv_name = eval_dir + "DUAL_" +e[1] +"_" + e[0] + "-" + e[2] + "-deterministic/" +          "DUAL-" +e[0] +"-on-" + month + "-" + e[1] +"-" + e[2] + ".csv"
+        csv_name = eval_dir + "DUAL_" +e[1] + "-"  + e[2]  +"_" + e[0]    + "/" +  "DUAL-" +e[0] +"-on-" + month + "-" + e[1] +"-" + e[2] + ".csv"
         print(csv_name)
 
         try:
@@ -133,8 +133,8 @@ for e in eval_months:
             
 
     # Add the mean TWR_Scores for this evaluation month to the DataFrame
-    mean_twr_df["JAN-deterministic"] = mean_twr_scores
-    std_twr_df["JAN-deterministic"] = std_twr_scores
+    mean_twr_df["Sep-tau"] = mean_twr_scores
+    std_twr_df["Sep-tau"] = std_twr_scores
 
     print(mean_twr_df)
     #sdfs
