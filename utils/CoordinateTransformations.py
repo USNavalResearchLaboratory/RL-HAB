@@ -1,5 +1,6 @@
 from pyproj import CRS, Transformer
 import math
+import numpy as np
 
 
 def latlon_to_meters_merc(origin_lat, origin_lon, target_lat, target_lon):
@@ -23,12 +24,18 @@ def latlon_to_meters_merc(origin_lat, origin_lon, target_lat, target_lon):
     relative_x = target_x - origin_x
     relative_y = target_y - origin_y
 
+    # If lat or lon is nan from the transform step being too close to the central coordinate, revert back to central coordinate distance
+    if np.isnan(relative_x):
+        relative_x = 0
+    if np.isnan(relative_y):
+        relative_y = 0
+
     return relative_x, relative_y
 
 def latlon_to_meters_spherical(origin_lat, origin_lon, target_lat, target_lon):
     # Convert degrees to radians
     origin_lat_rad = math.radians(origin_lat)
-    target_lat_rad = math.radians(target_lat)
+    #target_lat_rad = math.radians(target_lat) # unused now
 
     # Calculate distance for latitude change
     lat_distance = (target_lat - origin_lat) * 111000  # meters per degree of latitude
@@ -36,6 +43,12 @@ def latlon_to_meters_spherical(origin_lat, origin_lon, target_lat, target_lon):
     # Calculate distance for longitude change
     #longitude_distance = (target_lon - origin_lon) * 111000 * math.cos((origin_lat_rad + target_lat_rad) / 2) #OLD OUTDATED TRANSFROM.  THIS FAILED OUTSIDE of 150 km due to Transform errors
     longitude_distance = (target_lon - origin_lon) * 111000 * math.cos(origin_lat_rad)
+
+    # If lat or lon is nan from the transform step being too close to the central coordinate, revert back to central coordinate distance
+    if np.isnan(longitude_distance):
+        longitude_distance = 0
+    if np.isnan(lat_distance):
+        lat_distance = 0
 
     # Latitude distance will be positive or negative depending on direction
     return longitude_distance, lat_distance
@@ -55,6 +68,14 @@ def meters_to_latlon_spherical(origin_lat, origin_lon, x_m, y_m):
     # Calculate target latitude and longitude
     target_lat = origin_lat + lat_change
     target_lon = origin_lon + lon_change
+
+
+    # If lat or lon is nan from the transform step being too close to the central coordinate, revert back to central coordinate. 
+    if np.isnan(target_lat):
+        target_lat = origin_lat
+    if np.isnan(target_lon):
+        target_lon = origin_lon
+
 
     return target_lat, target_lon
 
@@ -76,6 +97,12 @@ def mercator_to_latlon(origin_lat, origin_lon, x_m, y_m):
     # Calculate target latitude and longitude
     target_lat = origin_lat + lat_change
     target_lon = origin_lon + lon_change
+
+    # If lat or lon is nan from the transform step being too close to the central coordinate, revert back to central coordinate. 
+    if np.isnan(target_lat):
+        target_lat = origin_lat
+    if np.isnan(target_lon):
+        target_lon = origin_lon
 
     return target_lat, target_lon
 

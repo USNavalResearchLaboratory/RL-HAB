@@ -284,7 +284,7 @@ class MatplotlibRendererTriple():
 
             if mode == 'human':
                 plt.pause(0.001)
-                print(self.SimulatorState.timestamp, self.Balloon)
+                #print(self.SimulatorState.timestamp, self.Balloon)
 
             # Save frame as image
             if self.save_figure:

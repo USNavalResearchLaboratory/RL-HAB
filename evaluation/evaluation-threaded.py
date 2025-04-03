@@ -6,6 +6,8 @@ def update_env_params(key, value):
     # Dynamically update the global env_params in the module
     globals()["env_params"][key] = value
 
+#env_params["render_mode"] = "None"
+
 # List of months (or arguments for each process)
 months_H1 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 months_H2 = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -19,8 +21,8 @@ script = "evaluation/evaluate_DUAL.py"
 for month in months_H1:
     #print(month)
     eval_month = month
-    era_netcdf = "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc"
-    synth_netcdf = f"../forecasts/SYNTH-{month}-2023-USA-UPDATED.nc"
+    era_netcdf = env_params['era_netcdf']
+    synth_netcdf = f"../../../FLOW2D/forecasts/SYNTH-{month}-2023-SEA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"
@@ -43,8 +45,8 @@ for month in months_H1:
 for month in months_H2:
     #print(month)
     eval_month = month
-    era_netcdf = "../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc"
-    synth_netcdf = f"../forecasts/SYNTH-{month}-2023-USA-UPDATED.nc"
+    era_netcdf = env_params['era_netcdf']
+    synth_netcdf = f"../../../FLOW2D/forecasts/SYNTH-{month}-2023-SEA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"

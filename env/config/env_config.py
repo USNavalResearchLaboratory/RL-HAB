@@ -39,9 +39,12 @@ env_params = {
         #'era_netcdf': "ERA5-H2-2023-USA.nc",
         
         
-        'era_netcdf': "../../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc",
-        'synth_netcdf': "../forecasts/SYNTH-Sep-2023-USA-UPDATED.nc",
-        #'synth_netcdf': "../forecasts/SYNTH-2023-USA.nc",
+        #'era_netcdf': "../../../cds_api/complete_era5_data/2023-ERA5-NORTH_renamed-condensed_64bit.nc",
+        #'synth_netcdf': "../forecasts/SYNTH-Sep-2023-USA-UPDATED.nc",
+        
+
+        'era_netcdf': "../../../cds_api/2023-ERA5-Complete-SEA_renamed_64bit.nc",
+        'synth_netcdf': "../../../FLOW2D/forecasts/SYNTH-Jan-2023-SEA-UPDATED.nc",
 
         #New params 
         'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
@@ -55,15 +58,16 @@ env_params = {
         'forecast_score_threshold': 0.01, # 0-1  (0.1 removes all 100% bad forecasts for navigating, winter months are typically dominated by 0 scores)
 
         # Evaluation Parameters
-        'eval_dir': "evaluation/EVALUATION_DATA3/",
-        'eval_type': "DUAL", # DUAL or SINGLE or Baseline
+        'eval_dir': "evaluation/EVALUATION_DATA4/",
+        'eval_type': "SINGLE-Synth", # DUAL or SINGLE or Baseline
         #'model_name': "RL_models_aeolus-Jan-COMPLETE/frosty-plasma-36/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-bearing/playful-sound-2/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-transform_fix/fast-oath-5/DQN_DUAL_COMPLETE_150000000_steps",
-        'model_name': "RL_models_aeolus-Sep-COMPLETE-tau_fix/brisk-durian-5/DQN_DUAL_COMPLETE_150000000_steps",
-        'eval_model': "brisk-durian-5",
-        'model_month': "Sep",
-        'eval_month':  "Sep",
+        #'model_name': "RL_models_aeolus-Sep-COMPLETE-tau_fix/brisk-durian-5/DQN_DUAL_COMPLETE_150000000_steps",
+        'model_name': "aeolus-SEA-2023-Jul/lilac-field-3/DQN_DUAL_COMPLETE_150000000_steps",
+        'eval_model': "lilac-field-3",
+        'model_month': "Jan",
+        'eval_month':  "Dec",
         'save_figure': False, #f or saving renderings
         'save_dir': "img/DUAL-jul_tau/"
 }

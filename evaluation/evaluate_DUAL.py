@@ -125,7 +125,7 @@ for i in range (0,NUM_EPS):
 
     eps_length = env_params["episode_length"]
     for _ in range (eps_length):
-        action, _states = model.predict(obs, deterministic=True)
+        action, _states = model.predict(obs, deterministic=False)
 
         obs, rewards, dones, info = vec_env.step(action)
         total_reward += rewards
@@ -184,12 +184,12 @@ df = pd.DataFrame({'Forecast_Score': forecast_score,
                        )
 
 eval_dir = env_params["eval_dir"]
-full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "-deterministic/"
+full_dir = eval_dir + '/' + env_params["eval_type"] + "_" + env_params["eval_model"] +  "_" + env_params["model_month"] + "/"
 #env_params["eval_month"] = "Jan"
 
 if not os.path.exists(full_dir):
     os.makedirs(full_dir)
 
 
-df.to_csv(full_dir + env_params["eval_type"] + "-" + env_params["model_month"] + "-on-" + env_params["eval_month"] + "-" + env_params["eval_model"] + "-deterministic.csv")
+df.to_csv(full_dir + env_params["eval_type"] + "-" + env_params["model_month"] + "-on-" + env_params["eval_month"] + "-" + env_params["eval_model"] + ".csv")
 print(df)

@@ -506,8 +506,12 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         :rtype: tuple
         """
 
+        # Override for Baseline?
+        best_altitude, baseline_action = self.baseline_controller(self._get_obs())
+        reward = self.move_agent(baseline_action)
 
-        reward = self.move_agent(action)
+
+        #reward = self.move_agent(action)
         observation = self._get_obs()
         info = self._get_info()
 
@@ -516,6 +520,7 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         #    reward += 1
 
         reward += self.reward_piecewise()
+        #print(reward)
 
         #print(self.reward_piecewise(), reward )
         #print(self.radius)
@@ -675,7 +680,7 @@ listener.start()
 
 def main():
     # Import Forecasts
-    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts_full()
+    FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
 
     env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params['render_mode'])
@@ -695,6 +700,8 @@ def main():
 
             # For random actions
             obs, reward, done, truncated, info = env.step(random.randint(0, 2))
+
+            total_reward += reward
                 
 
 

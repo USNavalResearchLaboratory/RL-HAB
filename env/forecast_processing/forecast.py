@@ -55,6 +55,30 @@ class Forecast:
         #check and see if the forecast type is correct
         if forecast_type != "SYNTH" and forecast_type != "ERA5":
             raise Exception("Invalid forecast type " + str(forecast_type))
+        
+    def check_nan(self, ds):
+        nans_exist = False
+        for var in ds.data_vars:
+            has_nan = ds[var].isnull().any()
+            
+            if has_nan.item():
+                print(colored(f"WARNING: {var}: contains NaN? {has_nan.item()}", "yellow"))
+                nans_exist = True
+
+        if nans_exist:
+            for var in ds.data_vars:
+                total_vals = ds[var].size
+                n_nans = ds[var].isnull().sum().item()
+                pct_nans = (n_nans / total_vals) * 100
+                print(f"{var}: {n_nans} NaNs out of {total_vals} values ({pct_nans:.2f}%)")
+
+            print(colored(f"Linear Filling Nans on time dimension", "yellow"))
+            ds['u'] = ds['u'].interpolate_na(dim='time', method='linear', use_coordinate=False)
+            ds['v'] = ds['v'].interpolate_na(dim='time', method='linear', use_coordinate=False)
+            ds['z'] = ds['z'].interpolate_na(dim='time', method='linear', use_coordinate=False)
+            print(colored(f"Linear Interpolation done", "yellow"))
+        return ds
+
 
 
     def load_forecast(self, filename, month = None, timewarp = None):
@@ -67,6 +91,9 @@ class Forecast:
             timewarp (int, optional): Time interval adjustment (e.g., 3, 6, or 12 hours).
         """
         self.ds_original = xr.open_dataset(env_params["forecast_directory"] + filename)
+
+        #Check if the forecast is corrupt, handle it.
+        self.ds_original = self.check_nan(self.ds_original)
 
         # Drop temperature variable from forecasts if it exists
         if 't' in self.ds_original.data_vars:
@@ -415,6 +442,7 @@ class Forecast_Subset:
         Returns:
             tuple: Altitude, u-component, and v-component of the wind.
         """
+        #print(lat, self.lat_min, self.lat_max, 0, self.lat_dim)
         lat_idx = int(convert_range(lat, self.lat_min, self.lat_max, 0, self.lat_dim))
         lon_idx = int(convert_range(lon, self.lon_min, self.lon_max, 0, self.lon_dim))
         time_idx = int(convert_range(self.get_unixtime(np.datetime64(time)), self.get_unixtime(self.start_time),
@@ -466,6 +494,8 @@ class Forecast_Subset:
         z_col, u_col, v_col = self.np_lookup(Balloon.lat, Balloon.lon, SimulationState.timestamp)
         x_vel, y_vel = self.interpolate_wind(Balloon.altitude, z_col, u_col, v_col )
 
+        
+
         #print("alt", Balloon.altitude, z_col, "u_vel:", u_col, "v_vel", v_col)
 
 
@@ -473,6 +503,10 @@ class Forecast_Subset:
         relative_x, relative_y = transform.latlon_to_meters_spherical(self.lat_central,
                                                                 self.lon_central,
                                                                 Balloon.lat, Balloon.lon)
+        
+
+        # If relative distance is nan from the transform step being too close to the central coordinate, revert back to 0. 
+
 
         #print()
         #print("alt", Balloon.altitude, "x_vel:", x_vel, "y_vel", y_vel)
@@ -482,12 +516,18 @@ class Forecast_Subset:
         x_new = relative_x + x_vel * dt
         y_new =  relative_y + y_vel * dt
 
-
-
         # Convert New Relative Position back to Lat/Lon
         lat_new, lon_new = transform.meters_to_latlon_spherical(self.lat_central,
                                                                 self.lon_central,
                                                                 x_new, y_new)
+        
+        # Similarly, If lat or lon is nan from the transform step being too close to the central coordinate, revert back to central coordinate. 
+        #print("relative distance", relative_x, relative_y, x_vel, y_vel, dt)
+        #if lat_new == np.nan:
+        #    lat_new = self.lat_central
+        #if lon_new == np.nan:
+        #    lon_new = self.lon_central
+
         #print("x_new", x_new, "y_new", y_new)
         #print("pre_lat", Balloon.lat, "pre_lon", Balloon.lon)
         #print("lat_new", lat_new, "lon_new", lon_new)

@@ -1,9 +1,11 @@
 .idea/
+.vscode/
 
 PAPER_IMAGES/pics*
 
 RL_models*
 logs*
+aeolus*
 wandb
 FORECASTS
 BEST_MODELS
