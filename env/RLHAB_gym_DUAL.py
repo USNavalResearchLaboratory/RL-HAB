@@ -506,15 +506,18 @@ class FlowFieldEnv3d_DUAL(gym.Env):
         :rtype: tuple
         """
 
-        # Override for Baseline?
-        best_altitude, baseline_action = self.baseline_controller(self._get_obs())
-        reward = self.move_agent(baseline_action)
+        # For Baseline
+        #best_altitude, baseline_action = self.baseline_controller(self._get_obs())
+        #reward = self.move_agent(baseline_action)
+
+        # For Normal Training with suggested actions
+        reward = self.move_agent(action)
 
 
-        #reward = self.move_agent(action)
         observation = self._get_obs()
         info = self._get_info()
 
+        # Testing for imitation learning
         #best_altitude, baseline_action = self.baseline_controller(self._get_obs())
         #if baseline_action == action:
         #    reward += 1

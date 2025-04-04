@@ -44,7 +44,7 @@ env_params = {
         
 
         'era_netcdf': "../../../cds_api/2023-ERA5-Complete-SEA_renamed_64bit.nc",
-        'synth_netcdf': "../../../FLOW2D/forecasts/SYNTH-Jan-2023-SEA-UPDATED.nc",
+        'synth_netcdf': "../../../FLOW2D/forecasts/SYNTH-Mar-2023-SEA-UPDATED.nc",
 
         #New params 
         'timewarp': 3, # None, 1, 3, 6, or 12  (for simulating faster time intervals between Synth and ERA5)
@@ -59,15 +59,15 @@ env_params = {
 
         # Evaluation Parameters
         'eval_dir': "evaluation/EVALUATION_DATA4/",
-        'eval_type': "SINGLE-Synth", # DUAL or SINGLE or Baseline
+        'eval_type': "SINGLE_SYNTH", # DUAL or SINGLE or Baseline
         #'model_name': "RL_models_aeolus-Jan-COMPLETE/frosty-plasma-36/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-bearing/playful-sound-2/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Jan-COMPLETE-transform_fix/fast-oath-5/DQN_DUAL_COMPLETE_150000000_steps",
         #'model_name': "RL_models_aeolus-Sep-COMPLETE-tau_fix/brisk-durian-5/DQN_DUAL_COMPLETE_150000000_steps",
         'model_name': "aeolus-SEA-2023-Jul/lilac-field-3/DQN_DUAL_COMPLETE_150000000_steps",
         'eval_model': "lilac-field-3",
-        'model_month': "Jan",
-        'eval_month':  "Dec",
+        'model_month': "Mar",
+        'eval_month':  "Mar",
         'save_figure': False, #f or saving renderings
         'save_dir': "img/DUAL-jul_tau/"
 }

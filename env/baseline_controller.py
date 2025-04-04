@@ -181,8 +181,8 @@ def main(angle, eval_dir, sub_eval):
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    #env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode='human')
-    env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY = FORECAST_SYNTH, render_mode=None)
+    env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode='None')
+    #env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY = FORECAST_SYNTH, render_mode=None)
 
 
     NUM_EPS = 1000  # Number of episodes to evaulate on
@@ -232,11 +232,19 @@ def main(angle, eval_dir, sub_eval):
 
         print("episode length", total_steps, "Total Reward", total_reward, "TWR", info["twr"], "Rogue", rogue_status,
               "Rogue Percent", rogue_cumulative / (total_steps * 1.))
-        print("Coord", env.forecast_subset.start_time, env.forecast_subset.lat_central,env.forecast_subset.lon_central, env.Balloon.altitude)
-        
-        timestamps.append(env.forecast_subset.start_time)
-        lats.append(env.forecast_subset.lat_central)
-        lons.append(env.forecast_subset.lon_central)
+        #print("Coord", env.forecast_subset.start_time, env.forecast_subset.lat_central,env.forecast_subset.lon_central, env.Balloon.altitude) #SINGLE
+        print("Coord", env.forecast_subset_era5.start_time, env.forecast_subset_era5.lat_central,env.forecast_subset_era5.lon_central, env.Balloon.altitude) #DUAL
+
+        # SINGLE
+        #timestamps.append(env.forecast_subset.start_time)
+        #lats.append(env.forecast_subset.lat_central)
+        #lons.append(env.forecast_subset.lon_central)
+
+        #DUAL
+        timestamps.append(env.forecast_subset_era5.start_time)
+        lats.append(env.forecast_subset_era5.lat_central)
+        lons.append(env.forecast_subset_era5.lon_central)
+
         altitudes.append(env.Balloon.altitude)
 
     # Make Dataframe with overall scores
@@ -253,15 +261,15 @@ def main(angle, eval_dir, sub_eval):
                        'altitude': altitudes}
                        )
 
-    df.to_csv(eval_dir + sub_eval + "/SINGLE-SYNTH-baseline-on-" + env_params["eval_month"] +"-SEA.csv")
+    df.to_csv(eval_dir + sub_eval + "/DUAL-baseline-on-" + env_params["eval_month"] +"-SEA.csv")
     #df.to_csv(eval_dir + sub_eval + "/SINGLE_ERA5-baseline-on-" + env_params["eval_month"] +"-USA.csv")
     print(df)
 
 if __name__ == '__main__':
     angles = [0, 5, 10, 15, 20, 30, 40]
     eval_dir = "evaluation/EVALUATION_DATA4/"
-    sub_eval = "baseline_SINGLE_SYNTH"
-    #sub_eval = "baseline_DUAL"
+    #sub_eval = "baseline_SINGLE_SYNTH"
+    sub_eval = "baseline_DUAL"
 
     #for angle in angles:
     #    main(angle, eval_dir, sub_eval)
