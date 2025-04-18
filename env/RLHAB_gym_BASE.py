@@ -19,6 +19,16 @@ from utils.common import convert_range
 from utils.initialize_forecast import initialize_forecasts, initialize_forecasts_full
 
 class FlowFieldEnv3dBase(gym.Env):
+    """
+    A custom Gym environment simulating 3D flow fields for high-altitude balloons.
+
+    This environment allows the agent to control the altitude of a balloon while considering
+    two types of flow forecasts (ERA5 and synthetic). The goal is to perform station keeping
+    within a defined radius around a target location.
+
+
+    This base class needs to be extended by RLHAB_gym_SINGLE or RLHAB_gym_DUAL
+    """
     metadata = {'render.modes': ['human', 'rgb_array']}
 
     def __init__(self, days=1, render_mode=None):
