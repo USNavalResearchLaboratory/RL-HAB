@@ -12,6 +12,7 @@ from env.balloon import BalloonState, SimulatorState
 from env.balloon import AltitudeControlCommand as command
 from env.forecast_processing.forecast import Forecast, Forecast_Subset
 from env.forecast_processing.ForecastClassifier import ForecastClassifier
+from env.rewards import reward_google, reward_piecewise, reward_euclidian, reward_bearing
 from termcolor import colored
 
 from utils.common import convert_range
@@ -167,137 +168,7 @@ class FlowFieldEnv3dBase(gym.Env):
         # Return the best altitude found
         return best_altitude, action
 
-    def reward_google(self):
-        """
-        Google Loon's reward function from the paper `"Autonomous navigation of stratospheric balloons using reinforcement
-        learning" <https://www.nature.com/articles/s41586-020-2939-8>`_
-        """
-        distance_to_target = self.Balloon.distance
-        c_cliff = 0.4 # scale factor
-        tau = 100000 # m
-
-        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
-
-            if distance_to_target <= self.radius:
-                reward = 1
-                self.twr += 1
-                self.within_target = True
-            else:
-                #reward = np.exp(-0.01 * (distance_to_target - self.radius))
-                reward = c_cliff*2*np.exp((-1*(distance_to_target-self.radius)/tau))
-                self.within_target = False
-
-            #Add more regions to track,  Not doing anything with them yet,  just for metric analysis
-            if distance_to_target <= self.radius_inner:
-                self.twr_inner += 1
-
-            if distance_to_target <= self.radius_outer:
-                self.twr_outer += 1
-
-        else:
-            reward = 0
-
-        return reward
-
-    def reward_piecewise(self):
-        """
-        Compute the reward based on the balloon's distance to the target.
-
-        Returns:
-            float: Reward value.
-        """
-        distance_to_target = self.Balloon.distance
-        c_cliff = 0.4 # scale factor
-        tau = 100000 # m
-
-        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
-
-            if distance_to_target <= self.radius_inner:
-                reward = 2
-                self.twr += 1
-                self.within_target = True
-            elif distance_to_target <= self.radius and distance_to_target > self.radius_inner:
-                reward = 1
-                self.twr += 1
-                self.within_target = True
-            else:
-                # reward = np.exp(-0.01 * (distance_to_target - self.radius))
-                reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
-                self.within_target = False
-
-            # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
-            if distance_to_target <= self.radius_inner:
-                self.twr_inner += 1
-
-            if distance_to_target <= self.radius_outer:
-                self.twr_outer += 1
-
-        else:
-            reward = 0
-
-        return reward
-
-    def reward_euclidian(self):
-        """
-        Linear Euclidian reward within target region, google cliff function for outside of radius
-
-        """
-
-        distance_to_target = self.Balloon.distance
-        c_cliff = 0.4 # scale factor
-        tau = 100000 # m
-        self.within_target = False #by default
-
-        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
-
-            if distance_to_target <= self.radius:
-                #Normalize distance within radius,  for a maximum score of 2.
-                reward = convert_range(distance_to_target,0,self.radius, 2, 1)
-                self.twr += 1
-                self.within_target = True
-
-            else:
-                # reward = np.exp(-0.01 * (distance_to_target - self.radius))
-                reward = c_cliff * 2 * np.exp((-1 * (distance_to_target - self.radius) / tau))
-                self.within_target = False
-
-            # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
-            if distance_to_target <= self.radius_inner:
-                self.twr_inner += 1
-
-            if distance_to_target <= self.radius_outer:
-                self.twr_outer += 1
-
-        #no reward for going outside of altitude control bounds
-        else:
-            reward = 0
-
-        #print(self.within_target, "Reward", reward)
-
-        return reward
-        
-    def reward_bearing(self):
-        "Trying a new reward strategy"
-
-        distance_to_target = self.Balloon.distance
-
-        if self.Balloon.altitude >= env_params['alt_min'] and self.Balloon.altitude <= env_params['alt_max']:
-
-            if distance_to_target <= self.radius:
-                self.twr += 1
-                self.within_target = True
-            # Add more regions to track,  Not doing anything with them yet,  just for metric analysis
-            if distance_to_target <= self.radius_inner:
-                self.twr_inner += 1
-
-            if distance_to_target <= self.radius_outer:
-                self.twr_outer += 1
-            else:
-                self.within_target = False
-
-            reward = convert_range(self.Balloon.rel_bearing, 0, np.pi, 1, 0)
-
-            return reward
+    
         
     def calculate_relative_angle(self, x, y, goal_x, goal_y, heading_x, heading_y):
         """
@@ -427,27 +298,26 @@ class FlowFieldEnv3dBase(gym.Env):
 
         # For Normal Training with suggested actions
         reward = self.move_agent(action)
-
-
         observation = self._get_obs()
         info = self._get_info()
 
-        # Testing for imitation learning
-        #best_altitude, baseline_action = self.baseline_controller(self._get_obs())
-        #if baseline_action == action:
-        #    reward += 1
+        # Initialize twr_data with current values
+        twr_data = {
+            "twr": self.twr,
+            "twr_inner": self.twr_inner,
+            "twr_outer": self.twr_outer
+        }
 
-        reward += self.reward_piecewise()
-        #print(reward)
+        reward_step, self.within_target = reward_piecewise(
+            self.Balloon, self.radius, self.radius_inner, self.radius_outer, twr_data)       
+        reward += reward_step
 
-        #print(self.reward_piecewise(), reward )
-        #print(self.radius)
-        #reward += self.reward_bearing()
+        # Update instance tracking variables
+        self.twr = twr_data["twr"]
+        self.twr_inner = twr_data["twr_inner"]
+        self.twr_outer = twr_data["twr_outer"]
 
         done = self.SimulatorState.step(self.Balloon)
-
-        #if done:
-        #    print(observation, reward, done, False, info)
 
         return observation, reward, done, False, info
 
