@@ -11,12 +11,6 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from datetime import datetime
 from stable_baselines3.common.env_util import make_vec_env
 
-import wandb
-from wandb.integration.sb3 import WandbCallback
-from env.forecast_processing.forecast import Forecast
-
-#from FlowEnv3D_SK_relative import FlowFieldEnv3d
-#from FlowEnv3D_SK_relative_kinematics import FlowFieldEnv3d
 from env.RLHAB_gym_SINGLE import FlowFieldEnv3d_SINGLE
 from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 
@@ -27,8 +21,15 @@ from callbacks.ForecastScoreDecayCallback import ForecastScoreDecayCallback
 from callbacks.TimewarpCallback import TimewarpCallback
 from env.config.env_config import env_params
 from utils.initialize_forecast import initialize_forecasts
+from types import SimpleNamespace
+
+# Optional Wandb integration
+import wandb
+from wandb.integration.sb3 import WandbCallback
 
 import git
+
+use_wandb = False
 
 repo = git.Repo(search_parent_directories=True)
 branch = repo.head.ref.name
@@ -51,6 +52,7 @@ if not os.path.exists(logdir):
 # https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
 policy_kwargs = dict(net_arch=[75, 275, 500, 500, 425, 500, 125, 250])
 
+# Override Default SB3 DQN hyperparameters
 config = {
     "total_timesteps": int(150e6),
     'hyperparameters': {
@@ -75,23 +77,27 @@ config = {
     "NOTES": "Testing Rogue functionality. Using January with serene meadow hyperparams"
 }
 
-run = wandb.init(
-    #anonymous="allow",
-    project="DQN-DUAL-ROGUE-TEST",
-    config=config,
-    sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
-    # monitor_gym=True,  # auto-upload the videos of agents playing the game
-    save_code=True,  # optional
-)
+
+
+
+if use_wandb:
+    run = wandb.init(
+        #anonymous="allow",
+        project="DQN-DUAL-ROGUE-TEST",
+        config=config,
+        sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+        # monitor_gym=True,  # auto-upload the videos of agents playing the game
+        save_code=True,  # optional
+    )
+else:
+    run = SimpleNamespace(name=run_id)
 
 #Training Parameters
-
 n_procs = 100
 SAVE_FREQ = int(5e6/n_procs)
 
-# Import Forecasts
+# Import Forecasts AND Initialize environment
 FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
-
 env = make_vec_env(lambda: FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH), n_envs=n_procs)
 
 # Define the checkpoint callback to save the model every 1000 steps
@@ -116,23 +122,41 @@ model = DQN(env=env,
 # MAKE SURE TO CHANGE THIS STUFF BACK! reset_timesteps = false
 #########################
 
+# Initialize callbacks
+callbacks = [
+    checkpoint_callback,
+    TWRCallback(moving_avg_length=1000, radius='twr'),
+    TWRCallback(moving_avg_length=1000, radius='twr_inner'),
+    TWRCallback(moving_avg_length=1000, radius='twr_outer'),
+    RogueCallback(),
+    FlowChangeCallback(),
+    TimewarpCallback(),
+    ForecastScoreDecayCallback(
+        initial_percent=0.8,
+        final_percent=0.01,
+        decay_rate=1.0,
+        total_timesteps=config["total_timesteps"]
+    )
+]
+
+if use_wandb:
+    callbacks.append(
+        WandbCallback(
+            gradient_save_freq=1000,
+            model_save_path=f"RL_models/{run.name}",
+            verbose=1
+        )
+    )
+
 model.learn(
     total_timesteps=config["total_timesteps"],
     #tb_log_name=run.name,  #added this for restarting a training
     log_interval=100,
-    callback=[WandbCallback(
-        gradient_save_freq=1000,
-        model_save_path=f"RL_models_synth/{run.name}",
-        verbose=1), checkpoint_callback,
-        TWRCallback(moving_avg_length=1000, radius='twr'),
-        TWRCallback(moving_avg_length=1000, radius='twr_inner'),
-        TWRCallback(moving_avg_length=1000, radius='twr_outer'),
-        RogueCallback(),
-        FlowChangeCallback(),
-        TimewarpCallback(),
-        ForecastScoreDecayCallback(initial_percent=0.8, final_percent=0.01, decay_rate=1.0,
-                                   total_timesteps=config["total_timesteps"])],
+    callback=callbacks,
     progress_bar=True, reset_num_timesteps=False #added this for restarting a training
-)
+    )   
 
-run.finish()
+if use_wandb:
+    run.finish()
+else:
+    pass

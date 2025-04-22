@@ -1,5 +1,5 @@
 """
-THis script shows an examples to generate a CSV file with forecast scores for the same coordinate in a Synth and ERA5 forecast.
+This script shows an examples to generate a CSV file with forecast scores for the same coordinate in a Synth and ERA5 forecast.
 """
 
 from env.forecast_processing.forecast import Forecast, Forecast_Subset

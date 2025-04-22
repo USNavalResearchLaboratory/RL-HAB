@@ -90,47 +90,6 @@ class FlowFieldEnv3d_SINGLE(FlowFieldEnv3dBase):
     def get_flow_forecast(self):
         return self.forecast_subset
 
-    '''
-    def move_agent(self, action):
-        # Look up flow at current 3D position before altitude change. Update Position and Flow State
-        self.Balloon.lat,self.Balloon.lon,self.Balloon.x_vel,self.Balloon.y_vel, self.Balloon.x, self.Balloon.y = self.forecast_subset.getNewCoord(self.Balloon, self.SimulatorState, self.dt)
-
-        self.Balloon.distance = np.sqrt((self.Balloon.x - self.goal["x"]) ** 2 + (self.Balloon.y - self.goal["y"]) ** 2)
-        self.Balloon.rel_bearing = self.calculate_relative_angle(self.Balloon.x, self.Balloon.y,
-                                                                 self.goal["x"], self.goal["y"],
-                                                                 self.Balloon.x_vel, self.Balloon.y_vel)
-
-        self.Balloon.rel_wind_column = self.calculate_relative_wind_column(self.forecast_subset)
-
-        # Apply altitude change given action
-        if action == command.UP:  # up
-            # self.Balloon.z_vel = 2  # m/s
-            self.Balloon.z_vel = np.random.normal(loc=env_params['ascent_rate_mean'],
-                                                  scale=env_params['ascent_rate_std_dev'])
-        elif action == command.DOWN:  # down
-            # self.Balloon.z_vel = -3  # m/s
-            self.Balloon.z_vel = -np.random.normal(loc=env_params['descent_rate_mean'],
-                                                   scale=env_params['descent_rate_std_dev'])
-        elif action == command.STAY:  # stay
-            self.Balloon.z_vel = 0
-
-        # Update Altitude and Last Action. Check for Altitude going out of bounds and clip.
-        self.Balloon.altitude = np.clip(self.Balloon.altitude + self.Balloon.z_vel * self.dt,
-                                        env_params["alt_min"],env_params["alt_max"])
-        self.Balloon.last_action = action
-
-        if self.Balloon.distance > env_params["rel_dist"]:
-            if not self.rogue_status:
-                self.rogue_step_trigger = self.total_steps
-
-            self.rogue_count += 1
-            self.rogue_status = True
-
-        self.total_steps += 1
-
-        return 0
-    '''
-
 def main():
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()

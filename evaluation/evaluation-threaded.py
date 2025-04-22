@@ -1,3 +1,7 @@
+"""
+Example on how to run 12 months of evaulation for an entire year in individual threads
+"""
+
 import subprocess
 import env.config.env_config as env_config
 from env.config.env_config import env_params
@@ -16,13 +20,13 @@ months_H2 = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 #screen -ls | grep evaluate_ | awk '{print $1}' | xargs -I {} screen -S {} -X quit
 
 # Command template
-script = "evaluation/evaluate_DUAL.py"
+script = "evaluation/evaluate.py"
 
 for month in months_H1:
     #print(month)
     eval_month = month
     era_netcdf = env_params['era_netcdf']
-    synth_netcdf = f"../../../FLOW2D/forecasts/SYNTH-{month}-2023-SEA-UPDATED.nc"
+    synth_netcdf = f"../../../FLOW2D/forecasts/SYNTH-{month}-2023-USA-UPDATED.nc"
 
     # Create a unique screen session name for each month
     session_name = f"evaluate_{month.lower()}"

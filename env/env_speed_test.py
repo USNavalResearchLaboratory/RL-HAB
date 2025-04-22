@@ -1,5 +1,9 @@
 # sphinx-apidoc-skip
 
+'''
+Test training speed without calling checkpoint_callback() and saving any models or logs
+'''
+
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3 import DQN
 from callbacks.TWRCallback import TWRCallback
@@ -13,7 +17,6 @@ from env.RLHAB_gym_DUAL import FlowFieldEnv3d_DUAL
 from utils.initialize_forecast import initialize_forecasts
 
 import git
-
 
 repo = git.Repo(search_parent_directories=True)
 branch = repo.head.ref.name

@@ -12,7 +12,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 eval_months = [ ("Jan" , "frosty-plasma", "36"), ("Apr" , "ethereal-yogurt", "14"),("Jul" , "deep-fire", "2"), ("Sep", "toasty-glade","17")]
-#eval_months = [ ("Jan" , "dainty-water"),("Apr" , "effortless-blaze"),("Jul" , "hopeful-pyramid"), ("Sep", "pretty-cosmos")]
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 colors = [ "blue", "green", "orange", "red", "limegreen","black", "brown", "gray", "purple", "cyan", "pink"]
 

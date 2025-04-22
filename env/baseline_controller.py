@@ -181,11 +181,11 @@ def main(angle, eval_dir, sub_eval):
     # Import Forecasts
     FORECAST_SYNTH, FORECAST_ERA5, forecast_subset_era5, forecast_subset_synth = initialize_forecasts()
 
-    env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode='None')
+    env = FlowFieldEnv3d_DUAL(FORECAST_ERA5=FORECAST_ERA5, FORECAST_SYNTH=FORECAST_SYNTH, render_mode=env_params['render_mode'] )
     #env = FlowFieldEnv3d_SINGLE(FORECAST_PRIMARY = FORECAST_SYNTH, render_mode=None)
 
 
-    NUM_EPS = 1000  # Number of episodes to evaulate on
+    NUM_EPS = env_params['num_evals']   # Number of episodes to evaulate on
 
     for i in range(0, NUM_EPS):
         total_steps = 0
@@ -194,7 +194,6 @@ def main(angle, eval_dir, sub_eval):
 
         obs, info = env.reset()
         total_reward = 0
-        print(env.render_mode)
         for step in range( env_params["episode_length"]):
 
             #best_altitude, action = baseline_controller_thresholded(obs, np.radians(angle))
