@@ -18,10 +18,7 @@ BEST_MODELS
 img/*/
 
 forecasts/*
-#!forecasts/2023-ERA5-NORTH_renamed-condensed_64bit.nc
-#!forecasts/ERA5-H2-2023-USA.nc
-!forecasts/SYNTH-Jul-2023-USA-UPDATED.nc
-#!forecasts/SYNTH-Jan-2023-USA-UPDATED.nc
+*.nc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
