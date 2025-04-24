@@ -181,5 +181,3 @@ Some example output from hyperparameter tuning with Optuna:
 * **Tristan Schuler** - *U.S. Naval Research Laboratory*
 * **Chinthan Prasad** - *U.S. Naval Research Laboratory*
 * **Georgiy Kiselev** - *U.S. Naval Research Laboratory (NREIP Intern)*
-
-Testing 
