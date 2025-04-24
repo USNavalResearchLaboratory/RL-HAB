@@ -1,0 +1,568 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rendering &mdash; RLHAB 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Forecast Processing" href="forecast_processing.html" />
+    <link rel="prev" title="Baseline Controller" href="baseline_controller.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            RLHAB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About RL HAB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forecasts.html">Preparing Forecast Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env.html">Environment Module (<cite>env</cite> Directory)</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="RLHAB_gym_DUAL.html">RLHAB Gym Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="balloon.html">Balloon and Simulator State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="baseline_controller.html">Baseline Controller</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Rendering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-rendering.Trajectory3DPlotter">rendering.Trajectory3DPlotter module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-rendering.renderer">rendering.renderer module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-rendering.renderer_old">rendering.renderer_old module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-rendering.renderertriple">rendering.renderertriple module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="forecast_processing.html">Forecast Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../citing.html">Citing RLHAB</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">RLHAB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API</a></li>
+      <li class="breadcrumb-item active">Rendering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/API/rendering.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="rendering">
+<h1>Rendering<a class="headerlink" href="#rendering" title="Link to this heading"></a></h1>
+<section id="module-rendering.Trajectory3DPlotter">
+<span id="rendering-trajectory3dplotter-module"></span><h2>rendering.Trajectory3DPlotter module<a class="headerlink" href="#module-rendering.Trajectory3DPlotter" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rendering.Trajectory3DPlotter.</span></span><span class="sig-name descname"><span class="pre">Trajectory3DPlotter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">episode_length</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handles the 3D visualization of balloon trajectories, including altitude plots and goal radius visualization.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.ax">
+<span class="sig-name descname"><span class="pre">ax</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.ax" title="Link to this definition"></a></dt>
+<dd><p>3D axes object for plotting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>matplotlib.axes._axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius">
+<span class="sig-name descname"><span class="pre">radius</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius" title="Link to this definition"></a></dt>
+<dd><p>Radius of the target zone in meters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius_inner">
+<span class="sig-name descname"><span class="pre">radius_inner</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius_inner" title="Link to this definition"></a></dt>
+<dd><p>Inner radius for visualizing proximity to the goal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius_outer">
+<span class="sig-name descname"><span class="pre">radius_outer</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.radius_outer" title="Link to this definition"></a></dt>
+<dd><p>Outer radius for visualizing extended proximity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.goal">
+<span class="sig-name descname"><span class="pre">goal</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.goal" title="Link to this definition"></a></dt>
+<dd><p>Dictionary containing the goal’s x and y coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.dt">
+<span class="sig-name descname"><span class="pre">dt</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.dt" title="Link to this definition"></a></dt>
+<dd><p>Time step of the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.episode_length">
+<span class="sig-name descname"><span class="pre">episode_length</span></span><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.episode_length" title="Link to this definition"></a></dt>
+<dd><p>Total length of the episode in steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.clear" title="Link to this definition"></a></dt>
+<dd><p>Clear the plot for reinitialization.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.draw">
+<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.draw" title="Link to this definition"></a></dt>
+<dd><p>Redraw the plot after updates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.plot_circle">
+<span class="sig-name descname"><span class="pre">plot_circle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'g--'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter.plot_circle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.plot_circle" title="Link to this definition"></a></dt>
+<dd><p>Plot a circle at the centered base of the the XY plane</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes._axes.Axes</em>) – Axes object for plotting.</p></li>
+<li><p><strong>center_x</strong> (<em>float</em>) – X-coordinate of the circle center.</p></li>
+<li><p><strong>center_y</strong> (<em>float</em>) – Y-coordinate of the circle center.</p></li>
+<li><p><strong>radius</strong> (<em>float</em>) – Radius of the circle.</p></li>
+<li><p><strong>plane</strong> (<em>str</em><em>, </em><em>optional</em>) – Plane in which to plot the circle (‘xy’ by default).</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – Color and style of the circle.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Balloon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goal</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.update" title="Link to this definition"></a></dt>
+<dd><p>Update the trajectory plot with the current state and path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Balloon</strong> (<em>object</em>) – Current state of the balloon, including x, y, and altitude.</p></li>
+<li><p><strong>path</strong> (<em>numpy.ndarray</em>) – Array of x, y, altitude coordinates representing the path.</p></li>
+<li><p><strong>goal</strong> (<em>dict</em>) – Dictionary containing the goal’s x and y coordinates.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.Trajectory3DPlotter.Trajectory3DPlotter.update_altitude">
+<span class="sig-name descname"><span class="pre">update_altitude</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/Trajectory3DPlotter.html#Trajectory3DPlotter.update_altitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter.update_altitude" title="Link to this definition"></a></dt>
+<dd><p>Update the altitude line plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>numpy.ndarray</em>) – Array of x, y, altitude coordinates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-rendering.renderer">
+<span id="rendering-renderer-module"></span><h2>rendering.renderer module<a class="headerlink" href="#module-rendering.renderer" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="rendering.renderer.MatplotlibRenderer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rendering.renderer.</span></span><span class="sig-name descname"><span class="pre">MatplotlibRenderer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Forecast_visualizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinate_system</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'geographic'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer.html#MatplotlibRenderer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer.MatplotlibRenderer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer.MatplotlibRenderer.init_plot_geographic">
+<span class="sig-name descname"><span class="pre">init_plot_geographic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer.html#MatplotlibRenderer.init_plot_geographic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer.MatplotlibRenderer.init_plot_geographic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer.MatplotlibRenderer.is_timestamp_in_interval">
+<span class="sig-name descname"><span class="pre">is_timestamp_in_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer.html#MatplotlibRenderer.is_timestamp_in_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer.MatplotlibRenderer.is_timestamp_in_interval" title="Link to this definition"></a></dt>
+<dd><p>Maybe move this to utils</p>
+<p>Checks if the provided timestamp is in intervals of 3, 6, or 12 hours..</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer.MatplotlibRenderer.render">
+<span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'human'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer.html#MatplotlibRenderer.render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer.MatplotlibRenderer.render" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer.MatplotlibRenderer.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Balloon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SimulatorState</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer.html#MatplotlibRenderer.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer.MatplotlibRenderer.reset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-rendering.renderer_old">
+<span id="rendering-renderer-old-module"></span><h2>rendering.renderer_old module<a class="headerlink" href="#module-rendering.renderer_old" title="Link to this heading"></a></h2>
+<p>This module is excluded from the index.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="rendering.renderer_old.MatplotlibRenderer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rendering.renderer_old.</span></span><span class="sig-name descname"><span class="pre">MatplotlibRenderer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Forecast_visualizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinate_system</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'geographic'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer_old.html#MatplotlibRenderer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer_old.MatplotlibRenderer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer_old.MatplotlibRenderer.init_plot_geographic">
+<span class="sig-name descname"><span class="pre">init_plot_geographic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer_old.html#MatplotlibRenderer.init_plot_geographic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer_old.MatplotlibRenderer.init_plot_geographic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer_old.MatplotlibRenderer.plot_circle">
+<span class="sig-name descname"><span class="pre">plot_circle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'g--'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer_old.html#MatplotlibRenderer.plot_circle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer_old.MatplotlibRenderer.plot_circle" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer_old.MatplotlibRenderer.render">
+<span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'human'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer_old.html#MatplotlibRenderer.render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer_old.MatplotlibRenderer.render" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderer_old.MatplotlibRenderer.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Balloon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SimulatorState</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderer_old.html#MatplotlibRenderer.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderer_old.MatplotlibRenderer.reset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-rendering.renderertriple">
+<span id="rendering-renderertriple-module"></span><h2>rendering.renderertriple module<a class="headerlink" href="#module-rendering.renderertriple" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rendering.renderertriple.</span></span><span class="sig-name descname"><span class="pre">MatplotlibRendererTriple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Forecast_visualizer_ERA5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Forecast_visualizer_SYNTH</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinate_system</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'geographic'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handles the visualization of ERA5 and Synthetic forecasts using 3D quiver plots and trajectory visualization.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.coordinate_system">
+<span class="sig-name descname"><span class="pre">coordinate_system</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.coordinate_system" title="Link to this definition"></a></dt>
+<dd><p>Coordinate system used for visualization (‘geographic’ or ‘cartesian’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.Forecast_visualizer">
+<span class="sig-name descname"><span class="pre">Forecast_visualizer</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.Forecast_visualizer" title="Link to this definition"></a></dt>
+<dd><p>Visualizer for ERA5 forecasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.Forecast_visualizer_synth">
+<span class="sig-name descname"><span class="pre">Forecast_visualizer_synth</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.Forecast_visualizer_synth" title="Link to this definition"></a></dt>
+<dd><p>Visualizer for synthetic forecasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.render_count">
+<span class="sig-name descname"><span class="pre">render_count</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.render_count" title="Link to this definition"></a></dt>
+<dd><p>Frequency of rendering updates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.quiver_skip">
+<span class="sig-name descname"><span class="pre">quiver_skip</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.quiver_skip" title="Link to this definition"></a></dt>
+<dd><p>Frequency of skipping quivers in plots for performance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.render_mode">
+<span class="sig-name descname"><span class="pre">render_mode</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.render_mode" title="Link to this definition"></a></dt>
+<dd><p>Rendering mode (‘human’, etc.).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.render_timestamp">
+<span class="sig-name descname"><span class="pre">render_timestamp</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.render_timestamp" title="Link to this definition"></a></dt>
+<dd><p>Timestamp for ERA5 rendering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.datetime64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.render_timestamp_synth">
+<span class="sig-name descname"><span class="pre">render_timestamp_synth</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.render_timestamp_synth" title="Link to this definition"></a></dt>
+<dd><p>Timestamp for synthetic rendering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.datetime64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.dt">
+<span class="sig-name descname"><span class="pre">dt</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.dt" title="Link to this definition"></a></dt>
+<dd><p>Time step of the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.episode_length">
+<span class="sig-name descname"><span class="pre">episode_length</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.episode_length" title="Link to this definition"></a></dt>
+<dd><p>Total steps in an episode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.goal">
+<span class="sig-name descname"><span class="pre">goal</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.goal" title="Link to this definition"></a></dt>
+<dd><p>Goal position (x, y).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.radius">
+<span class="sig-name descname"><span class="pre">radius</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.radius" title="Link to this definition"></a></dt>
+<dd><p>Station-keeping radius.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.radius_inner">
+<span class="sig-name descname"><span class="pre">radius_inner</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.radius_inner" title="Link to this definition"></a></dt>
+<dd><p>Inner radius for goal visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.radius_outer">
+<span class="sig-name descname"><span class="pre">radius_outer</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.radius_outer" title="Link to this definition"></a></dt>
+<dd><p>Outer radius for goal visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.trajectory_plotter">
+<span class="sig-name descname"><span class="pre">trajectory_plotter</span></span><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.trajectory_plotter" title="Link to this definition"></a></dt>
+<dd><p>Handles trajectory visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rendering.Trajectory3DPlotter.Trajectory3DPlotter" title="rendering.Trajectory3DPlotter.Trajectory3DPlotter">Trajectory3DPlotter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.init_plot_geographic">
+<span class="sig-name descname"><span class="pre">init_plot_geographic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple.init_plot_geographic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.init_plot_geographic" title="Link to this definition"></a></dt>
+<dd><p>Initialize the plot layout for geographic visualization.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.is_timestamp_in_interval">
+<span class="sig-name descname"><span class="pre">is_timestamp_in_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple.is_timestamp_in_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.is_timestamp_in_interval" title="Link to this definition"></a></dt>
+<dd><p>Check if a timestamp falls within a specified interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timestamp</strong> (<em>datetime.datetime</em>) – Timestamp to check.</p></li>
+<li><p><strong>interval</strong> (<em>int</em>) – Interval in hours.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if timestamp falls within the interval, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.render">
+<span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'human'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple.render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.render" title="Link to this definition"></a></dt>
+<dd><p>Render the simulation environment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Rendering mode (‘human’, etc.).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Balloon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SimulatorState</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.reset" title="Link to this definition"></a></dt>
+<dd><p>Reset the renderer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>goal</strong> (<em>dict</em>) – Goal position (x, y).</p></li>
+<li><p><strong>Balloon</strong> (<em>object</em>) – Balloon state object.</p></li>
+<li><p><strong>SimulatorState</strong> (<em>object</em>) – Simulator state object.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rendering.renderertriple.MatplotlibRendererTriple.reset_forecast_visualization">
+<span class="sig-name descname"><span class="pre">reset_forecast_visualization</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/rendering/renderertriple.html#MatplotlibRendererTriple.reset_forecast_visualization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#rendering.renderertriple.MatplotlibRendererTriple.reset_forecast_visualization" title="Link to this definition"></a></dt>
+<dd><p>Reset the forecast visualization for ERA5 and Synthetic forecasts.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="baseline_controller.html" class="btn btn-neutral float-left" title="Baseline Controller" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="forecast_processing.html" class="btn btn-neutral float-right" title="Forecast Processing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Tristan Schuler, Chinthan Prasad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

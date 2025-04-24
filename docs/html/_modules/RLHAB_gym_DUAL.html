@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RLHAB_gym_DUAL &mdash; RLHAB 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            RLHAB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About RL HAB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../forecasts.html">Preparing Forecast Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env.html">Environment Module (<cite>env</cite> Directory)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../API/modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../citing.html">Citing RLHAB</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">RLHAB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">RLHAB_gym_DUAL</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for RLHAB_gym_DUAL</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">env.RLHAB_gym_BASE</span> <span class="kn">import</span> <span class="n">FlowFieldEnv3dBase</span>
+<span class="kn">from</span> <span class="nn">env.config.env_config</span> <span class="kn">import</span> <span class="n">env_params</span>
+<span class="kn">from</span> <span class="nn">env.rendering.renderertriple</span> <span class="kn">import</span> <span class="n">MatplotlibRendererTriple</span>
+<span class="kn">from</span> <span class="nn">env.forecast_processing.forecast</span> <span class="kn">import</span> <span class="n">Forecast_Subset</span>
+<span class="kn">from</span> <span class="nn">env.forecast_processing.forecast_visualizer</span> <span class="kn">import</span> <span class="n">ForecastVisualizer</span>
+<span class="kn">from</span> <span class="nn">env.balloon</span> <span class="kn">import</span> <span class="n">BalloonState</span><span class="p">,</span> <span class="n">SimulatorState</span>
+<span class="kn">from</span> <span class="nn">env.balloon</span> <span class="kn">import</span> <span class="n">AltitudeControlCommand</span> <span class="k">as</span> <span class="n">command</span>
+<span class="kn">from</span> <span class="nn">utils.initialize_forecast</span> <span class="kn">import</span> <span class="n">initialize_forecasts</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">gymnasium</span> <span class="kn">import</span> <span class="n">spaces</span>
+
+
+<div class="viewcode-block" id="FlowFieldEnv3d_DUAL">
+<a class="viewcode-back" href="../API/RLHAB_gym_DUAL.html#RLHAB_gym_DUAL.FlowFieldEnv3d_DUAL">[docs]</a>
+<span class="k">class</span> <span class="nc">FlowFieldEnv3d_DUAL</span><span class="p">(</span><span class="n">FlowFieldEnv3dBase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">FORECAST_ERA5</span><span class="p">,</span> <span class="n">FORECAST_SYNTH</span><span class="p">,</span> <span class="n">render_style</span><span class="o">=</span><span class="s2">&quot;direction&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">FORECAST_ERA5</span> <span class="o">=</span> <span class="n">FORECAST_ERA5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FORECAST_SYNTH</span> <span class="o">=</span> <span class="n">FORECAST_SYNTH</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_style</span> <span class="o">=</span> <span class="n">render_style</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span> <span class="o">=</span> <span class="n">Forecast_Subset</span><span class="p">(</span><span class="n">FORECAST_ERA5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span> <span class="o">=</span> <span class="n">Forecast_Subset</span><span class="p">(</span><span class="n">FORECAST_SYNTH</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">randomize_coord</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">np_rng</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">subset_forecast</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="o">.</span><span class="n">assign_coord</span><span class="p">(</span>
+            <span class="n">lat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span>
+            <span class="n">lon</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="o">.</span><span class="n">subset_forecast</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_mode</span> <span class="o">==</span> <span class="s2">&quot;human&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vis_era5</span> <span class="o">=</span> <span class="n">ForecastVisualizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vis_era5</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">vis_synth</span> <span class="o">=</span> <span class="n">ForecastVisualizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vis_synth</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">renderer</span> <span class="o">=</span> <span class="n">MatplotlibRendererTriple</span><span class="p">(</span>
+                <span class="n">Forecast_visualizer_ERA5</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vis_era5</span><span class="p">,</span>
+                <span class="n">Forecast_visualizer_SYNTH</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vis_synth</span><span class="p">,</span>
+                <span class="n">render_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">render_mode</span><span class="p">,</span>
+                <span class="n">radius</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span>
+                <span class="n">coordinate_system</span><span class="o">=</span><span class="s2">&quot;geographic&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">num_levels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">pressure_levels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observation_space</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_obs_space</span><span class="p">(</span><span class="n">num_levels</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="FlowFieldEnv3d_DUAL.reset">
+<a class="viewcode-back" href="../API/RLHAB_gym_DUAL.html#RLHAB_gym_DUAL.FlowFieldEnv3d_DUAL.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_scores</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span> <span class="c1"># dummy score to trigger randomizing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_score</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c1"># dummy score to trigger randomizing</span>
+
+        <span class="c1"># For not including bad forecasts (score of 0):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_score</span> <span class="o">&lt;</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;forecast_score_threshold&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">randomize_coord</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">np_rng</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">subset_forecast</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+
+            <span class="c1"># Then assign coord to synth winds</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="o">.</span><span class="n">assign_coord</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span>
+                                                    <span class="n">lon</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span>
+                                                    <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span><span class="o">.</span><span class="n">subset_forecast</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ForecastClassifier</span><span class="o">.</span><span class="n">determine_OW_Rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="p">)</span>
+
+
+        <span class="c1">#Reset custom metrics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">within_target</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rogue_status</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rogue_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rogue_step_trigger</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span>
+
+        <span class="c1"># Reset Balloon State to forecast subset central point.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span> <span class="o">=</span> <span class="n">BalloonState</span><span class="p">(</span><span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span>
+                                    <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span>
+                                    <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                                    <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                                    <span class="n">altitude</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;alt_min&#39;</span><span class="p">],</span><span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;alt_max&#39;</span><span class="p">]))</span>
+                                    <span class="p">)</span>
+
+        <span class="c1"># Reset simulator state (timestamp to forecast subset start time,  counts back to 0)                            </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span> <span class="o">=</span> <span class="n">SimulatorState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+
+        <span class="c1"># Do an artificial move to get some initial velocity, disntance, and bearing values, then reset back to initial coordinates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">move_agent</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#Reset total steps for the initialization &quot;move&quot;</span>
+
+        <span class="c1"># Synth and ERA5 don&#39;t amtter here because the variables should be identical</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Relative wind column is still era5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span><span class="o">.</span><span class="n">rel_wind_column</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_relative_wind_column</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_mode</span> <span class="o">==</span> <span class="s2">&quot;human&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">renderer</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">goal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Balloon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimulatorState</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vis_era5</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+
+        <span class="c1"># Reset custom metrics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">twr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">twr_inner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">twr_outer</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">within_target</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_obs</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_info</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="FlowFieldEnv3d_DUAL.get_motion_forecast">
+<a class="viewcode-back" href="../API/RLHAB_gym_DUAL.html#RLHAB_gym_DUAL.FlowFieldEnv3d_DUAL.get_motion_forecast">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_motion_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_synth</span></div>
+
+
+<div class="viewcode-block" id="FlowFieldEnv3d_DUAL.get_flow_forecast">
+<a class="viewcode-back" href="../API/RLHAB_gym_DUAL.html#RLHAB_gym_DUAL.FlowFieldEnv3d_DUAL.get_flow_forecast">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_flow_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_subset_era5</span></div>
+</div>
+
+    
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../API/RLHAB_gym_DUAL.html#RLHAB_gym_DUAL.main">[docs]</a>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="c1"># Import Forecasts</span>
+    <span class="n">FORECAST_SYNTH</span><span class="p">,</span> <span class="n">FORECAST_ERA5</span><span class="p">,</span> <span class="n">forecast_subset_era5</span><span class="p">,</span> <span class="n">forecast_subset_synth</span> <span class="o">=</span> <span class="n">initialize_forecasts</span><span class="p">()</span>
+
+    <span class="n">env</span> <span class="o">=</span> <span class="n">FlowFieldEnv3d_DUAL</span><span class="p">(</span><span class="n">FORECAST_ERA5</span><span class="o">=</span><span class="n">FORECAST_ERA5</span><span class="p">,</span> <span class="n">FORECAST_SYNTH</span><span class="o">=</span><span class="n">FORECAST_SYNTH</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;render_mode&#39;</span><span class="p">])</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="n">total_reward</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span> <span class="n">env_params</span><span class="p">[</span><span class="s2">&quot;episode_length&quot;</span><span class="p">]):</span>
+
+            <span class="c1"># For random actions</span>
+            <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+            <span class="n">total_reward</span> <span class="o">+=</span> <span class="n">reward</span>
+
+            <span class="k">if</span> <span class="n">env_params</span><span class="p">[</span><span class="s1">&#39;render_mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;human&quot;</span><span class="p">:</span>
+                <span class="n">env</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total reward:&quot;</span><span class="p">,</span> <span class="n">total_reward</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">execution_time</span> <span class="o">=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Execution time:&quot;</span><span class="p">,</span> <span class="n">execution_time</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Tristan Schuler, Chinthan Prasad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

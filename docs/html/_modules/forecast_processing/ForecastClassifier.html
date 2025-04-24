@@ -1,0 +1,271 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>forecast_processing.ForecastClassifier &mdash; RLHAB 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            RLHAB
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About RL HAB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../forecasts.html">Preparing Forecast Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../env.html">Environment Module (<cite>env</cite> Directory)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../API/modules.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../citing.html">Citing RLHAB</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">RLHAB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">forecast_processing.ForecastClassifier</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for forecast_processing.ForecastClassifier</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Simple Algorithm to classify forecasts based on number of opposing winds.  Similar to method used in RadioWinds.</span>
+
+<span class="sd">For now, we are assuming looking at 6 hour increments for a 24 hour window  (4 time instances)</span>
+
+<span class="sd">For each time instance,  calculate opposing winds with **n_sectors** (default is 8)</span>
+
+<span class="sd">Levels are based on the netcdf file and pressure range.  (Synth will have more levels than ERA5)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">env.forecast_processing.forecast</span> <span class="kn">import</span> <span class="n">Forecast</span><span class="p">,</span> <span class="n">Forecast_Subset</span>
+<span class="kn">import</span> <span class="nn">windrose</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">env.forecast_processing.forecast_visualizer</span> <span class="kn">import</span> <span class="n">ForecastVisualizer</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">utils.initialize_forecast</span> <span class="kn">import</span> <span class="n">initialize_forecasts</span>
+
+
+<div class="viewcode-block" id="ForecastClassifier">
+<a class="viewcode-back" href="../../API/forecast_processing.html#forecast_processing.ForecastClassifier.ForecastClassifier">[docs]</a>
+<span class="k">class</span> <span class="nc">ForecastClassifier</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Classifies forecasts based on opposing wind patterns.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        - determine_opposing_winds: Identify opposing wind levels and directions.</span>
+<span class="sd">        - determine_OW_Rate: Calculate the opposing wind rate for a forecast subset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the ForecastClassifier.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="ForecastClassifier.determine_opposing_winds">
+<a class="viewcode-back" href="../../API/forecast_processing.html#forecast_processing.ForecastClassifier.ForecastClassifier.determine_opposing_winds">[docs]</a>
+    <span class="k">def</span> <span class="nf">determine_opposing_winds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wd</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">n_sectors</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify opposing wind levels and directions from wind data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            wd (numpy.ndarray): Wind direction array (degrees).</span>
+<span class="sd">            levels (numpy.ndarray): Pressure or altitude levels.</span>
+<span class="sd">            n_sectors (int): Number of angular sectors.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple:</span>
+<span class="sd">                - opposing_wind_directions (numpy.ndarray): Indices of opposing wind directions.</span>
+<span class="sd">                - opposing_wind_levels (numpy.ndarray): Levels with opposing winds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dir_edges</span><span class="p">,</span> <span class="n">var_bins</span><span class="p">,</span> <span class="n">table</span> <span class="o">=</span> <span class="n">windrose</span><span class="o">.</span><span class="n">windrose</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">wd</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">levels</span><span class="p">,</span> <span class="n">nsector</span><span class="o">=</span><span class="n">n_sectors</span><span class="p">)</span>
+
+        <span class="c1">#Determine the sectors (directions) that contain non zero values (altitude levels that have wind)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+        <span class="n">altitude_lookup_idxs</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="c1"># altitude can be pressure or height, depending on by_pressure variable</span>
+
+        <span class="n">opposing_wind_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="n">opposing_wind_directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="c1"># Determine the sectors that have opposing winds by checking the current index and the complimentary index at n_sectors/2.</span>
+        <span class="c1"># Also determine the altitudes contains in the opposing wind pairs for calculating probabilities later.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">n_sectors</span><span class="o">/</span><span class="mi">2</span><span class="p">)):</span>
+            <span class="c1"># check if opposing sectors in the histogram tables have values greater than 0</span>
+            <span class="c1"># (therefore, there are winds in that sectors)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="n">i</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="n">n_sectors</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">altitude_lookup_idxs</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                    <span class="n">opposing_wind_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opposing_wind_levels</span><span class="p">,</span> <span class="n">var_bins</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                    <span class="n">opposing_wind_directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opposing_wind_directions</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">altitude_lookup_idxs</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="n">n_sectors</span><span class="o">/</span><span class="mi">2</span><span class="p">)]:</span>
+                    <span class="c1">#print(var_bins[idx])</span>
+                    <span class="n">opposing_wind_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opposing_wind_levels</span><span class="p">,</span> <span class="n">var_bins</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                    <span class="n">opposing_wind_directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opposing_wind_directions</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="n">n_sectors</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1"># sort the opposing wind altitudes and direction idxs (format later) in ascending order and remove duplicates</span>
+        <span class="n">opposing_wind_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">opposing_wind_levels</span><span class="p">))</span>
+        <span class="n">opposing_wind_directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">opposing_wind_directions</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">opposing_wind_directions</span><span class="p">,</span> <span class="n">opposing_wind_levels</span></div>
+
+
+
+<div class="viewcode-block" id="ForecastClassifier.determine_OW_Rate">
+<a class="viewcode-back" href="../../API/forecast_processing.html#forecast_processing.ForecastClassifier.ForecastClassifier.determine_OW_Rate">[docs]</a>
+    <span class="k">def</span> <span class="nf">determine_OW_Rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">forecast_subset</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the opposing wind rate for a forecast subset over a 24-hour window.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            forecast_subset (Forecast_Subset): Subset of the forecast.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple:</span>
+<span class="sd">                - scores (list): Number of opposing wind levels at each time interval.</span>
+<span class="sd">                - score (float): Normalized opposing wind rate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#Assuming 24 hour subset window right now</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">start_time</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">intervals</span> <span class="o">=</span> <span class="mi">4</span> <span class="c1"># Default Value (how many time incrememnts to look at given a 24 hour window)</span>
+        <span class="n">n_sectors</span> <span class="o">=</span> <span class="mi">8</span> <span class="c1"># Default Value (how many angular bins to classify angular bins into)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">intervals</span><span class="p">):</span>
+
+            <span class="n">z</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">np_lookup</span><span class="p">(</span><span class="n">forecast_subset</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span>
+                                                <span class="n">timestamp</span><span class="p">)</span>
+
+            <span class="n">bearing</span><span class="p">,</span> <span class="n">speed</span> <span class="o">=</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">windVectorToBearing</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+            <span class="n">bearing</span> <span class="o">=</span> <span class="n">bearing</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+            <span class="n">bearing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">bearing</span><span class="p">)</span>
+
+            <span class="n">levels</span> <span class="o">=</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">ds</span><span class="o">.</span><span class="n">level</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">opposing_wind_directions</span><span class="p">,</span> <span class="n">opposing_wind_levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_opposing_winds</span><span class="p">(</span><span class="n">bearing</span><span class="p">,</span> <span class="n">levels</span><span class="p">,</span> <span class="n">n_sectors</span><span class="p">)</span>
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">opposing_wind_levels</span><span class="p">))</span>
+
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">)</span>
+
+        <span class="n">max_score</span> <span class="o">=</span> <span class="p">(</span><span class="n">forecast_subset</span><span class="o">.</span><span class="n">level_dim</span><span class="o">*</span><span class="n">intervals</span><span class="p">)</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span><span class="o">/</span><span class="n">max_score</span>
+
+        <span class="k">return</span> <span class="n">scores</span><span class="p">,</span> <span class="n">score</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1"># Import Forecasts</span>
+    <span class="n">FORECAST_SYNTH</span><span class="p">,</span> <span class="n">FORECAST_ERA5</span><span class="p">,</span> <span class="n">forecast_subset_era5</span><span class="p">,</span> <span class="n">forecast_subset_synth</span> <span class="o">=</span> <span class="n">initialize_forecasts</span><span class="p">()</span>
+
+    <span class="c1"># Initialize ForecastClassifier</span>
+    <span class="n">ForecastClassifier</span> <span class="o">=</span> <span class="n">ForecastClassifier</span><span class="p">()</span>
+
+    <span class="c1">#randomize coord, ERA5 or Synth</span>
+    <span class="n">forecast_subset</span> <span class="o">=</span> <span class="n">forecast_subset_synth</span> <span class="c1">#choose _era5 or _synth</span>
+    <span class="n">forecast_subset</span><span class="o">.</span><span class="n">randomize_coord</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;random_coord&quot;</span><span class="p">,</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">lat_central</span><span class="p">,</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">lon_central</span><span class="p">,</span> <span class="n">forecast_subset</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+    <span class="n">forecast_subset</span><span class="o">.</span><span class="n">subset_forecast</span><span class="p">()</span>
+
+    <span class="c1">#Determine Forecast Score</span>
+    <span class="n">scores</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">ForecastClassifier</span><span class="o">.</span><span class="n">determine_OW_Rate</span><span class="p">(</span><span class="n">forecast_subset</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span><span class="n">score</span><span class="p">)</span>
+
+    <span class="c1"># Visualize the forecast at the first timestamp</span>
+    <span class="n">Forecast_visualizer</span> <span class="o">=</span> <span class="n">ForecastVisualizer</span><span class="p">(</span><span class="n">forecast_subset</span><span class="p">)</span>
+    <span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">generate_flow_array</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">forecast_subset</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+
+    <span class="c1"># Initialize Figure</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;custom3dquiver&#39;</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
+
+    <span class="n">Forecast_visualizer</span><span class="o">.</span><span class="n">visualize_3d_planar_flow</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">quiver_skip</span><span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Tristan Schuler, Chinthan Prasad.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
