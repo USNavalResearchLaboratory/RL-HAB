@@ -85,14 +85,14 @@
              
   <section id="preparing-forecast-data">
 <h1>Preparing Forecast Data<a class="headerlink" href="#preparing-forecast-data" title="Link to this heading"></a></h1>
-<p>RLHAB already comes with examples ERA5 forecasts and synthetic forecasts to get started.
-This page explains  how to download/generate forecasts for other regions and/or time periods.</p>
+<p>RLHAB requires at least one 4D forecast to run (RLHAB_env_SINGLE) in the ERA5 Pre Sep 2024 netcdf4 format, which is not provided due to file size.  Other forecast data sources can work as long as they are processed into the correct format.
+<a class="reference external" href="https://github.com/tkschuler/ERA5-Utils/">ERAS-Utils</a> provides more guidance on this formatting.</p>
 <section id="downloading-era5-forecasts">
 <h2>Downloading ERA5 forecasts<a class="headerlink" href="#downloading-era5-forecasts" title="Link to this heading"></a></h2>
-<p>Download ERA5 Reanalysis Forecasts from ECWMF data store. You will need to make an account first
-<a class="reference external" href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels?tab=overview">https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels?tab=overview</a></p>
-<table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Default Parameters for downloading ERA5 Reanalysis NETCDF4 File</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<p>The easiest way to get started is to download an ERA5 Reanalysis Forecast on individual pressure levels from the <a class="reference external" href="https://cds.climate.copernicus.eu/datasets/reanalysis-era5-pressure-levels?tab=overview/">ECMWF CDS</a>.
+You will need to make an account first.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Default Parameters for downloading ERA5 Reanalysis NETCDF4 File</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />
@@ -112,8 +112,14 @@ This page explains  how to download/generate forecasts for other regions and/or 
 <tr class="row-even"><td><p>Data format</p></td>
 <td><p>NetCDF4</p></td>
 </tr>
+<tr class="row-odd"><td><p>Time</p></td>
+<td><p>At least 12 hour resolution.</p></td>
+</tr>
 </tbody>
 </table>
+<p>Equatorial regions year-round and mid-latitudes in the summer have the best wind diversity for HAB navigation.</p>
+<p>For more advanced users, higher vertical resolution (recommended) ERA5 on model levels can be downloaded and processed.  ERA5 data on model levels comes in hybrid-sigma coordinates, which are not compatible with
+RLHAB, and must be converted to pressure levels using the <a class="reference external" href="https://github.com/tkschuler/ERA5-Utils/">ERAS-Utils</a></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>ERA5 forecasts may need to be downloaded in batches depending on the region or time periods
@@ -122,7 +128,41 @@ of interest. The Copernicus server does not support downloads over 10 gigs.</p>
 </section>
 <section id="generating-synthetic-forecasts">
 <h2>Generating Synthetic Forecasts<a class="headerlink" href="#generating-synthetic-forecasts" title="Link to this heading"></a></h2>
-<p>See Synth winds [ToDO]</p>
+<p>The SynthWinds notebook is designed to process radiosonde data and export synthetic wind forecasts in NetCDF format.
+It includes functionality for radiosonde data aggregation, smoothing, I/O operations, and visualization.
+Radiosonde sounding data needs to be downloaded seperately from University of Wyoming’s <a class="reference external" href="https://weather.uwyo.edu/upperair/sounding_legacy.html">Upper Air Soundings Dataset</a>.
+<cite>AnnualWyomingDownload.py</cite> from <a class="reference external" href="https://github.com/tkschuler/RadioWinds/">Radiowinds</a> provides the script <cite>AnnualWyomingDownload.py</cite> to batch download individual soundings for a region and year using
+the python package <a class="reference external" href="https://unidata.github.io/siphon/latest/index.html">Siphon</a> and organize the downloads into the same structure SynthWinds requires:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>soundings_data
+├── ABQ - 72365
+│   ├── 2022
+│   └── 2023
+│       └── 1
+│           ├──ABQ-2023-1-1-0.csv
+│           ├── ABQ-2023-1-1-12.csv
+│           ├── ABQ-2023-1-2-00.csv
+│           └── ...
+│       ├── 2
+│       └── ...
+├── SLC - 72572
+└── ...
+</pre></div>
+</div>
+</div></blockquote>
+<p>Steps for generating synthetic winds forecasts:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Download the radiosonde data using <cite>AnnualWyomingDownload.py</cite> from RadioWinds</p></li>
+<li><p>Aggregate Radiosonde Data</p></li>
+<li><p>Filters radiosonde data for desired altitude, lat, and long ranges</p></li>
+<li><p>Interpolate missing data</p></li>
+<li><p>Post-Processing</p></li>
+<li><p>Visualization (optional)</p></li>
+<li><p>Reshape Data for NetCDF Export</p></li>
+</ol>
+</div></blockquote>
+<p>Synthwinds is currently set up to download and process radiosonde data for the SouthWestern United States as an example.</p>
 </section>
 </section>
 
