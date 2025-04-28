@@ -25,7 +25,7 @@ You will need to make an account first.
    * - Data format
      - NetCDF4
    * - Time 
-     - At least 12 hour resolution. 
+     - At least 12 hour resolution 
 
 Equatorial regions year-round and mid-latitudes in the summer have the best wind diversity for HAB navigation. 
 

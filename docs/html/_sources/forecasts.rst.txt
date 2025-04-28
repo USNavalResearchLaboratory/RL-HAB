@@ -25,7 +25,7 @@ You will need to make an account first.
    * - Data format
      - NetCDF4
    * - Time 
-     - At least 12 hour resolution. 
+     - At least 12 hour resolution 
 
 Equatorial regions year-round and mid-latitudes in the summer have the best wind diversity for HAB navigation. 
 
@@ -79,3 +79,7 @@ Steps for generating synthetic winds forecasts:
 
 Synthwinds is currently set up to download and process radiosonde data for the SouthWestern United States as an example. 
 
+Generating SynthWinds Quickstart
+___________________________________________
+
+Clone RadioWinds, and run `AnnualWyomingDownload.py` with `config.py` as is.  This will download all radiosondes in North America for 2023. 

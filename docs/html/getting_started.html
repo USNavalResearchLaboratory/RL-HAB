@@ -97,9 +97,46 @@
 </section>
 <section id="running-a-simulation-in-gym">
 <h2>Running a simulation in Gym<a class="headerlink" href="#running-a-simulation-in-gym" title="Link to this heading"></a></h2>
+<p>The RL-HAB simulation environment is built on the <a class="reference external" href="https://www.gymlibrary.dev/index.html">Gym API</a>. This API is a standard API for most reinforcement learning applications, and can be easily coupled with out-of-the-box RL implementations such as <a class="reference external" href="https://stable-baselines3.readthedocs.io/en/master/">StableBaselines3</a>.
+There are two types of custom Gym environments to choose from: <cite>RLHAB_gym_SINGLE.py</cite> and <cite>RLHAB_gym_DUAL.py</cite>.
+- What are the two types of custom Gym envrionments and what do each mean
+- Requirements for every environment (ERA5 + Synth)
+- Modify the env_config.py file</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>What do each of the variables here mean? Which ones are open for modification? - Should this link to the API?</p></li>
+<li><p>Dynamics noise</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Example call of the environment with random actions</p></li>
+</ul>
 </section>
 <section id="training-an-agent-with-dqn">
 <h2>Training an agent with DQN<a class="headerlink" href="#training-an-agent-with-dqn" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><dl class="simple">
+<dt>StableBaselines3 DQN explanation</dt><dd><ul>
+<li><p>Simple training example usage</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Optuna explanation + usage</dt><dd><ul>
+<li><p>Optuna dashboard</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Weights and Biases explanation + usage</dt><dd><ul>
+<li><p>Screenshot of W&amp;Biases</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
 </section>
 <section id="evaluating-an-agent">
 <h2>Evaluating an Agent<a class="headerlink" href="#evaluating-an-agent" title="Link to this heading"></a></h2>
